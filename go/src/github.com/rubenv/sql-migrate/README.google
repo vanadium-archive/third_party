@@ -1,0 +1,20 @@
+URL: https://github.com/rubenv/sql-migrate/archive/0ab1fcff8960ab61100892ed0e2d6d2902867848.zip
+Version: 0ab1fcff8960ab61100892ed0e2d6d2902867848
+License: MIT
+License File: LICENSE
+
+Description:
+
+sql-migrate is a SQL schema migration tool for Go.
+
+Local Modifications:
+
+Deleted sql-migrate/mssql.go, since it imported unwanted dependencies, and we
+don't need to support mssql.
+
+Deleted migrate-test.go since it impoted unwanted dependencies.
+
+Removed the following imports and their associated dialects from
+sql-migrate/config.go:
+	* github.com/lib/pq
+	* github.com/mattn/go-sqlite3

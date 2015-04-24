@@ -1,0 +1,11 @@
+URL: https://github.com/olekukonko/tablewriter/archive/1805332a9a6612da6603ccfdd99a036afb89cec6.zip
+Version: 1805332a9a6612da6603ccfdd99a036afb89cec6
+License: MIT
+License File: LICENSE
+
+Description:
+tablewriter is a library for ASCII tables in golang.
+
+Local Modifications:
+No modifications
+

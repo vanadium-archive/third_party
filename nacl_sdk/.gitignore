@@ -1,0 +1,3 @@
+*.pyc
+pepper_*
+sdk_cache/

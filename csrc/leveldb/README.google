@@ -1,0 +1,10 @@
+URL: https://github.com/google/leveldb/archive/v1.18.zip
+Version: 1.18 (commit 803d69203a62faf50f1b77897310a3a1fcae712b)
+License: New BSD
+License File: LICENSE
+
+Description:
+LevelDB is a fast key-value storage library written at Google that provides an ordered mapping from string keys to string values.
+
+Local Modifications:
+- go/vcl/5501 adds support for specifying where levelDB libraries should be built

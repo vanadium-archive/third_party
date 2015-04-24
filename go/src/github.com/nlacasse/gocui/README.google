@@ -1,0 +1,10 @@
+URL: https://github.com/nlacasse/gocui/archive/36ee3d0edb39588b5d657ec3c2960acf964d0584.zip
+Version: 36ee3d0edb39588b5d657ec3c2960acf964d0584
+License: New BSD
+License File: LICENSE
+
+Description:
+Minimalist Go package aimed at creating Console User Interfaces.
+
+Local Modifications:
+None.

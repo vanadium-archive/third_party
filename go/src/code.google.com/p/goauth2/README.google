@@ -1,0 +1,11 @@
+URL: http://goauth2.googlecode.com/archive/9fc9b28b7ffab4a7fb3ae2ad22fdf8f473de5db5.tar.gz
+Version: 9fc9b28b7ffab4a7fb3ae2ad22fdf8f473de5db5
+License: New BSD
+License File: LICENSE
+
+Description:
+The oauth package provides support for making OAuth2-authenticated HTTP
+requests.
+
+Local Modifications:
+No Modifications.

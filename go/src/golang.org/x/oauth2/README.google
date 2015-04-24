@@ -1,0 +1,10 @@
+URL: https://github.com/golang/oauth2/archive/ce5ea7da934b76b1066c527632359e2b8f65db97.tar.gz
+Version: ce5ea7da934b76b1066c527632359e2b8f65db97
+License: New BSD
+License File: LICENSE
+
+Description:
+oauth2 package contains a client implementation for OAuth 2.0 spec.
+
+Local Modifications:
+No modifications.

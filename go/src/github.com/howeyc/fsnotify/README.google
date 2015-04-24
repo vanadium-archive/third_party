@@ -1,0 +1,10 @@
+URL: https://github.com/howeyc/fsnotify/archive/6b1ef893dc11e0447abda6da20a5203481878dda.zip
+Version: 6b1ef893dc11e0447abda6da20a5203481878dda
+License: Notice License
+License File: LICENSE
+
+Description:
+fsnotify is a package that supports file system notifications for Go.
+
+Local Modifications:
+No modifications

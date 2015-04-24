@@ -1,0 +1,12 @@
+URL: https://github.com/golang/groupcache/archive/8b25adc0f62632c810997cb38c21111a3f256bf4.zip
+Version: 8b25adc0f62632c810997cb38c21111a3f256bf4
+License: Apache 2.0
+License File: LICENSE
+
+Description:
+  groupcache is a caching and cache-filling library, intended as a replacement
+  for memcached in many cases.
+
+Local Modifications:
+  Added "// +build ignore" build constraint to all .go files except those in
+  lru/ directory.

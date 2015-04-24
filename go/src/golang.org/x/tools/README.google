@@ -1,0 +1,10 @@
+URL: https://go.googlesource.com/tools/+archive/69db398fe0e69396984e3967724820c1f631e971.tar.gz
+Version: 69db398fe0e69396984e3967724820c1f631e971
+License: New BSD
+License File: LICENSE
+
+Description:
+Packages and tools supporting the Go programming language.
+
+Local Modifications:
+No modifications.

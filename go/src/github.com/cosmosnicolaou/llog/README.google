@@ -1,0 +1,21 @@
+URL:https://github.com/cosmosnicolaou/llog/archive/82a41c8494ef89601b775bf6a1da7b3db5a6b49e.zip
+Version: 82a41c8494ef89601b775bf6a1da7b3db5a6b49e
+License: Apache 2.0
+License File: LICENSE
+
+Description:
+  Low level implementation of leveled execution logs for Go.
+
+It is a fork of the github.com/golang/glog package that is itself an efficient
+pure Go implementation of leveled logs in the manner of the open source C++
+package
+	http://code.google.com/p/google-glog
+
+This version refactors the code so as not to rely on a single global variable
+and associated log state. It also separates out the flag parsing so that
+an application can chose to use whatever command line flags they wish to
+configure the package.
+
+Local Modifications:
+See p4 history
+

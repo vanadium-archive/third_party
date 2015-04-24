@@ -1,0 +1,10 @@
+URL: https://github.com/nsf/termbox-go/archive/bc836fdbcf75184c95c96500ea740e3dd727b5a8.zip
+Version: bc836fdbcf75184c95c96500ea740e3dd727b5a8
+License: MIT
+License File: LICENSE
+
+Description:
+Pure Go termbox implementation.
+
+Local Modifications:
+None.

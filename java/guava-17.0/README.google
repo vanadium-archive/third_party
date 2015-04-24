@@ -1,0 +1,13 @@
+URL: http://search.maven.org/remotecontent?filepath=com/google/guava/guava/17.0/guava-17.0.jar
+     http://search.maven.org/remotecontent?filepath=com/google/guava/guava/17.0/guava-17.0-javadoc.jar
+     http://search.maven.org/remotecontent?filepath=com/google/guava/guava/17.0/guava-17.0-sources.jar
+Version: 17.0
+License: Apache 2.0
+License File: LICENSE
+
+Description:
+The Guava project contains several of Google's core libraries that we rely on in our Java-based projects: collections, caching, primitives support, concurrency libraries, common annotations, string processing, I/O, and so forth.
+
+Local Modifications:
+Generated LICENSE file by copying the contents of the following license link
+at the project homepage: http://www.apache.org/licenses/LICENSE-2.0

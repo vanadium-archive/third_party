@@ -1,0 +1,10 @@
+URL: https://github.com/junit-team/junit/archive/r4.11.zip
+Version: 4.11
+License: Common Public License - v 1.0
+License File: LICENSE
+
+Description:
+JUnit is a simple framework to write repeatable tests. It is an instance of the xUnit architecture for unit testing frameworks.
+
+Local Modifications:
+Copied generated JAR file into the lib/ directory.

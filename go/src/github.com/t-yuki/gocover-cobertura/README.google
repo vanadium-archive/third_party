@@ -1,0 +1,11 @@
+URL: https://github.com/t-yuki/gocover-cobertura/archive/51e121ba753c65cdc969ec7edabf651e2a018832.zip
+Version: 51e121ba753c65cdc969ec7edabf651e2a018832
+License: MIT
+License File: LICENSE
+
+Description:
+This is a simple helper tool for generating XML output in Cobertura format for
+CIs like Jenkins and others from go tool cover output.
+
+Local Modifications:
+No modifications.

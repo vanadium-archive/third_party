@@ -1,0 +1,12 @@
+URL: https://bitbucket.org/tebeka/go2xunit/get/77968f802fb3.zip
+Version: 77968f802fb3852e199209e2c78092b717714a2c
+License: MIT
+License File: LICENSE
+
+Description:
+Converts go test -v (or gocheck -vv) output to xunit compatible XML output (used
+in Jenkins/Hudson).
+
+Local Modifications:
+- go/vcl/4807: modified the map2arr() function to output map values in
+  a deterministic order to avoid test flakiness

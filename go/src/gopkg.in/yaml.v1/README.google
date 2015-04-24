@@ -1,0 +1,11 @@
+URL: https://github.com/go-yaml/yaml/archive/9f9df34309c04878acc86042b16630b0f696e1de.zip
+Version: 9f9df34309c04878acc86042b16630b0f696e1de
+License: LGPL with an exception that allows it to be linked statically
+License File: LICENSE
+
+Description:
+YAML support for the Go language.
+
+Local Modifications:
+No modifications
+

@@ -1,0 +1,10 @@
+URL: https://github.com/mattn/go-runewidth/archive/58a0da4ed7b321c9b5dfeffb7e03ee188fae1c60.zip
+Version: 58a0da4ed7b321c9b5dfeffb7e03ee188fae1c60
+License: MIT
+License File: LICENSE
+
+Description:
+Provides functions to get fixed width of the character or string.
+
+Local Modifications:
+None.

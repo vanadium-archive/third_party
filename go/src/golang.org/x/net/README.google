@@ -1,0 +1,10 @@
+URL: https://go.googlesource.com/net/+archive/cbcac7bb8415db9b6cb4d1ebab1dc9afbd688b97.tar.gz
+Version: cbcac7bb8415db9b6cb4d1ebab1dc9afbd688b97
+License: New BSD
+License File: LICENSE
+
+Description:
+Supplementary Go networking libraries.
+
+Local Modifications:
+No modifications.

@@ -1,0 +1,12 @@
+URL: https://gopass.googlecode.com/archive/3b39664481b57ad99d34c86bd64090c28eacc7a1.zip
+Version: 3b39664481b57ad99d34c86bd64090c28eacc7a1
+License: MIT
+License File: LICENSE
+
+Description:
+  Go library providing to accept sensitive input (e.g. passwords) from stdin.
+
+Local Modifications:
+* LICENSE file has been created for compliance purposes. Not included in
+	original distribution.  https://code.google.com/p/gopass links to the
+	MIT license, so included that in initial checkin.

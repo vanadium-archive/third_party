@@ -1,0 +1,7 @@
+/.v23
+
+# Built files from third-party C libraries
+/cout
+
+# Repositories clone during setup of v23 profiles
+/repos

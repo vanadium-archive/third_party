@@ -1,0 +1,10 @@
+URL: https://freetype-go.googlecode.com/archive/4ee4916a76ae3d8090397720251cef12f830a1ec.tar.gz
+Version: 4ee4916a76ae3d8090397720251cef12f830a1ec
+License: BSD
+License File: LICENSE
+
+Description:
+freetype font support, needed by golang.org/x/mobile
+
+Local Modifications:
+No Modifications.

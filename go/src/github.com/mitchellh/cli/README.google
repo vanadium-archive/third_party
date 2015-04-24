@@ -1,0 +1,11 @@
+URL: https://github.com/mitchellh/cli/archive/afc399c273e70173826fb6f518a48edff23fe897.zip
+Version: afc399c273e70173826fb6f518a48edff23fe897
+License: MPL2
+License File: LICENSE
+
+Description:
+go-cli is a go library for implementing command-line interfaces.
+
+Local Modifications:
+No modifications
+

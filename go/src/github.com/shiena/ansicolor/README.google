@@ -1,0 +1,10 @@
+URL: https://github.com/shiena/ansicolor/archive/8368d3b31cf6f2c2464c7a91675342c9a0ac6658.zip
+Version: 8368d3b31cf6f2c2464c7a91675342c9a0ac6658
+License: MIT
+License File: LICENSE
+
+Description:
+Ansicolor library provides color console in Windows as ANSICON for Golang.
+
+Local Modifications:
+None.

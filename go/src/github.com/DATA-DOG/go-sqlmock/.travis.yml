@@ -1,0 +1,12 @@
+language: go
+go:
+ - 1.1
+ - 1.2
+ - 1.3
+ - release
+ - tip
+
+script:
+ - (go version | grep "version go1.1") || go get code.google.com/p/go.tools/cmd/vet
+ - go vet ./...
+ - go test -v ./...

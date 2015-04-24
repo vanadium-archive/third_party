@@ -1,0 +1,11 @@
+URL: https://github.com/visualfc/gotools/archive/07fb242eb9ee0950a31ff3d809c1faa5c3b2a5f6.zip
+Version: 07fb242eb9ee0950a31ff3d809c1faa5c3b2a5f6
+License: BSD
+License File: LICENSE
+
+Description:
+gotools provides a handful of utilties (including goapi) for dealing with Go
+source code.
+
+Local Modifications:
+No modifications

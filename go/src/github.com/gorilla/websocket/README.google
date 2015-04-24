@@ -1,0 +1,10 @@
+URL: https://github.com/gorilla/websocket/archive/92334662baa9cbebc2e6e68b8d56bc1233f85a4c.zip
+Version: 92334662baa9cbebc2e6e68b8d56bc1233f85a4c
+License: Notice License
+License File: LICENSE
+
+Description:
+A package for adding websocket support to the standard Go HTTP Server
+
+Local Modifications:
+No modifications.

@@ -1,0 +1,10 @@
+URL: https://github.com/kr/pty/archive/67e2db24c831afa6c64fc17b4a143390674365ef.zip
+Version: 67e2db24c831afa6c64fc17b4a143390674365ef
+License: MIT
+License File: LICENSE
+
+Description:
+Pty is a Go package for using unix pseudo-terminals.
+
+Local Modifications:
+No modifications.

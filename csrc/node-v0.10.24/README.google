@@ -1,0 +1,14 @@
+URL: http://nodejs.org/dist/v0.10.24/node-v0.10.24.tar.gz
+Version: 0.10.24
+License: N/A
+License File: LICENSE
+
+Description: 
+Node.js is a platform built on Chrome's JavaScript runtime for easily
+building fast, scalable network applications. Node.js uses an
+event-driven, non-blocking I/O model that makes it lightweight and
+efficient, perfect for data-intensive real-time applications that run
+across distributed devices.
+
+Local Modifications:
+None.

@@ -1,0 +1,10 @@
+URL: http://www.bizdirusa.com/mirrors/apache//commons/math/binaries/commons-math3-3.3-bin.zip
+Version: 3.3
+License: Apache 2.0
+License File: LICENSE
+
+Description:
+Commons Math is a library of lightweight, self-contained mathematics and statistics components addressing the most common problems not available in the Java programming language or Commons Lang.
+
+Local Modifications:
+Renamed LICENSE.txt to LICENSE

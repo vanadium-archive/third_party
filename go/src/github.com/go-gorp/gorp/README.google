@@ -1,0 +1,13 @@
+URL: https://github.com/go-gorp/gorp/archive/6d3d64eb828eb0e96a99234d8954e3ad89e2f1d7.zip
+Version: 6d3d64eb828eb0e96a99234d8954e3ad89e2f1d7
+License: MIT
+License File: LICENSE
+
+Description:
+gorp is a go relational persistence library.
+
+Local Modifications:
+Removed the following imports from gorp_test.go:
+  * github.com/ziutek/mymysql/godrv
+  * github.com/lib/pq
+  * github.com/mattn/go-sqlite3

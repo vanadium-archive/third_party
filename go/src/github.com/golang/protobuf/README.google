@@ -1,0 +1,11 @@
+URL: https://github.com/golang/protobuf/archive/60976d353effd937b53a171e7493148a9969e39a.zip
+Version: 60976d353effd937b53a171e7493148a9969e39a
+License: New BSD
+License File: LICENSE
+
+Description:
+golang protobufs
+
+Local Modifications:
+Remove .pb.go exclusion from .gitignore so that our jenkins builds will function correctly.
+Replace relative import paths with absolute ones to avoid golang.org/x/loader errors.

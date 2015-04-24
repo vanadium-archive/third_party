@@ -1,0 +1,11 @@
+URL: https://go.googlesource.com/crypto/+archive/632d287f9f3f54b09809eebbd3cacbcb00b9f2fc.tar.gz
+Version: 632d287f9f3f54b09809eebbd3cacbcb00b9f2fc
+License: New BSD
+License File: LICENSE
+
+Description:
+Supplementary Go cryptography libraries.
+
+Local Modifications:
+go/crypto/ssh/terminal/util.go: Clear out left over buffers from append in ReadPassword
+to avoid keeping password data in memory.

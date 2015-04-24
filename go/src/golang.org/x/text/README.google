@@ -1,0 +1,10 @@
+URL: https://go.googlesource.com/text/+archive/ef0bf1da95d2b971524f971801f2a4c2d0b4841f.tar.gz
+Version: ef0bf1da95d2b971524f971801f2a4c2d0b4841f
+License: New BSD
+License File: LICENSE
+
+Description:
+Supplementary Go text processing libraries.
+
+Local Modifications:
+No modifications.

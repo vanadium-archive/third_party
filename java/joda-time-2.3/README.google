@@ -1,0 +1,11 @@
+URL: http://sourceforge.net/projects/joda-time/files/joda-time/2.3/joda-time-2.3-dist.zip/download
+Version: 2.3
+License: Apache 2.0
+License File: LICENSE
+
+Description:
+Joda-Time - Java date and time API
+Joda-Time provides a quality replacement for the Java date and time classes.
+
+Local Modifications:
+Renamed LICENSE.txt to LICENSE
