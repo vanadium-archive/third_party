@@ -1,13 +1,9 @@
 # Generated files
-configure
-autom4te.cache
-config.log
-config.status
-Makefile
-*ct-ng*
-!ct-ng.comp
-!ct-ng.in
-paths.*
+/configure
+/autom4te.cache
+/config.log
+/config.status
+/Makefile
 config.gen/
 .config
 .config.2
