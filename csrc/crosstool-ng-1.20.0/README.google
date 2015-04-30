@@ -1,0 +1,11 @@
+URL: http://crosstool-ng.org/download/crosstool-ng/crosstool-ng-1.20.0.tar.bz2
+Version: 1.20.0
+License: N/A
+License File: LICENSES
+
+Description:
+crosstool-ng is a tool for building cross-compilation toolchains.
+
+Local Modifications:
+None.
+
