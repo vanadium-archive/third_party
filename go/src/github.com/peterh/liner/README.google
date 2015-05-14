@@ -1,0 +1,12 @@
+URL: https://github.com/peterh/liner/archive/1bb0d1c1a25ed393d8feb09bab039b2b1b1fbced.zip
+Version: 1bb0d1c1a25ed393d8feb09bab039b2b1b1fbced
+License: x11
+License File: LICENSE
+
+Description:
+Package liner implements a simple command line editor, inspired by linenoise
+(https://github.com/antirez/linenoise/). This package supports WIN32 in
+addition to the xterm codes supported by everything else.
+
+Local Modifications:
+None.
