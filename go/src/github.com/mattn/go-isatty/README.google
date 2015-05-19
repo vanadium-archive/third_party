@@ -1,0 +1,10 @@
+URL: https://github.com/mattn/go-isatty/archive/ae0b1f8f8004be68d791a576e3d8e7648ab41449.zip
+Version: ae0b1f8f8004be68d791a576e3d8e7648ab41449
+License: MIT
+License File: LICENSE
+
+Description:
+Package isatty implements interface to isatty.
+
+Local Modifications:
+None.
