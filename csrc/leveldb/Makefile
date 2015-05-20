@@ -103,6 +103,8 @@ endif  # PLATFORM_SHARED_EXT
 
 all: $(SHARED) $(LIBRARY)
 
+static: $(LIBRARY)
+
 check: all $(PROGRAMS) $(TESTS)
 	for t in $(TESTS); do echo "***** Running $$t"; ./$$t || exit 1; done
 

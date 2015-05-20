@@ -8,3 +8,4 @@ LevelDB is a fast key-value storage library written at Google that provides an o
 
 Local Modifications:
 - go/vcl/5501 adds support for specifying where levelDB libraries should be built
+- go/vcl/11736 adds a Makefile target for only building the static library
