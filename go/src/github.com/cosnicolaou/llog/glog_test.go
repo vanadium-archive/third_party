@@ -320,7 +320,7 @@ var vRegexps = map[string]bool{
 	"...._.*=2":      true,
 	"..[mno]?_.*t=2": true,
 	// These all use 2 and check the patterns. All are false.
-	".*x=2":            false,
+	".*x$=2":           false,
 	"m.*=2":            true,
 	".._.*=2":          true,
 	".\\[abc\\]._.*=2": false,
