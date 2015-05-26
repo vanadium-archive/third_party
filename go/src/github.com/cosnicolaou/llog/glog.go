@@ -509,7 +509,7 @@ type Log struct {
 	verbosity Level        // V logging level, the value of the -v flag/
 
 	// track lines/bytes per severity level
-	stats         Stats
+	stats         *Stats
 	severityStats [numSeverity]*OutputStats
 
 	// number of stack frame to skip in order to reach the callpoint
@@ -528,7 +528,7 @@ type Log struct {
 // call point to be logged. 0 will log the caller of the logging methods,
 // 1 their caller etc.
 func NewLogger(name string, skip int) *Log {
-	logging := &Log{}
+	logging := &Log{stats: new(Stats)}
 	logging.setVState(0, nil, nil, false)
 	logging.skip = 2 + skip
 	logging.maxStackBufSize = 4096 * 1024
@@ -1135,5 +1135,5 @@ func (l *Log) V(level Level) bool {
 }
 
 func (l *Log) Stats() Stats {
-	return l.stats
+	return *l.stats
 }
