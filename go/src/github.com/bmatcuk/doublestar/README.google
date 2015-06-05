@@ -1,0 +1,10 @@
+URL: https://github.com/bmatcuk/doublestar/archive/3d7b9fdaa0003377934692e98a5d3233f11a5baa.zip
+Version: 3d7b9fdaa0003377934692e98a5d3233f11a5baa
+License: MIT
+License File: LICENSE
+
+Description:
+doublestar expands Go file globbing to match `**` (any number of path components).
+
+Local Modifications:
+Applied gofmt.
