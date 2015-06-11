@@ -548,8 +548,8 @@ func NewLogger(name string, skip int) *Log {
 }
 
 func (l *Log) String() string {
-	return fmt.Sprintf("name=%s logdirs=%s logtostderr=%t alsologtostderr=%t max_stack_buf_size=%d v=%d stderrthreshold=%s vmodule=%s log_backtrace_at=%s",
-		l.name, l.logDirs, l.toStderr, l.alsoToStderr, l.maxStackBufSize, l.verbosity, &l.stderrThreshold, &l.vmodule, &l.traceLocation)
+	return fmt.Sprintf("name=%s logdirs=%s logtostderr=%t alsologtostderr=%t max_stack_buf_size=%d v=%d stderrthreshold=%s vmodule=%s vfilepath=%s log_backtrace_at=%s",
+		l.name, l.logDirs, l.toStderr, l.alsoToStderr, l.maxStackBufSize, l.verbosity, &l.stderrThreshold, &l.vmodule, &l.vfilepath, &l.traceLocation)
 }
 
 // logDir if non-empty, write log files to this directory.
