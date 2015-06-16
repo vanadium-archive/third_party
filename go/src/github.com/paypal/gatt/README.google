@@ -1,0 +1,10 @@
+URL: https://github.com/paypal/gatt/archive/fc9c77133e3b89c5ff904b9c7c41fee62f9ebab7.zip
+Version: fc9c77133e3b89c5ff904b9c7c41fee62f9ebab7
+License: BSD
+License File: LICENSE
+
+Description:
+Gatt is a Go package for building Bluetooth Low Energy peripherals
+
+Local Modifications:
+No modifications.
