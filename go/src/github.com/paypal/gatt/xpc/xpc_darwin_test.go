@@ -24,7 +24,7 @@ func TestConvertUUID(t *testing.T) {
 
 	uuid2 := CheckUUID(t, v)
 
-	if reflect.DeepEqual(uuid, uuid2) {
+	if !reflect.DeepEqual(uuid, uuid2) {
 		t.Errorf("expected %#v got %#v\n", uuid, uuid2)
 	}
 }
@@ -67,7 +67,7 @@ func TestConvertSliceUUID(t *testing.T) {
 			uuid1 := CheckUUID(t, arr[i])
 			uuid2 := CheckUUID(t, arr2[i])
 
-			if reflect.DeepEqual(uuid1, uuid2) {
+			if !reflect.DeepEqual(uuid1, uuid2) {
 				t.Errorf("expected array[%d]: %#v got %#v\n", i, arr[i], arr2[i])
 			}
 		}
@@ -94,7 +94,7 @@ func TestConvertMap(t *testing.T) {
 		fail := false
 
 		for k, v := range d {
-			if v != d2[k] {
+			if !reflect.DeepEqual(v, d2[k]) {
 				t.Logf("expected map[%s]: %#v got %#v\n", k, v, d2[k])
 				fail = true
 			}
