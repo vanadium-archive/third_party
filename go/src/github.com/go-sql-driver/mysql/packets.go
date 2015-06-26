@@ -78,7 +78,6 @@ func (mc *mysqlConn) readPacket() ([]byte, error) {
 
 // Write packet buffer 'data'
 func (mc *mysqlConn) writePacket(data []byte) error {
-	errLog.Print("start: writePacket")
 	pktLen := len(data) - 4
 
 	if pktLen > mc.maxPacketAllowed {
@@ -101,13 +100,10 @@ func (mc *mysqlConn) writePacket(data []byte) error {
 		data[3] = mc.sequence
 
 		// Write packet
-		errLog.Print("start: mc.netConn.Write")
 		n, err := mc.netConn.Write(data[:4+size])
-		errLog.Print("end: mc.netConn.Write")
 		if err == nil && n == 4+size {
 			mc.sequence++
 			if size != maxPacketSize {
-				errLog.Print("end: writePacket")
 				return nil
 			}
 			pktLen -= size
@@ -422,9 +418,7 @@ func (mc *mysqlConn) readResultOK() error {
 // Result Set Header Packet
 // http://dev.mysql.com/doc/internals/en/com-query-response.html#packet-ProtocolText::Resultset
 func (mc *mysqlConn) readResultSetHeaderPacket() (int, error) {
-	errLog.Print("start: mc.readPacket")
 	data, err := mc.readPacket()
-	errLog.Print("end: mc.readPacket err:", err)
 	if err == nil {
 		switch data[0] {
 
@@ -432,7 +426,6 @@ func (mc *mysqlConn) readResultSetHeaderPacket() (int, error) {
 			return 0, mc.handleOkPacket(data)
 
 		case iERR:
-			errLog.Print("err package recieved")
 			return 0, mc.handleErrorPacket(data)
 
 		case iLocalInFile:

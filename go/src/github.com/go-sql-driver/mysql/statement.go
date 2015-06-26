@@ -40,9 +40,7 @@ func (stmt *mysqlStmt) Exec(args []driver.Value) (driver.Result, error) {
 		return nil, driver.ErrBadConn
 	}
 	// Send command
-	errLog.Print("start: stmt.writeExecutePacket")
 	err := stmt.writeExecutePacket(args)
-	errLog.Print("end: stmt.writeExecutePacket")
 	if err != nil {
 		return nil, err
 	}
@@ -53,23 +51,17 @@ func (stmt *mysqlStmt) Exec(args []driver.Value) (driver.Result, error) {
 	mc.insertId = 0
 
 	// Read Result
-	errLog.Print("start: mc.readResultSetHeaderPacket")
 	resLen, err := mc.readResultSetHeaderPacket()
-	errLog.Print("end: mc.readResultSetHeaderPacket")
 	if err == nil {
 		if resLen > 0 {
 			// Columns
-			errLog.Print("start: mc.readUntilEOF columns")
 			err = mc.readUntilEOF()
-			errLog.Print("end: mc.readUntilEOF columns")
 			if err != nil {
 				return nil, err
 			}
 
 			// Rows
-			errLog.Print("start: mc.readUntilEOF rows")
 			err = mc.readUntilEOF()
-			errLog.Print("end: mc.readUntilEOF rows")
 		}
 		if err == nil {
 			return &mysqlResult{
