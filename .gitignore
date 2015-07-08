@@ -6,5 +6,5 @@
 # Repositories clone during setup of v23 profiles
 /repos
 
-# Built files from "v23 profile setup android"
+# Built files from "v23 profile install android"
 /android
