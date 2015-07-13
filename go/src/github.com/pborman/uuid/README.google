@@ -1,0 +1,10 @@
+URL: https://github.com/pborman/uuid/archive/ca53cad383cad2479bbba7f7a1a05797ec1386e4.zip
+Version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
+License: BSD
+License File: LICENSE
+
+Description:
+The uuid package generates and inspects UUIDs based on RFC 4122 and DCE 1.1: Authentication and Security Services.
+
+Local Modifications:
+No Modifications
