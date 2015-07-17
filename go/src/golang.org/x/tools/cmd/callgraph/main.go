@@ -30,6 +30,7 @@ import (
 	"runtime"
 	"text/template"
 
+	"golang.org/x/tools/go/buildutil"
 	"golang.org/x/tools/go/callgraph"
 	"golang.org/x/tools/go/callgraph/cha"
 	"golang.org/x/tools/go/callgraph/rta"
@@ -37,10 +38,11 @@ import (
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/pointer"
 	"golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/go/ssa/ssautil"
 )
 
 var algoFlag = flag.String("algo", "rta",
-	`Call graph construction algorithm, one of "rta" or "pta"`)
+	`Call graph construction algorithm (static, cha, rta, pta)`)
 
 var testFlag = flag.Bool("test", false,
 	"Loads test code (*_test.go) for imported packages")
@@ -48,6 +50,10 @@ var testFlag = flag.Bool("test", false,
 var formatFlag = flag.String("format",
 	"{{.Caller}}\t--{{.Dynamic}}-{{.Line}}:{{.Column}}-->\t{{.Callee}}",
 	"A template expression specifying how to format an edge")
+
+func init() {
+	flag.Var((*buildutil.TagsFlag)(&build.Default.BuildTags), "tags", buildutil.TagsFlagDoc)
+}
 
 const Usage = `callgraph: display the the call graph of a Go program.
 
@@ -173,7 +179,7 @@ func doCallgraph(ctxt *build.Context, algo, format string, tests bool, args []st
 	}
 
 	// Create and build SSA-form program representation.
-	prog := ssa.Create(iprog, 0)
+	prog := ssautil.CreateProgram(iprog, 0)
 	prog.BuildAll()
 
 	// -- call graph construction ------------------------------------------

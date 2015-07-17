@@ -94,7 +94,6 @@ func Usage() {
 	fmt.Fprintf(os.Stderr, "\thttp://godoc.org/golang.org/x/tools/cmd/stringer\n")
 	fmt.Fprintf(os.Stderr, "Flags:\n")
 	flag.PrintDefaults()
-	os.Exit(2)
 }
 
 func main() {
@@ -563,7 +562,7 @@ func (g *Generator) buildOneRun(runs [][]Value, typeName string) {
 //	[2]: size of index element (8 for uint8 etc.)
 //	[3]: less than zero check (for signed types)
 const stringOneRun = `func (i %[1]s) String() string {
-	if %[3]si+1 >= %[1]s(len(_%[1]s_index)) {
+	if %[3]si >= %[1]s(len(_%[1]s_index)-1) {
 		return fmt.Sprintf("%[1]s(%%d)", i)
 	}
 	return _%[1]s_name[_%[1]s_index[i]:_%[1]s_index[i+1]]
@@ -579,7 +578,7 @@ const stringOneRun = `func (i %[1]s) String() string {
  */
 const stringOneRunWithOffset = `func (i %[1]s) String() string {
 	i -= %[2]s
-	if %[4]si+1 >= %[1]s(len(_%[1]s_index)) {
+	if %[4]si >= %[1]s(len(_%[1]s_index)-1) {
 		return fmt.Sprintf("%[1]s(%%d)", i + %[2]s)
 	}
 	return _%[1]s_name[_%[1]s_index[i] : _%[1]s_index[i+1]]

@@ -25,7 +25,7 @@ import (
 type Command struct {
 	// Run runs the command.
 	// The args are the arguments after the command name.
-	Run func(cmd *Command, args []string)
+	Run func(cmd *Command, args []string) error
 
 	// UsageLine is the one-line usage message.
 	// The first word in the line is taken to be the command name.
@@ -43,6 +43,10 @@ type Command struct {
 	// CustomFlags indicates that the command will do its own
 	// flag parsing.
 	CustomFlags bool
+
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
 // Name returns the command's name: the first word in the usage line.
@@ -63,16 +67,37 @@ func (c *Command) Usage() {
 	os.Exit(2)
 }
 
+func (c *Command) PrintUsage() {
+	fmt.Fprintf(Stderr, "usage: %s %s\n", AppName, c.UsageLine)
+	c.Flag.SetOutput(Stderr)
+	c.Flag.PrintDefaults()
+}
+
 // Runnable reports whether the command can be run; otherwise
 // it is a documentation pseudo-command such as importpath.
 func (c *Command) Runnable() bool {
 	return c.Run != nil
 }
 
+func (c *Command) Println(args ...interface{}) {
+	fmt.Fprintln(c.Stdout, args...)
+}
+
+func (c *Command) Printf(format string, args ...interface{}) {
+	fmt.Fprintf(c.Stdout, format, args...)
+}
+
 var commands []*Command
 
 func Register(cmd *Command) {
 	commands = append(commands, cmd)
+}
+
+func CommandList() (cmds []string) {
+	for _, cmd := range commands {
+		cmds = append(cmds, cmd.Name())
+	}
+	return
 }
 
 var exitStatus = 0
@@ -84,6 +109,53 @@ func SetExitStatus(n int) {
 		exitStatus = n
 	}
 	exitMu.Unlock()
+}
+
+var (
+	Stdout io.Writer = os.Stdout
+	Stderr io.Writer = os.Stderr
+	Stdin  io.Reader = os.Stdin
+)
+
+func RunArgs(arguments []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+	flag.CommandLine.Parse(arguments)
+	args := flag.Args()
+	if len(args) < 1 {
+		printUsage(os.Stderr)
+		return os.ErrInvalid
+	}
+
+	if len(args) == 1 && strings.TrimSpace(args[0]) == "" {
+		printUsage(os.Stderr)
+		return os.ErrInvalid
+	}
+
+	if args[0] == "help" {
+		if !help(args[1:]) {
+			return os.ErrInvalid
+		}
+		return nil
+	}
+
+	for _, cmd := range commands {
+		if cmd.Name() == args[0] && cmd.Run != nil {
+			cmd.Flag.Usage = func() { cmd.Usage() }
+			if cmd.CustomFlags {
+				args = args[1:]
+			} else {
+				cmd.Flag.Parse(args[1:])
+				args = cmd.Flag.Args()
+			}
+			cmd.Stdin = stdin
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			return cmd.Run(cmd, args)
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "%s: unknown subcommand %q\nRun '%s help' for usage.\n",
+		AppName, args[0], AppName)
+	return os.ErrInvalid
 }
 
 func Main() {
@@ -101,7 +173,9 @@ func Main() {
 	}
 
 	if args[0] == "help" {
-		help(args[1:])
+		if !help(args[1:]) {
+			os.Exit(2)
+		}
 		return
 	}
 
@@ -114,6 +188,9 @@ func Main() {
 				cmd.Flag.Parse(args[1:])
 				args = cmd.Flag.Args()
 			}
+			cmd.Stdin = Stdin
+			cmd.Stdout = Stdout
+			cmd.Stderr = Stderr
 			cmd.Run(cmd, args)
 			Exit()
 			return
@@ -199,15 +276,15 @@ func usage() {
 }
 
 // help implements the 'help' command.
-func help(args []string) {
+func help(args []string) bool {
 	if len(args) == 0 {
 		printUsage(os.Stdout)
 		// not exit 2: succeeded at 'go help'.
-		return
+		return true
 	}
 	if len(args) != 1 {
 		fmt.Fprintf(os.Stderr, "usage: %s help command\n\nToo many arguments given.\n", AppName)
-		os.Exit(2) // failed at 'go help'
+		return false
 	}
 
 	arg := args[0]
@@ -218,19 +295,20 @@ func help(args []string) {
 		printUsage(buf)
 		usage := &Command{Long: buf.String()}
 		tmpl(os.Stdout, strings.Replace(documentationTemplate, "{{AppName}}", AppName, -1), append([]*Command{usage}, commands...))
-		return
+		return false
 	}
 
 	for _, cmd := range commands {
 		if cmd.Name() == arg {
 			tmpl(os.Stdout, strings.Replace(helpTemplate, "{{AppName}}", AppName, -1), cmd)
 			// not exit 2: succeeded at 'go help cmd'.
-			return
+			return true
 		}
 	}
 
 	fmt.Fprintf(os.Stderr, "Unknown help topic %#q.  Run '%s help'.\n", arg, AppName)
-	os.Exit(2) // failed at 'go help cmd'
+	//os.Exit(2) // failed at 'go help cmd'
+	return false
 }
 
 var atexitFuncs []func()

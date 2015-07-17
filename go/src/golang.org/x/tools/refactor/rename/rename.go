@@ -8,6 +8,7 @@
 package rename // import "golang.org/x/tools/refactor/rename"
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -15,15 +16,16 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/types"
+	"golang.org/x/tools/go/types/typeutil"
 	"golang.org/x/tools/refactor/importgraph"
 	"golang.org/x/tools/refactor/satisfy"
 )
@@ -153,7 +155,7 @@ type renamer struct {
 	to                 string
 	satisfyConstraints map[satisfy.Constraint]bool
 	packages           map[*types.Package]*loader.PackageInfo // subset of iprog.AllPackages to inspect
-	msets              types.MethodSetCache
+	msets              typeutil.MethodSetCache
 	changeMethods      bool
 }
 
@@ -163,10 +165,9 @@ var reportError = func(posn token.Position, message string) {
 
 // importName renames imports of the package with the given path in
 // the given package.  If fromName is not empty, only imports as
-// fromName will be renamed.  Even if renaming is successful, there
-// may be some files that are unchanged; they are reported in
-// unchangedFiles.
-func importName(iprog *loader.Program, info *loader.PackageInfo, fromPath, fromName, to string) (unchangedFiles []string, err error) {
+// fromName will be renamed.  If the renaming would lead to a conflict,
+// the file is left unchanged.
+func importName(iprog *loader.Program, info *loader.PackageInfo, fromPath, fromName, to string) error {
 	for _, f := range info.Files {
 		var from types.Object
 		for _, imp := range f.Imports {
@@ -192,13 +193,12 @@ func importName(iprog *loader.Program, info *loader.PackageInfo, fromPath, fromN
 		r.check(from)
 		if r.hadConflicts {
 			continue // ignore errors; leave the existing name
-			unchangedFiles = append(unchangedFiles, f.Name.Name)
 		}
 		if err := r.update(); err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return unchangedFiles, nil
+	return nil
 }
 
 func Main(ctxt *build.Context, offsetFlag, fromFlag, to string) error {
@@ -254,6 +254,8 @@ func Main(ctxt *build.Context, offsetFlag, fromFlag, to string) error {
 		// Scan the workspace and build the import graph.
 		_, rev, errors := importgraph.Build(ctxt)
 		if len(errors) > 0 {
+			// With a large GOPATH tree, errors are inevitable.
+			// Report them but proceed.
 			fmt.Fprintf(os.Stderr, "While scanning Go workspace:\n")
 			for path, err := range errors {
 				fmt.Fprintf(os.Stderr, "Package %q: %s.\n", path, err)
@@ -459,48 +461,15 @@ func plural(n int) string {
 	return ""
 }
 
-func writeFile(name string, fset *token.FileSet, f *ast.File, mode os.FileMode) error {
-	out, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		// assume error includes the filename
-		return fmt.Errorf("failed to open file: %s", err)
-	}
-
-	// Oddly, os.OpenFile doesn't preserve all the mode bits, hence
-	// this chmod.  (We use 0600 above to avoid a brief
-	// vulnerability if the user has an insecure umask.)
-	os.Chmod(name, mode) // ignore error
-
-	if err := format.Node(out, fset, f); err != nil {
-		out.Close() // ignore error
-		return fmt.Errorf("failed to write file: %s", err)
-	}
-
-	return out.Close()
-}
-
-var rewriteFile = func(fset *token.FileSet, f *ast.File, orig string) (err error) {
-	backup := orig + ".gorename.backup"
+var rewriteFile = func(fset *token.FileSet, f *ast.File, filename string) (err error) {
 	// TODO(adonovan): print packages and filenames in a form useful
 	// to editors (so they can reload files).
 	if Verbose {
-		fmt.Fprintf(os.Stderr, "\t%s\n", orig)
+		fmt.Fprintf(os.Stderr, "\t%s\n", filename)
 	}
-	// save file mode
-	var mode os.FileMode = 0666
-	if fi, err := os.Stat(orig); err == nil {
-		mode = fi.Mode()
+	var buf bytes.Buffer
+	if err := format.Node(&buf, fset, f); err != nil {
+		return fmt.Errorf("failed to pretty-print syntax tree: %v", err)
 	}
-	if err := os.Rename(orig, backup); err != nil {
-		return fmt.Errorf("failed to make backup %s -> %s: %s",
-			orig, filepath.Base(backup), err)
-	}
-	if err := writeFile(orig, fset, f, mode); err != nil {
-		// Restore the file from the backup.
-		os.Remove(orig)         // ignore error
-		os.Rename(backup, orig) // ignore error
-		return err
-	}
-	os.Remove(backup) // ignore error
-	return nil
+	return ioutil.WriteFile(filename, buf.Bytes(), 0644)
 }

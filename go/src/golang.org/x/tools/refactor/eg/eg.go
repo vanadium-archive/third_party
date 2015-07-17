@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/printer"
 	"go/token"
 	"os"
@@ -82,6 +83,9 @@ a wildcard may have any integer type, for example.
 
 It is not possible to replace an expression by one of a different
 type, even in contexts where this is legal, such as x in fmt.Print(x).
+
+The struct literals T{x} and T{K: x} cannot both be matched by a single
+template.
 
 
 SAFETY
@@ -288,7 +292,7 @@ func WriteAST(fset *token.FileSet, filename string, f *ast.File) (err error) {
 			err = err2 // prefer earlier error
 		}
 	}()
-	return printer.Fprint(fh, fset, f)
+	return format.Node(fh, fset, f)
 }
 
 // -- utilities --------------------------------------------------------

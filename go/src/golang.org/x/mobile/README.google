@@ -1,9 +1,0 @@
-URL: https://go.googlesource.com/mobile/+archive/f17dcbad8d17642aaeff781952613c089f07f966.tar.gz
-Version: f17dcbad8d17642aaeff781952613c089f07f966
-License: New BSD
-License File: LICENSE
-
-Description:
-Libraries and build tools for Go on Android.
-
-Local Modifications:

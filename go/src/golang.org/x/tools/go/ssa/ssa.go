@@ -14,7 +14,6 @@ import (
 	"sync"
 
 	"golang.org/x/tools/go/exact"
-	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/types"
 	"golang.org/x/tools/go/types/typeutil"
 )
@@ -25,7 +24,7 @@ type Program struct {
 	imported   map[string]*Package         // all importable Packages, keyed by import path
 	packages   map[*types.Package]*Package // all loaded Packages, keyed by object
 	mode       BuilderMode                 // set of mode bits for SSA construction
-	MethodSets types.MethodSetCache        // cache of type-checker's method-sets
+	MethodSets typeutil.MethodSetCache     // cache of type-checker's method-sets
 
 	methodsMu    sync.Mutex                 // guards the following maps:
 	methodSets   typeutil.Map               // maps type to its concrete methodSet
@@ -40,19 +39,24 @@ type Program struct {
 // declares.  These may be accessed directly via Members, or via the
 // type-specific accessor methods Func, Type, Var and Const.
 //
+// Members also contains entries for "init" (the synthetic package
+// initializer) and "init#%d", the nth declared init function,
+// and unspecified other things too.
+//
 type Package struct {
 	Prog    *Program               // the owning program
 	Object  *types.Package         // the type checker's package object for this package
-	Members map[string]Member      // all package members keyed by name
+	Members map[string]Member      // all package members keyed by name (incl. init and init#%d)
 	values  map[types.Object]Value // package members (incl. types and methods), keyed by object
 	init    *Function              // Func("init"); the package's init function
 	debug   bool                   // include full debug info in this package
 
 	// The following fields are set transiently, then cleared
 	// after building.
-	started int32               // atomically tested and set at start of build phase
-	ninit   int32               // number of init functions
-	info    *loader.PackageInfo // package ASTs and type information
+	started int32       // atomically tested and set at start of build phase
+	ninit   int32       // number of init functions
+	info    *types.Info // package type information
+	files   []*ast.File // package ASTs
 }
 
 // A Member is a member of a Go package, implemented by *NamedConst,
@@ -280,6 +284,10 @@ type Node interface {
 //
 // If the function is a method (Signature.Recv() != nil) then the first
 // element of Params is the receiver parameter.
+//
+// A Go package may declare many functions called "init".
+// For each one, Object().Name() returns "init" but Name() returns
+// "init#1", etc, in declaration order.
 //
 // Pos() returns the declaring ast.FuncLit.Type.Func or the position
 // of the ast.FuncDecl.Name, if the function was explicit in the

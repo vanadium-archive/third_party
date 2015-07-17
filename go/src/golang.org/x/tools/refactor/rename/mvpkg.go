@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // licence that can be found in the LICENSE file.
 
-// This file contains the implementation of the 'gomovepkg' command
-// whose main function is in golang.org/x/tools/cmd/gomovepkg.
+// This file contains the implementation of the 'gomvpkg' command
+// whose main function is in golang.org/x/tools/cmd/gomvpkg.
 
 package rename
 
@@ -26,7 +26,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"text/template"
 
 	"golang.org/x/tools/go/buildutil"
@@ -62,11 +61,12 @@ func Move(ctxt *build.Context, from, to, moveTmpl string) error {
 	// Build the import graph and figure out which packages to update.
 	fwd, rev, errors := importgraph.Build(ctxt)
 	if len(errors) > 0 {
+		// With a large GOPATH tree, errors are inevitable.
+		// Report them but proceed.
 		fmt.Fprintf(os.Stderr, "While scanning Go workspace:\n")
 		for path, err := range errors {
 			fmt.Fprintf(os.Stderr, "Package %q: %s.\n", path, err)
 		}
-		return fmt.Errorf("failed to construct import graph")
 	}
 
 	// Determine the affected packages---the set of packages whose import
@@ -133,13 +133,12 @@ func srcDir(ctxt *build.Context, pkg string) (string, error) {
 // subpackages returns the set of packages in the given srcDir whose
 // import paths start with dir.
 func subpackages(ctxt *build.Context, srcDir string, dir string) map[string]bool {
-	var mu sync.Mutex
 	subs := map[string]bool{dir: true}
 
 	// Find all packages under srcDir whose import paths start with dir.
 	buildutil.ForEachPackage(ctxt, func(pkg string, err error) {
 		if err != nil {
-			log.Fatalf("unexpected error in ForEackPackage: %v", err)
+			log.Fatalf("unexpected error in ForEachPackage: %v", err)
 		}
 
 		if !strings.HasPrefix(pkg, path.Join(dir, "")) {
@@ -157,9 +156,7 @@ func subpackages(ctxt *build.Context, srcDir string, dir string) map[string]bool
 			return
 		}
 
-		mu.Lock()
 		subs[pkg] = true
-		mu.Unlock()
 	})
 
 	return subs
@@ -248,9 +245,7 @@ func (m *mover) move() error {
 	// None of the subpackages will change their name---only the from package
 	// itself will.
 	for p := range m.rev[m.from] {
-		_, err := importName(
-			m.iprog, m.iprog.Imported[p], m.from, path.Base(m.from), newName)
-		if err != nil {
+		if err := importName(m.iprog, m.iprog.Imported[p], m.from, path.Base(m.from), newName); err != nil {
 			return err
 		}
 	}

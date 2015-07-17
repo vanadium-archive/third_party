@@ -5,6 +5,7 @@
 package loader_test
 
 import (
+	"fmt"
 	"go/build"
 	"reflect"
 	"sort"
@@ -139,6 +140,49 @@ func TestLoad_MissingInitialPackage_AllowErrors(t *testing.T) {
 	}
 }
 
+func TestCreateUnnamedPackage(t *testing.T) {
+	var conf loader.Config
+	conf.CreateFromFilenames("")
+	prog, err := conf.Load()
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if got, want := fmt.Sprint(prog.InitialPackages()), "[(unnamed)]"; got != want {
+		t.Errorf("InitialPackages = %s, want %s", got, want)
+	}
+}
+
+func TestLoad_MissingFileInCreatedPackage(t *testing.T) {
+	var conf loader.Config
+	conf.CreateFromFilenames("", "missing.go")
+
+	const wantErr = "couldn't load packages due to errors: (unnamed)"
+
+	prog, err := conf.Load()
+	if prog != nil {
+		t.Errorf("Load unexpectedly returned a Program")
+	}
+	if err == nil {
+		t.Fatalf("Load succeeded unexpectedly, want %q", wantErr)
+	}
+	if err.Error() != wantErr {
+		t.Fatalf("Load failed with wrong error %q, want %q", err, wantErr)
+	}
+}
+
+func TestLoad_MissingFileInCreatedPackage_AllowErrors(t *testing.T) {
+	conf := loader.Config{AllowErrors: true}
+	conf.CreateFromFilenames("", "missing.go")
+
+	prog, err := conf.Load()
+	if err != nil {
+		t.Errorf("Load failed: %v", err)
+	}
+	if got, want := fmt.Sprint(prog.InitialPackages()), "[(unnamed)]"; got != want {
+		t.Fatalf("InitialPackages = %s, want %s", got, want)
+	}
+}
+
 func TestLoad_ParseError(t *testing.T) {
 	var conf loader.Config
 	conf.CreateFromFilenames("badpkg", "testdata/badpkgdecl.go")
@@ -146,13 +190,14 @@ func TestLoad_ParseError(t *testing.T) {
 	const wantErr = "couldn't load packages due to errors: badpkg"
 
 	prog, err := conf.Load()
-	if err == nil {
-		t.Errorf("Load succeeded unexpectedly, want %q", wantErr)
-	} else if err.Error() != wantErr {
-		t.Errorf("Load failed with wrong error %q, want %q", err, wantErr)
-	}
 	if prog != nil {
 		t.Errorf("Load unexpectedly returned a Program")
+	}
+	if err == nil {
+		t.Fatalf("Load succeeded unexpectedly, want %q", wantErr)
+	}
+	if err.Error() != wantErr {
+		t.Fatalf("Load failed with wrong error %q, want %q", err, wantErr)
 	}
 }
 
@@ -307,6 +352,38 @@ func TestLoad_BadDependency_AllowErrors(t *testing.T) {
 		}
 		if got := all(prog); strings.Join(got, " ") != test.wantPkgs {
 			t.Errorf("%s: AllPackages = %s, want %s", test.descr, got, test.wantPkgs)
+		}
+	}
+}
+
+func TestCwd(t *testing.T) {
+	ctxt := fakeContext(map[string]string{"one/two/three": `package three`})
+	for _, test := range []struct {
+		cwd, arg, want string
+	}{
+		{cwd: "/go/src/one", arg: "./two/three", want: "one/two/three"},
+		{cwd: "/go/src/one", arg: "../one/two/three", want: "one/two/three"},
+		{cwd: "/go/src/one", arg: "one/two/three", want: "one/two/three"},
+		{cwd: "/go/src/one/two/three", arg: ".", want: "one/two/three"},
+		{cwd: "/go/src/one", arg: "two/three", want: ""},
+	} {
+		conf := loader.Config{
+			Cwd:   test.cwd,
+			Build: ctxt,
+		}
+		conf.Import(test.arg)
+
+		var got string
+		prog, err := conf.Load()
+		if prog != nil {
+			got = imported(prog)
+		}
+		if got != test.want {
+			t.Errorf("Load(%s) from %s: Imported = %s, want %s",
+				test.arg, test.cwd, got, test.want)
+			if err != nil {
+				t.Errorf("Load failed: %v", err)
+			}
 		}
 	}
 }

@@ -5,7 +5,7 @@
 package command
 
 import (
-	"fmt"
+	"os"
 	"runtime"
 )
 
@@ -22,10 +22,12 @@ var cmdVersion = &Command{
 	Long:      `Version prints the version.`,
 }
 
-func runVersion(cmd *Command, args []string) {
+func runVersion(cmd *Command, args []string) error {
 	if len(args) != 0 {
-		cmd.Usage()
+		cmd.PrintUsage()
+		return os.ErrInvalid
 	}
 
-	fmt.Printf("%s version %s [%s %s/%s]\n", AppName, AppVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	cmd.Printf("%s version %s [%s %s/%s]\n", AppName, AppVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	return nil
 }
