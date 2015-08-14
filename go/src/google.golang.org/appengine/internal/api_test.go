@@ -217,7 +217,7 @@ func TestAPICallDialFailure(t *testing.T) {
 
 	start := time.Now()
 	err := Call(toContext(c), "foo", "bar", &basepb.VoidProto{}, &basepb.VoidProto{})
-	const max = 1 * time.Second
+	const max = 10 * time.Second
 	if taken := time.Since(start); taken > max {
 		t.Errorf("Dial hang took too long: %v > %v", taken, max)
 	}

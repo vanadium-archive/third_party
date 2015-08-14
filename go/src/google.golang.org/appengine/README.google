@@ -7,4 +7,4 @@ Description:
 golang appengine bindings.
 
 Local Modifications:
-See p4 history
+Increased timeout interval for TestAPICallDialFailure.
