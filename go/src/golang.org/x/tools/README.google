@@ -7,4 +7,4 @@ Description:
 Packages and tools supporting the Go programming language.
 
 Local Modifications:
-No modifications.
+Whitelisting Vanadium named slice types for go vet checks.

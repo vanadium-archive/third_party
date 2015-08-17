@@ -50,4 +50,11 @@ var UnkeyedLiteral = map[string]bool{
 	"image.Point":         true,
 	"image.Rectangle":     true,
 	"image.Uniform":       true,
+
+	// Vanadium named slice types.
+	//
+	// NOTE: These types were added to avoid spurious go vet warnings.
+	// Make sure to add them back if you update the source.
+	"v.io/v23/uniqueid.Id":     true,
+	"v.io/v23/rpc.ListenAddrs": true,
 }
