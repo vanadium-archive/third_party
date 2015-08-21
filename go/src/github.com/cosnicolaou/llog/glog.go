@@ -1100,7 +1100,7 @@ func (l *Log) setV(pc uintptr) Level {
 // the -v and --vmodule flags; both are off by default. If the level in the call to
 // V is at least the value of -v, or of -vmodule for the source file containing the
 // call, the V call will log.
-func (l *Log) V(level Level) bool {
+func (l *Log) VDepth(depth int, level Level) bool {
 	// This function tries hard to be cheap unless there's work to do.
 	// The fast path is two atomic loads and compares.
 
@@ -1122,7 +1122,7 @@ func (l *Log) V(level Level) bool {
 		// value for .Caller to reach the same stack frame. So, even though
 		// we are one level closer to the caller here, we will still use the
 		// same value as for runtime.Caller!
-		if runtime.Callers(l.skip, l.pcs[:]) == 0 {
+		if runtime.Callers(l.skip+depth, l.pcs[:]) == 0 {
 			return false
 		}
 		v, ok := l.vmap[l.pcs[0]]
@@ -1132,6 +1132,10 @@ func (l *Log) V(level Level) bool {
 		return v >= level
 	}
 	return false
+}
+
+func (l *Log) V(level Level) bool {
+	return l.VDepth(1, level)
 }
 
 func (l *Log) Stats() Stats {
