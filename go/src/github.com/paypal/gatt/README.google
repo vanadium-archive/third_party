@@ -1,5 +1,5 @@
-URL: https://github.com/paypal/gatt/archive/fc9c77133e3b89c5ff904b9c7c41fee62f9ebab7.zip
-Version: fc9c77133e3b89c5ff904b9c7c41fee62f9ebab7
+URL: https://github.com/paypal/gatt/archive/b9fc93c14a321fa542c824baa911471deec736fa.zip
+Version: b9fc93c14a321fa542c824baa911471deec736fa
 License: BSD
 License File: LICENSE
 
@@ -7,4 +7,4 @@ Description:
 Gatt is a Go package for building Bluetooth Low Energy peripherals
 
 Local Modifications:
-No modifications.
+Modified xpc/xpc_darwin_test.go to get tests to pass.  This will be upstreamed shortly.
