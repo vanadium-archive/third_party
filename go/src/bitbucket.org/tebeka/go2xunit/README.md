@@ -1,7 +1,7 @@
-# go2xunit 0.2.12
+# go2xunit
 
-Converts `go test -v` (or `gocheck -vv`) output to xunit compatible XML output
-(used in [Jenkins][jenkins]/[Hudson][hudson]).
+Converts `go test -v` (or `gocheck -vv`) output to xunit or [xunit.net][xnet]
+compatible XML output (used in [Jenkins][jenkins]/[Hudson][hudson]).
 
 
 # Install
@@ -18,7 +18,7 @@ are failed tests.
 
     go test -v | go2xunit -output tests.xml
 
-`go2xunit` also works with [gocheck][gocheck].
+`go2xunit` also works with [gocheck][gocheck], and [testify][testify].
 
     go test -gocheck.vv | go2xunit -gocheck -output tests.xml
 
@@ -32,8 +32,12 @@ Here's an example script (`run-tests.sh`) that can be used with [Jenkins][jenkin
     go2xunit -fail -input $outfile -output tests.xml
 
 
-Contact
-=======
+# Related
+
+* [testing: add -json flag for json
+  results](https://github.com/golang/go/issues/2981) open bug
+
+# Contact
 Miki Tebeka <miki.tebeka@gmail.com>
 
 Bug reports go [here][bugs].
@@ -42,4 +46,6 @@ Bug reports go [here][bugs].
 [jenkins]: http://jenkins-ci.org/
 [hudson]: http://hudson-ci.org/
 [gocheck]: http://labix.org/gocheck
+[testify]: http://godoc.org/github.com/stretchr/testify
 [bugs]: https://bitbucket.org/tebeka/go2xunit/issues
+[xnet]: https://xunit.codeplex.com/wikipage?title=XmlFormat

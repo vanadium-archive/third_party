@@ -297,7 +297,7 @@ func Test_parseGocheckFail(t *testing.T) {
 		t.Fatalf("bad number of suites %d != %d", len(suites), nsuites)
 	}
 
-	suite := suites[0]
+	suite := suites[1]
 	ntests := 3
 	if len(suite.Tests) != ntests {
 		t.Fatalf("bad number of tests %d != %d", len(suite.Tests), ntests)
@@ -405,5 +405,15 @@ func Test_0Time(t *testing.T) {
 	}
 	if suite.NumFailed() != 0 {
 		t.Fatalf("unexpected failure")
+	}
+}
+
+func Test_TestifySuite(t *testing.T) {
+	suites, err := loadGotest("data/gotest-testify-suite.out", t)
+	if err != nil {
+		t.Fatalf("Failed to parse")
+	}
+	if len(suites) != 2 {
+		t.Fatalf("Wrong number of suites", len(suites))
 	}
 }
