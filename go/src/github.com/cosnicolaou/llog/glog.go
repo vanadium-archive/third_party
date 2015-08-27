@@ -1135,6 +1135,18 @@ func (l *Log) VDepth(depth int, level Level) bool {
 }
 
 func (l *Log) V(level Level) bool {
+	// Here is a cheap but safe test to see if V logging is enabled globally.
+	if l.verbosity.get() >= level {
+		return true
+	}
+
+	// It's off globally but it vmodule may still be set.
+	// Here is another cheap but safe test to see if vmodule is enabled.
+	if atomic.LoadInt32(&l.filterLength) == 0 {
+		return false
+	}
+
+	// Only call VDepth when there's work for it to do.
 	return l.VDepth(1, level)
 }
 
