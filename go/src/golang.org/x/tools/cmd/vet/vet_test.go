@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// No testdata on Android.
+
+// +build !android
+
 package main_test
 
 import (
@@ -15,7 +19,7 @@ import (
 
 const (
 	dataDir = "testdata"
-	binary  = "testvet"
+	binary  = "testvet.exe"
 )
 
 // Run this shell script, but do it in Go so it can be run by "go test".
@@ -93,10 +97,10 @@ func TestTags(t *testing.T) {
 		t.Fatal(err)
 	}
 	// file1 has testtag and file2 has !testtag.
-	if !bytes.Contains(output, []byte("tagtest/file1.go")) {
+	if !bytes.Contains(output, []byte(filepath.Join("tagtest", "file1.go"))) {
 		t.Error("file1 was excluded, should be included")
 	}
-	if bytes.Contains(output, []byte("tagtest/file2.go")) {
+	if bytes.Contains(output, []byte(filepath.Join("tagtest", "file2.go"))) {
 		t.Error("file2 was included, should be excluded")
 	}
 }

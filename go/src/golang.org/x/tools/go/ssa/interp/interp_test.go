@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build !windows,!plan9
+// +build !android,!windows,!plan9
 
 package interp_test
 
@@ -291,7 +291,12 @@ func success(exitcode int, output string) error {
 // TestTestdataFiles runs the interpreter on testdata/*.go.
 func TestTestdataFiles(t *testing.T) {
 	var failures []string
+	start := time.Now()
 	for _, input := range testdataTests {
+		if testing.Short() && time.Since(start) > 30*time.Second {
+			printFailures(failures)
+			t.Skipf("timeout - aborting test")
+		}
 		if !run(t, "testdata"+slash, input, success) {
 			failures = append(failures, input)
 		}
@@ -302,7 +307,7 @@ func TestTestdataFiles(t *testing.T) {
 // TestGorootTest runs the interpreter on $GOROOT/test/*.go.
 func TestGorootTest(t *testing.T) {
 	if testing.Short() {
-		return // too slow (~30s)
+		t.Skip() // too slow (~30s)
 	}
 
 	var failures []string
@@ -322,6 +327,10 @@ func TestGorootTest(t *testing.T) {
 
 // TestTestmainPackage runs the interpreter on a synthetic "testmain" package.
 func TestTestmainPackage(t *testing.T) {
+	if testing.Short() {
+		t.Skip() // too slow on some platforms
+	}
+
 	success := func(exitcode int, output string) error {
 		if exitcode == 0 {
 			return fmt.Errorf("unexpected success")
