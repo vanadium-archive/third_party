@@ -6,6 +6,7 @@ package taskqueue
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -99,5 +100,17 @@ func TestAddMulti(t *testing.T) {
 	}
 	if !reflect.DeepEqual(err, want) {
 		t.Errorf("AddMulti got %v, wanted %v", err, want)
+	}
+}
+
+func TestAddWithEmptyPath(t *testing.T) {
+	c := aetesting.FakeSingleContext(t, "taskqueue", "Add", func(req *pb.TaskQueueAddRequest, res *pb.TaskQueueAddResponse) error {
+		if got, want := string(req.Url), "/_ah/queue/a-queue"; got != want {
+			return fmt.Errorf("req.Url = %q; want %q", got, want)
+		}
+		return nil
+	})
+	if _, err := Add(c, &Task{}, "a-queue"); err != nil {
+		t.Fatalf("Add: %v", err)
 	}
 }

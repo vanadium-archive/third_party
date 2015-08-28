@@ -56,13 +56,16 @@ This list summarises the differences:
 * `appengine.Timeout` has been removed. Use `context.WithTimeout` instead.
 * `appengine.Datacenter` now takes a `context.Context` argument.
 * `datastore.PropertyLoadSaver` has been simplified to use slices in place of channels.
+* `delay.Call` now returns an error.
 * `search.FieldLoadSaver` now handles document metadata.
+* `urlfetch.Transport` no longer has a Deadline field; set a deadline on the
+  `context.Context` instead.
 * `taskqueue.QueueStats` no longer takes a maxTasks argument. That argument has been
   deprecated and unused for a long time.
-* `appengine/aetest`, `appengine/blobstore`, `appengine/cloudsql`
-  and `appengine/runtime` have not been ported yet.
+* `appengine/aetest`, `appengine/cloudsql` and `appengine/runtime` have not been ported yet.
 * `appengine.BackendHostname` and `appengine.BackendInstance` were for the deprecated backends feature.
   Use `appengine.ModuleHostname`and `appengine.ModuleName` instead.
 * `appengine.IsCapabilityDisabled` and `appengine/capability` are obsolete.
-* Most of `appengine/file` is deprecated. Use [Google Cloud Storage](https://godoc.org/google.golang.org/cloud/storage) instead.
-* `appengine/socket` is deprecated. Use the standard `net` package instead.
+* Most of `appengine/file` and parts of `appengine/blobstore` are deprecated.
+  Use [Google Cloud Storage](https://godoc.org/google.golang.org/cloud/storage) instead.
+* `appengine/socket` is not required on Managed VMs. Use the standard `net` package instead.

@@ -105,9 +105,9 @@ ignore that field. If options is "noindex" then the field will not be indexed.
 If the options is "" then the comma may be omitted. There are no other
 recognized options.
 
-Fields (except for []byte) are indexed by default. Strings longer than 500
-characters cannot be indexed; fields used to store long strings should be
-tagged with "noindex". Similarly, ByteStrings longer than 500 bytes cannot be
+Fields (except for []byte) are indexed by default. Strings longer than 1500
+bytes cannot be indexed; fields used to store long strings should be
+tagged with "noindex". Similarly, ByteStrings longer than 1500 bytes cannot be
 indexed.
 
 Example code:
@@ -187,9 +187,9 @@ Example code:
 		Sum int `datastore:"-"`
 	}
 
-	func (x *CustomPropsExample) Load(c <-chan Property) error {
+	func (x *CustomPropsExample) Load(ps []datastore.Property) error {
 		// Load I and J as usual.
-		if err := datastore.LoadStruct(x, c); err != nil {
+		if err := datastore.LoadStruct(x, ps); err != nil {
 			return err
 		}
 		// Derive the Sum field.
@@ -197,24 +197,24 @@ Example code:
 		return nil
 	}
 
-	func (x *CustomPropsExample) Save(c chan<- Property) error {
-		defer close(c)
+	func (x *CustomPropsExample) Save() ([]datastore.Property, error) {
 		// Validate the Sum field.
 		if x.Sum != x.I + x.J {
 			return errors.New("CustomPropsExample has inconsistent sum")
 		}
 		// Save I and J as usual. The code below is equivalent to calling
-		// "return datastore.SaveStruct(x, c)", but is done manually for
+		// "return datastore.SaveStruct(x)", but is done manually for
 		// demonstration purposes.
-		c <- datastore.Property{
-			Name:  "I",
-			Value: int64(x.I),
+		return []datastore.Property{
+			{
+				Name:  "I",
+				Value: int64(x.I),
+			},
+			{
+				Name:  "J",
+				Value: int64(x.J),
+			},
 		}
-		c <- datastore.Property{
-			Name:  "J",
-			Value: int64(x.J),
-		}
-		return nil
 	}
 
 The *PropertyList type implements PropertyLoadSaver, and can therefore hold an
