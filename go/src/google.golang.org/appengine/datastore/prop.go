@@ -13,7 +13,7 @@ import (
 )
 
 // Entities with more than this many indexed properties will not be saved.
-const maxIndexedProperties = 5000
+const maxIndexedProperties = 20000
 
 // []byte fields more than 1 megabyte long will not be loaded or saved.
 const maxBlobLen = 1 << 20
@@ -63,7 +63,7 @@ type Property struct {
 	Multiple bool
 }
 
-// ByteString is a short byte slice (up to 500 bytes) that can be indexed.
+// ByteString is a short byte slice (up to 1500 bytes) that can be indexed.
 type ByteString []byte
 
 // PropertyLoadSaver can be converted from and to a slice of Properties.

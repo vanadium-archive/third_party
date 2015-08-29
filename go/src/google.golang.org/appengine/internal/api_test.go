@@ -2,6 +2,8 @@
 // Use of this source code is governed by the Apache 2.0
 // license that can be found in the LICENSE file.
 
+// +build !appengine
+
 package internal
 
 import (
@@ -231,7 +233,7 @@ func TestDelayedLogFlushing(t *testing.T) {
 	defer cleanup()
 
 	http.HandleFunc("/quick_log", func(w http.ResponseWriter, r *http.Request) {
-		c := NewContext(r)
+		c := WithContext(netcontext.Background(), r)
 		Logf(c, 1, "It's a lovely day.")
 		w.WriteHeader(200)
 		w.Write(make([]byte, 100<<10)) // write 100 KB to force HTTP flush
@@ -307,6 +309,22 @@ func TestRemoteAddr(t *testing.T) {
 	}
 }
 
+func TestPanickingHandler(t *testing.T) {
+	http.HandleFunc("/panic", func(http.ResponseWriter, *http.Request) {
+		panic("whoops!")
+	})
+	r := &http.Request{
+		Method: "GET",
+		URL:    &url.URL{Scheme: "http", Path: "/panic"},
+		Body:   ioutil.NopCloser(bytes.NewReader(nil)),
+	}
+	rec := httptest.NewRecorder()
+	handleHTTP(rec, r)
+	if rec.Code != 500 {
+		t.Errorf("Panicking handler returned HTTP %d, want HTTP %d", rec.Code, 500)
+	}
+}
+
 var raceDetector = false
 
 func TestAPICallAllocations(t *testing.T) {
@@ -342,7 +360,7 @@ func TestAPICallAllocations(t *testing.T) {
 	}
 
 	// Lots of room for improvement...
-	const min, max float64 = 80, 95
+	const min, max float64 = 75, 95
 	if avg < min || max < avg {
 		t.Errorf("Allocations per API call = %g, want in [%g,%g]", avg, min, max)
 	}
@@ -406,4 +424,35 @@ func TestHelperProcess(*testing.T) {
 
 	// Wait for stdin to be closed.
 	io.Copy(ioutil.Discard, os.Stdin)
+}
+
+func TestBackgroundContext(t *testing.T) {
+	environ := []struct {
+		key, value string
+	}{
+		{"GAE_LONG_APP_ID", "my-app-id"},
+		{"GAE_MINOR_VERSION", "067924799508853122"},
+		{"GAE_MODULE_INSTANCE", "0"},
+		{"GAE_MODULE_NAME", "default"},
+		{"GAE_MODULE_VERSION", "20150612t184001"},
+	}
+	for _, v := range environ {
+		old := os.Getenv(v.key)
+		os.Setenv(v.key, v.value)
+		v.value = old
+	}
+	defer func() { // Restore old environment after the test completes.
+		for _, v := range environ {
+			if v.value == "" {
+				os.Unsetenv(v.key)
+				continue
+			}
+			os.Setenv(v.key, v.value)
+		}
+	}()
+
+	ctx, key := fromContext(BackgroundContext()), "X-Magic-Ticket-Header"
+	if g, w := ctx.req.Header.Get(key), "my-app-id/default.20150612t184001.0"; g != w {
+		t.Errorf("%v = %q, want %q", key, g, w)
+	}
 }

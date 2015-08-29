@@ -19,19 +19,23 @@ import (
 // IsDevAppServer reports whether the App Engine app is running in the
 // development App Server.
 func IsDevAppServer() bool {
-	// TODO(dsymonds): Detect this.
-	return false
+	return internal.IsDevAppServer()
 }
 
 // NewContext returns a context for an in-flight HTTP request.
 // This function is cheap.
 func NewContext(req *http.Request) context.Context {
-	return internal.NewContext(req)
+	return WithContext(context.Background(), req)
+}
+
+// WithContext returns a copy of the parent context
+// and associates it with an in-flight HTTP request.
+// This function is cheap.
+func WithContext(parent context.Context, req *http.Request) context.Context {
+	return internal.WithContext(parent, req)
 }
 
 // TODO(dsymonds): Add a Call function here? Otherwise other packages can't access internal.Call.
-
-// TODO(dsymonds): Add BackgroundContext function?
 
 // BlobKey is a key for a blobstore blob.
 //

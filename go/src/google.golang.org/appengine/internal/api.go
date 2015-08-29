@@ -139,6 +139,7 @@ func executeRequestSafely(c *context, r *http.Request) {
 	defer func() {
 		if x := recover(); x != nil {
 			logf(c, 4, "%s", renderPanic(x)) // 4 == critical
+			c.outCode = 500
 		}
 	}()
 
@@ -215,19 +216,26 @@ func fromContext(ctx netcontext.Context) *context {
 	return c
 }
 
-func toContext(c *context) netcontext.Context {
-	ctx := netcontext.WithValue(netcontext.Background(), &contextKey, c)
+func withContext(parent netcontext.Context, c *context) netcontext.Context {
+	ctx := netcontext.WithValue(parent, &contextKey, c)
 	if ns := c.req.Header.Get(curNamespaceHeader); ns != "" {
 		ctx = WithNamespace(ctx, ns)
 	}
 	return ctx
 }
 
-func IncomingHeaders(ctx netcontext.Context) http.Header {
-	return fromContext(ctx).req.Header
+func toContext(c *context) netcontext.Context {
+	return withContext(netcontext.Background(), c)
 }
 
-func NewContext(req *http.Request) netcontext.Context {
+func IncomingHeaders(ctx netcontext.Context) http.Header {
+	if c := fromContext(ctx); c != nil {
+		return c.req.Header
+	}
+	return nil
+}
+
+func WithContext(parent netcontext.Context, req *http.Request) netcontext.Context {
 	ctxs.Lock()
 	c := ctxs.m[req]
 	ctxs.Unlock()
@@ -238,7 +246,7 @@ func NewContext(req *http.Request) netcontext.Context {
 		// so that stack traces will be more sensible.
 		log.Panic("appengine: NewContext passed an unknown http.Request")
 	}
-	return toContext(c)
+	return withContext(parent, c)
 }
 
 func BackgroundContext() netcontext.Context {
@@ -253,7 +261,7 @@ func BackgroundContext() netcontext.Context {
 	appID := partitionlessAppID()
 	escAppID := strings.Replace(strings.Replace(appID, ":", "_", -1), ".", "_", -1)
 	majVersion := VersionID(nil)
-	if i := strings.Index(majVersion, "_"); i >= 0 {
+	if i := strings.Index(majVersion, "."); i > 0 {
 		majVersion = majVersion[:i]
 	}
 	ticket := fmt.Sprintf("%s/%s.%s.%s", escAppID, ModuleName(nil), majVersion, InstanceID())
@@ -377,7 +385,7 @@ func (c *context) post(body []byte, timeout time.Duration) (b []byte, err error)
 }
 
 func Call(ctx netcontext.Context, service, method string, in, out proto.Message) error {
-	if f, ok := ctx.Value(&callOverrideKey).(callOverrideFunc); ok {
+	if f, ctx, ok := callOverrideFromContext(ctx); ok {
 		return f(ctx, service, method, in, out)
 	}
 
