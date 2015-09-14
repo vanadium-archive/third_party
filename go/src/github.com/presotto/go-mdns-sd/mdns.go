@@ -206,6 +206,10 @@ type goodbyeRequest struct {
 	host    string
 }
 
+type updateRequest struct {
+	host string
+}
+
 type watchedService struct {
 	c   *sync.Cond
 	gen int
@@ -230,6 +234,7 @@ type MDNS struct {
 	announce     chan announceRequest
 	goodbye      chan goodbyeRequest
 	lookup       chan lookupRequest
+	update       chan updateRequest
 	refreshAlarm chan struct{}
 	cleanupAlarm chan struct{}
 
@@ -328,6 +333,7 @@ func NewMDNS(host, v4addr, v6addr string, loopback, debug bool) (s *MDNS, err er
 	s.announce = make(chan announceRequest)
 	s.goodbye = make(chan goodbyeRequest)
 	s.lookup = make(chan lookupRequest)
+	s.update = make(chan updateRequest)
 	s.refreshAlarm = make(chan struct{})
 	s.cleanupAlarm = make(chan struct{})
 
@@ -357,12 +363,11 @@ func NewMDNS(host, v4addr, v6addr string, loopback, debug bool) (s *MDNS, err er
 			s.Stop()
 			return nil, errors.New("host name in use")
 		}
-		s.hostName = host
-		s.hostFQDN = hostFQDN(host)
+		s.update <- updateRequest{host}
 	}
 
 	// Announce ourselves if the host name is set.
-	if len(s.hostName) > 0 {
+	if len(host) > 0 {
 		s.refreshAlarm <- struct{}{}
 	}
 
@@ -706,6 +711,9 @@ func (s *MDNS) mainLoop() {
 				mifc.cache.Lookup(req.name, req.rrtype, req.rc)
 			}
 			close(req.rc)
+		case req := <-s.update:
+			s.hostName = req.host
+			s.hostFQDN = hostFQDN(req.host)
 		case <-s.refreshAlarm:
 			// Reannounce all services.  We need to do this before the TTLs run out.  As a side
 			// effect this reannounces the host address RRs.
