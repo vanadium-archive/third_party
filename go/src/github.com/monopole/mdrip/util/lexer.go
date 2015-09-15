@@ -59,7 +59,7 @@ const (
 	labelMarker  = '@'
 	commentOpen  = "<!--"
 	commentClose = "-->"
-	codeFence    = "```\n"
+	codeFence    = "```"
 )
 
 const eof = -1
@@ -245,13 +245,17 @@ func lexBlockLabels(l *lexer) stateFn {
 			return lexCommandBlock
 		}
 	}
-	return lexText
 }
 
 // lexCommandBlock scans a command block.  Initial marker known to be present.
 func lexCommandBlock(l *lexer) stateFn {
 	l.pos += Pos(len(codeFence))
 	l.ignore()
+	// Ignore any language specifier.
+	if idx := strings.Index(l.input[l.pos:], "\n"); idx > -1 {
+		l.pos += Pos(idx) + 1
+		l.ignore()
+	}
 	for {
 		if strings.HasPrefix(l.input[l.pos:], codeFence) {
 			if l.pos > l.start {

@@ -44,6 +44,12 @@ var lexTests = []lexTest{
 			{itemBlockLabel, "4"},
 			{itemCommandBlock, block2},
 			tEOF}},
+	{"blockWithLangName", "Hello <!-- @1 -->\n" +
+		"```java\nvoid main whatever\n```",
+		[]item{
+			{itemBlockLabel, "1"},
+			{itemCommandBlock, "void main whatever\n"},
+			tEOF}},
 }
 
 // collect gathers the emitted items into a slice.
@@ -65,8 +71,8 @@ func equal(i1, i2 []item) bool {
 	}
 	for k := range i1 {
 		if i1[k].typ != i2[k].typ {
-			fmt.Printf("types not equal - got : %s\n", i1[k].typ)
-			fmt.Printf("types not equal - want: %s\n", i2[k].typ)
+			fmt.Printf("types not equal - got : %v\n", i1[k].typ)
+			fmt.Printf("types not equal - want: %v\n", i2[k].typ)
 			fmt.Printf("\n")
 			return false
 		}
