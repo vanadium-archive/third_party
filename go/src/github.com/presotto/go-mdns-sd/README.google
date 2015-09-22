@@ -1,0 +1,12 @@
+URL: https://github.com/presotto/go-mdns-sd/archive/80bc955e5588ac81a340d3a3fa9aacc2a1414d64.zip
+Version: 80bc955e5588ac81a340d3a3fa9aacc2a1414d64
+License: New BSD
+License File: LICENSE
+
+Description:
+A standalone go based mdns and service discovery implementation
+
+Local Modifications:
+ - added a function for removing registered services.
+ - changed to support multiple watchers for a same service.
+ - fixed data races
