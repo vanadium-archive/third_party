@@ -201,12 +201,6 @@ type announceRequest struct {
 	txt     []string
 }
 
-type goodbyeRequest struct {
-	service string
-	host    string
-	port    uint16
-}
-
 type updateRequest struct {
 	done chan struct{}
 	host string
@@ -236,7 +230,7 @@ type MDNS struct {
 
 	// All access methods turn into channel requests to the main loop to make synchronization trivial.
 	announce chan announceRequest
-	goodbye  chan goodbyeRequest
+	goodbye  chan announceRequest
 	lookup   chan lookupRequest
 	update   chan updateRequest
 
@@ -247,8 +241,8 @@ type MDNS struct {
 	hostName string
 	hostFQDN string
 
-	// Services we are announcing and their ports
-	services map[string]announceRequest
+	// Services we are announcing and their hosts and ports.
+	services map[string]map[string]announceRequest
 
 	// Services whose memberships are being watched or subscribed to.
 	watchedLock sync.RWMutex
@@ -336,11 +330,11 @@ func NewMDNS(host, v4addr, v6addr string, loopback, debug bool) (s *MDNS, err er
 	// Allocate channels for communications internal to MDNS
 	s.fromNet = make(chan *msgFromNet, 10)
 	s.announce = make(chan announceRequest)
-	s.goodbye = make(chan goodbyeRequest)
+	s.goodbye = make(chan announceRequest)
 	s.lookup = make(chan lookupRequest)
 	s.update = make(chan updateRequest)
 
-	s.services = make(map[string]announceRequest, 0)
+	s.services = make(map[string]map[string]announceRequest, 0)
 	s.watched = make(map[string][]*watchedService, 0)
 	s.subscribed = make(map[string]bool, 0)
 	s.mifcs = make(map[string]*multicastIfc, 0)
@@ -579,6 +573,10 @@ func hostUnqualify(host string) string {
 	return strings.TrimSuffix(host, ".")
 }
 
+func hostport(host string, port uint16) string {
+	return fmt.Sprintf("%s:%d", host, port)
+}
+
 func serviceFQDNFromInstanceFQDN(instance string) string {
 	pieces := strings.SplitAfterN(instance, ".", 2)
 	if len(pieces) != 2 {
@@ -592,10 +590,12 @@ func (s *MDNS) answerA(m *msgFromNet, q dns.Question, msg *dns.Msg) {
 		m.mifc.appendHostAddresses(msg, s.hostName, dns.TypeA, s.ttl)
 		return
 	}
-	for _, req := range s.services {
-		if q.Name == hostFQDN(req.host) {
-			m.mifc.appendHostAddresses(msg, req.host, dns.TypeA, s.ttl)
-			return
+	for _, set := range s.services {
+		for _, req := range set {
+			if q.Name == hostFQDN(req.host) {
+				m.mifc.appendHostAddresses(msg, req.host, dns.TypeA, s.ttl)
+				return
+			}
 		}
 	}
 }
@@ -605,38 +605,44 @@ func (s *MDNS) answerAAAA(m *msgFromNet, q dns.Question, msg *dns.Msg) {
 		m.mifc.appendHostAddresses(msg, s.hostName, dns.TypeAAAA, s.ttl)
 		return
 	}
-	for _, req := range s.services {
-		if q.Name == hostFQDN(req.host) {
-			m.mifc.appendHostAddresses(msg, req.host, dns.TypeAAAA, s.ttl)
-			return
+	for _, set := range s.services {
+		for _, req := range set {
+			if q.Name == hostFQDN(req.host) {
+				m.mifc.appendHostAddresses(msg, req.host, dns.TypeAAAA, s.ttl)
+				return
+			}
 		}
 	}
 }
 
 func (s *MDNS) answerPTR(m *msgFromNet, q dns.Question, msg *dns.Msg) {
-	for service, req := range s.services {
+	for service, set := range s.services {
 		if q.Name == serviceFQDN(service) {
-			m.mifc.appendDiscoveryRecords(msg, service, req.host, req.port, req.txt, s.ttl)
+			for _, req := range set {
+				m.mifc.appendDiscoveryRecords(msg, service, req.host, req.port, req.txt, s.ttl)
+			}
 			return
 		}
 	}
 }
 
 func (s *MDNS) answerSRV(m *msgFromNet, q dns.Question, msg *dns.Msg) {
-	for service, req := range s.services {
-		if q.Name == instanceFQDN(req.host, service) {
-			m.mifc.appendSrvRR(msg, service, req.host, req.port, s.ttl)
-			m.mifc.appendHostAddresses(msg, req.host, dns.TypeALL, s.ttl)
-			break
+	for service, set := range s.services {
+		for _, req := range set {
+			if q.Name == instanceFQDN(req.host, service) {
+				m.mifc.appendSrvRR(msg, service, req.host, req.port, s.ttl)
+				m.mifc.appendHostAddresses(msg, req.host, dns.TypeALL, s.ttl)
+			}
 		}
 	}
 }
 
 func (s *MDNS) answerTXT(m *msgFromNet, q dns.Question, msg *dns.Msg) {
-	for service, req := range s.services {
-		if q.Name == instanceFQDN(req.host, service) {
-			m.mifc.appendTxtRR(msg, service, req.host, req.txt, s.ttl)
-			break
+	for service, set := range s.services {
+		for _, req := range set {
+			if q.Name == instanceFQDN(req.host, service) {
+				m.mifc.appendTxtRR(msg, service, req.host, req.txt, s.ttl)
+			}
 		}
 	}
 }
@@ -673,9 +679,11 @@ func (s *MDNS) answerQuestionFromNet(m *msgFromNet) {
 // As a side effect this reannounces the host address RRs.
 func (s *MDNS) refresh() {
 	if len(s.services) > 0 {
-		for service, req := range s.services {
-			for _, mifc := range s.mifcs {
-				mifc.announceService(service, req.host, req.port, req.txt, s.ttl)
+		for service, set := range s.services {
+			for _, req := range set {
+				for _, mifc := range s.mifcs {
+					mifc.announceService(service, req.host, req.port, req.txt, s.ttl)
+				}
 			}
 		}
 	} else if len(s.hostName) > 0 {
@@ -717,8 +725,13 @@ func (s *MDNS) mainLoop() {
 			}
 		case req := <-s.announce:
 			// Adding a service
-			s.services[req.service] = req
-			log.Printf("adding service %s %s %d %v\n", req.service, req.host, req.port, req.txt)
+			set := s.services[req.service]
+			if set == nil {
+				set = make(map[string]announceRequest)
+				s.services[req.service] = set
+			}
+			set[hostport(req.host, req.port)] = req
+			log.Printf("adding service %s %s %d\n", req.service, req.host, req.port)
 
 			// Tell all the networks about the name
 			for _, mifc := range s.mifcs {
@@ -726,12 +739,18 @@ func (s *MDNS) mainLoop() {
 			}
 		case req := <-s.goodbye:
 			// Removing a service
-			delete(s.services, req.service)
+			set := s.services[req.service]
+			if set != nil {
+				delete(set, hostport(req.host, req.port))
+			}
+			if len(set) == 0 {
+				delete(s.services, req.service)
+			}
 			log.Printf("removing service %s %s %d\n", req.service, req.host, req.port)
 
 			// Tell all the networks about the goodbye
 			for _, mifc := range s.mifcs {
-				mifc.announceService(req.service, req.host, req.port, nil, 0)
+				mifc.announceService(req.service, req.host, req.port, req.txt, 0)
 			}
 		case req := <-s.lookup:
 			// Reply with all matching requests from all interfaces and then close the channel.
@@ -801,7 +820,7 @@ func (s *MDNS) AddService(service, host string, port uint16, txt ...string) erro
 }
 
 // Remove a service.  If the host name is empty, we just use the host name from NewMDNS.  If the host name ends in .local. we strip it off.
-func (s *MDNS) RemoveService(service, host string, port uint16) error {
+func (s *MDNS) RemoveService(service, host string, port uint16, txt ...string) error {
 	if len(service) == 0 {
 		return errors.New("service name cannot be null")
 	}
@@ -813,7 +832,7 @@ func (s *MDNS) RemoveService(service, host string, port uint16) error {
 	} else {
 		host = hostUnqualify(host)
 	}
-	s.goodbye <- goodbyeRequest{service, host, port}
+	s.goodbye <- announceRequest{service, host, port, txt}
 	return nil
 }
 

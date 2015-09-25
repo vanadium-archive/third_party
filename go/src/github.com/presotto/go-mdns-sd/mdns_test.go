@@ -182,7 +182,7 @@ func TestMdns(t *testing.T) {
 	}
 
 	// Remove a service from one of the mdns instances.
-	s1.RemoveService("veyronns", instances[0].host, instances[0].port)
+	s1.RemoveService("veyronns", instances[0].host, instances[0].port, instances[0].txt...)
 
 	// Wait for a goodbye message to get out and get reflected back.
 	time.Sleep(3 * time.Second)
