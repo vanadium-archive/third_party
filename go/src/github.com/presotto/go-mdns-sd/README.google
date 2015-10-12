@@ -7,7 +7,4 @@ Description:
 A standalone go based mdns and service discovery implementation
 
 Local Modifications:
- - added a function for removing registered services.
- - changed to support multiple watchers for a same service.
- - changed to not announce host addresses when service port is zero.
- - fixed data races.
+None
