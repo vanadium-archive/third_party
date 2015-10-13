@@ -1,4 +1,4 @@
-This repository contains three kinds of code used in the Vanadium
+This repository contains three kinds of code used in the Vanadium 
 project:
 
 1) code which originated outside of Google
