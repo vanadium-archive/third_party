@@ -996,6 +996,14 @@ func (sb *syncBuffer) rotateFile(now time.Time) error {
 	return err
 }
 
+func newSyncBuffer(l *Log, s Severity, now time.Time) (flushSyncWriter, error) {
+	sb := &syncBuffer{
+		logger: l,
+		sev:    s,
+	}
+	return sb, sb.rotateFile(now)
+}
+
 // bufferSize sizes the buffer associated with each log file. It's large
 // so that log records can accumulate without the logging thread blocking
 // on disk I/O. The flushDaemon will block instead.
@@ -1008,14 +1016,11 @@ func (l *Log) createFiles(sev Severity) error {
 	// Files are created in decreasing severity order, so as soon as we find one
 	// has already been created, we can stop.
 	for s := sev; s >= InfoLog && l.file[s] == nil; s-- {
-		sb := &syncBuffer{
-			logger: l,
-			sev:    s,
-		}
-		if err := sb.rotateFile(now); err != nil {
+		w, err := newFlushSyncWriter(l, s, now)
+		if err != nil {
 			return err
 		}
-		l.file[s] = sb
+		l.file[s] = w
 	}
 	return nil
 }

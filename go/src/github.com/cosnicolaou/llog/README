@@ -8,8 +8,11 @@ logs in the manner of the open source C++ package
 
 	http://code.google.com/p/google-glog
 
-This version refactors the code so as not to rely on a single global variable
-and associated log state. It also separates out the flag parsing so that
-an application can chose to use whatever command line flags they wish to
-configure the package.
-
+Changes:
+- This version refactors code to not rely on a single global variable
+  and associated log state.
+- It separates out the flag parsing so that an application can choose
+  to use whatever command-line flags they wish to configure the
+  package.
+- When built with the 'android' build tag (such as with gomobile),
+  it uses the Android logging primitives instead of writing to files.
