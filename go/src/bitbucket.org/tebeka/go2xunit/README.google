@@ -1,5 +1,5 @@
-URL: https://bitbucket.org/tebeka/go2xunit/get/d45000af2242dd0e7b8c7b07d82a1068adc5fd40.zip
-Version: d45000af2242dd0e7b8c7b07d82a1068adc5fd40
+URL: https://bitbucket.org/tebeka/go2xunit/get/1d4e66f4f10963448ee5bf7efb5e27d537811918.zip
+Version: 1d4e66f4f10963448ee5bf7efb5e27d537811918
 License: MIT
 License File: LICENSE
 
@@ -10,3 +10,4 @@ in Jenkins/Hudson).
 Local Modifications:
 - fix demo/mmath_test.go
 - add +build ignore to demo-gocheck/mmath_test.go to avoid bringing in another dependency
+- add more detailed info on 'orphan' and 'name mismatch' errors.
