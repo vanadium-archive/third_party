@@ -7,4 +7,4 @@ Description:
 A standalone go based mdns and service discovery implementation
 
 Local Modifications:
-None
+o pack answers into separate packets.

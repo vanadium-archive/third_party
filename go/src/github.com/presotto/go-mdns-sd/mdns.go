@@ -607,95 +607,115 @@ func serviceFQDNFromInstanceFQDN(instance string) string {
 	return pieces[1]
 }
 
-func (s *MDNS) answerA(m *msgFromNet, q dns.Question, msg *dns.Msg) {
+func (s *MDNS) answerA(m *msgFromNet, q dns.Question) []*dns.Msg {
 	if q.Name == hostFQDN(s.hostName) {
+		msg := newDnsMsg(0, true, true)
 		m.mifc.appendHostAddresses(msg, s.hostName, dns.TypeA, s.ttl)
-		return
+		return []*dns.Msg{msg}
 	}
 	for _, set := range s.services {
 		for _, req := range set {
 			if q.Name == hostFQDN(req.host) && req.port > 0 {
+				msg := newDnsMsg(0, true, true)
 				m.mifc.appendHostAddresses(msg, req.host, dns.TypeA, s.ttl)
-				return
+				return []*dns.Msg{msg}
 			}
 		}
 	}
+	return nil
 }
 
-func (s *MDNS) answerAAAA(m *msgFromNet, q dns.Question, msg *dns.Msg) {
+func (s *MDNS) answerAAAA(m *msgFromNet, q dns.Question) []*dns.Msg {
 	if q.Name == hostFQDN(s.hostName) {
+		msg := newDnsMsg(0, true, true)
 		m.mifc.appendHostAddresses(msg, s.hostName, dns.TypeAAAA, s.ttl)
-		return
+		return []*dns.Msg{msg}
 	}
 	for _, set := range s.services {
 		for _, req := range set {
 			if q.Name == hostFQDN(req.host) && req.port > 0 {
+				msg := newDnsMsg(0, true, true)
 				m.mifc.appendHostAddresses(msg, req.host, dns.TypeAAAA, s.ttl)
-				return
+				return []*dns.Msg{msg}
 			}
 		}
 	}
+	return nil
 }
 
-func (s *MDNS) answerPTR(m *msgFromNet, q dns.Question, msg *dns.Msg) {
+func (s *MDNS) answerPTR(m *msgFromNet, q dns.Question) []*dns.Msg {
+	var msgs []*dns.Msg
 	for service, set := range s.services {
 		if q.Name == serviceFQDN(service) {
 			for _, req := range set {
+				msg := newDnsMsg(0, true, true)
 				m.mifc.appendDiscoveryRecords(msg, service, req.host, req.port, req.txt, s.ttl)
+				msgs = append(msgs, msg)
 			}
-			return
+			break
 		}
 	}
+	return msgs
 }
 
-func (s *MDNS) answerSRV(m *msgFromNet, q dns.Question, msg *dns.Msg) {
+func (s *MDNS) answerSRV(m *msgFromNet, q dns.Question) []*dns.Msg {
+	var msgs []*dns.Msg
 	for service, set := range s.services {
 		for _, req := range set {
 			if q.Name == instanceFQDN(req.host, service) {
+				msg := newDnsMsg(0, true, true)
 				m.mifc.appendSrvRR(msg, service, req.host, req.port, s.ttl)
 				if req.port > 0 {
 					m.mifc.appendHostAddresses(msg, req.host, dns.TypeALL, s.ttl)
 				}
+				msgs = append(msgs, msg)
 			}
 		}
 	}
+	return msgs
 }
 
-func (s *MDNS) answerTXT(m *msgFromNet, q dns.Question, msg *dns.Msg) {
+func (s *MDNS) answerTXT(m *msgFromNet, q dns.Question) []*dns.Msg {
+	var msgs []*dns.Msg
 	for service, set := range s.services {
 		for _, req := range set {
 			if q.Name == instanceFQDN(req.host, service) {
+				msg := newDnsMsg(0, true, true)
 				m.mifc.appendTxtRR(msg, service, req.host, req.txt, s.ttl)
+				msgs = append(msgs, msg)
 			}
 		}
 	}
+	return msgs
 }
 
 // Answer a question received from the network if it is for our host address or a service we know about.
 func (s *MDNS) answerQuestionFromNet(m *msgFromNet) {
-	msg := newDnsMsg(0, true, true)
+	var msgs []*dns.Msg
 	for _, q := range m.msg.Question {
 		switch q.Qtype {
 		case dns.TypeA:
-			s.answerA(m, q, msg)
+			msgs = append(msgs, s.answerA(m, q)...)
 		case dns.TypeAAAA:
-			s.answerAAAA(m, q, msg)
+			msgs = append(msgs, s.answerAAAA(m, q)...)
 		case dns.TypePTR:
-			s.answerPTR(m, q, msg)
+			msgs = append(msgs, s.answerPTR(m, q)...)
 		case dns.TypeSRV:
-			s.answerSRV(m, q, msg)
+			msgs = append(msgs, s.answerSRV(m, q)...)
 		case dns.TypeTXT:
-			s.answerTXT(m, q, msg)
+			msgs = append(msgs, s.answerTXT(m, q)...)
 		case dns.TypeALL:
-			s.answerA(m, q, msg)
-			s.answerAAAA(m, q, msg)
-			s.answerPTR(m, q, msg)
-			s.answerSRV(m, q, msg)
-			s.answerTXT(m, q, msg)
+			msgs = append(msgs, s.answerA(m, q)...)
+			msgs = append(msgs, s.answerAAAA(m, q)...)
+			msgs = append(msgs, s.answerPTR(m, q)...)
+			msgs = append(msgs, s.answerSRV(m, q)...)
+			msgs = append(msgs, s.answerTXT(m, q)...)
 		}
 	}
-	if len(msg.Answer) > 0 {
-		m.mifc.sendMessage(msg)
+	for _, msg := range msgs {
+		if len(msg.Answer) > 0 {
+			m.mifc.sendMessage(msg)
+		}
 	}
 }
 
