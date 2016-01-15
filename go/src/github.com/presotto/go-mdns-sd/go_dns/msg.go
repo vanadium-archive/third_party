@@ -782,27 +782,32 @@ type Msg struct {
 	Extra    []RR
 }
 
-func (dns *Msg) Pack() (msg []byte, ok bool) {
+func (dns *Msg) dnsHeaderBits() uint16 {
+	bits := uint16(dns.Opcode)<<11 | uint16(dns.Rcode)
+	if dns.RecursionAvailable {
+		bits |= _RA
+	}
+	if dns.RecursionDesired {
+		bits |= _RD
+	}
+	if dns.Truncated {
+		bits |= _TC
+	}
+	if dns.Authoritative {
+		bits |= _AA
+	}
+	if dns.Response {
+		bits |= _QR
+	}
+	return bits
+}
+
+func (dns *Msg) Pack() ([]byte, bool) {
 	var dh dnsHeader
 
 	// Convert convenient Msg into wire-like dnsHeader.
 	dh.Id = dns.ID
-	dh.Bits = uint16(dns.Opcode)<<11 | uint16(dns.Rcode)
-	if dns.RecursionAvailable {
-		dh.Bits |= _RA
-	}
-	if dns.RecursionDesired {
-		dh.Bits |= _RD
-	}
-	if dns.Truncated {
-		dh.Bits |= _TC
-	}
-	if dns.Authoritative {
-		dh.Bits |= _AA
-	}
-	if dns.Response {
-		dh.Bits |= _QR
-	}
+	dh.Bits = dns.dnsHeaderBits()
 
 	// Prepare variable sized arrays.
 	question := dns.Question
@@ -818,27 +823,62 @@ func (dns *Msg) Pack() (msg []byte, ok bool) {
 	// Could work harder to calculate message size,
 	// but this is far more than we need and not
 	// big enough to hurt the allocator.
-	msg = make([]byte, 2000)
+	msg := make([]byte, 1460)
 
 	// Pack it in: header and then the pieces.
-	off := 0
-	off, ok = packStruct(&dh, msg, off)
-	for i := 0; i < len(question); i++ {
+	off, ok := packStruct(&dh, msg, 0)
+	for i := 0; ok && i < len(question); i++ {
 		off, ok = packStruct(&question[i], msg, off)
 	}
-	for i := 0; i < len(answer); i++ {
+	for i := 0; ok && i < len(answer); i++ {
 		off, ok = packRR(answer[i], msg, off)
 	}
-	for i := 0; i < len(ns); i++ {
+	for i := 0; ok && i < len(ns); i++ {
 		off, ok = packRR(ns[i], msg, off)
 	}
-	for i := 0; i < len(extra); i++ {
+	for i := 0; ok && i < len(extra); i++ {
 		off, ok = packRR(extra[i], msg, off)
 	}
 	if !ok {
 		return nil, false
 	}
-	return msg[0:off], true
+	return msg[:off], true
+}
+
+func (dns *Msg) PackTo(msg []byte) ([]byte, bool) {
+	var dh dnsHeader
+	if _, ok := unpackStruct(&dh, msg, 0); !ok {
+		return nil, false
+	}
+	// We only want to combine answers to the same question without breaking
+	// ordering in the DNS packet.
+	if dh.Bits != dns.dnsHeaderBits() || dh.Nscount > 0 || dh.Arcount > 0 {
+		return nil, false
+	}
+	if len(dns.Question) > 0 || len(dns.NS) > 0 || len(dns.Extra) > 0 {
+		return nil, false
+	}
+
+	answer := dns.Answer
+	dh.Ancount += uint16(len(answer))
+
+	off := len(msg)
+	msg = msg[:cap(msg)]
+
+	var ok bool
+	for i := 0; i < len(answer); i++ {
+		off, ok = packRR(answer[i], msg, off)
+		if !ok {
+			return nil, false
+		}
+	}
+
+	// Update the packed header.
+	_, ok = packStruct(&dh, msg, 0)
+	if !ok {
+		panic("pack failed") // should never happen!
+	}
+	return msg[:off], true
 }
 
 func (dns *Msg) Unpack(msg []byte) bool {

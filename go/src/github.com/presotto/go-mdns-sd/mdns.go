@@ -144,27 +144,46 @@ func (m *multicastIfc) appendDiscoveryRecords(msg *dns.Msg, service, host string
 }
 
 // Send a message on a multicast net and cache it locally.
-func (m *multicastIfc) sendMessage(msg *dns.Msg) {
-	if m.mdns.logLevel >= 2 {
-		log.Printf("sending message %v\n", msg)
-	}
-	buf, ok := msg.Pack()
-	if !ok {
-		if m.mdns.logLevel >= 1 {
-			log.Printf("can't pack address message\n")
+func (m *multicastIfc) sendMessages(msgs ...*dns.Msg) {
+	var ok bool
+	var buf []byte
+	var bufs [][]byte
+	for _, msg := range msgs {
+		if m.mdns.logLevel >= 2 {
+			log.Printf("sending message %v\n", msg)
 		}
-		return
-	}
-	if _, err := m.conn.WriteTo(buf, m.addr); err != nil {
-		if m.mdns.logLevel >= 1 {
-			log.Printf("WriteTo failed %v %v", m.addr, err)
+		if buf != nil {
+			old := buf
+			buf, ok = msg.PackTo(buf)
+			if !ok {
+				// Probably due to space.
+				bufs = append(bufs, old)
+			}
+		}
+		if buf == nil {
+			buf, ok = msg.Pack()
+			if !ok {
+				if m.mdns.logLevel >= 1 {
+					log.Printf("can't pack message %v\n", msg)
+				}
+				continue
+			}
+		}
+		// Cache these RRs in case we ask about ourself.
+		for _, rr := range msg.Answer {
+			if m.cache.Add(rr) {
+				m.mdns.changedRR(rr)
+			}
 		}
 	}
-
-	// Cache these RRs in case we ask about ourself.
-	for _, rr := range msg.Answer {
-		if m.cache.Add(rr) {
-			m.mdns.changedRR(rr)
+	if buf != nil {
+		bufs = append(bufs, buf)
+	}
+	for _, buf := range bufs {
+		if _, err := m.conn.WriteTo(buf, m.addr); err != nil {
+			if m.mdns.logLevel >= 1 {
+				log.Printf("WriteTo failed %v %v", m.addr, err)
+			}
 		}
 	}
 }
@@ -173,21 +192,21 @@ func (m *multicastIfc) sendMessage(msg *dns.Msg) {
 func (m *multicastIfc) announceHost(host string, ttl uint32) {
 	msg := newDnsMsg(0, true, true)
 	m.appendHostAddresses(msg, host, dns.TypeALL, ttl)
-	m.sendMessage(msg)
+	m.sendMessages(msg)
 }
 
 // Announce a service and how to reach it.
 func (m *multicastIfc) announceService(service, host string, port uint16, txt []string, ttl uint32) {
 	msg := newDnsMsg(0, true, true)
 	m.appendDiscoveryRecords(msg, service, host, port, txt, ttl)
-	m.sendMessage(msg)
+	m.sendMessages(msg)
 }
 
 // Ask a question.
 func (m *multicastIfc) sendQuestion(q []dns.Question) {
 	msg := newDnsMsg(0, false, false)
 	msg.Question = q
-	m.sendMessage(msg)
+	m.sendMessages(msg)
 }
 
 type lookupRequest struct {
@@ -712,10 +731,8 @@ func (s *MDNS) answerQuestionFromNet(m *msgFromNet) {
 			msgs = append(msgs, s.answerTXT(m, q)...)
 		}
 	}
-	for _, msg := range msgs {
-		if len(msg.Answer) > 0 {
-			m.mifc.sendMessage(msg)
-		}
+	if len(msgs) > 0 {
+		m.mifc.sendMessages(msgs...)
 	}
 }
 

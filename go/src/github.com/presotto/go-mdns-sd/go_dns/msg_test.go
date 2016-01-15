@@ -35,6 +35,32 @@ func TestDNSTxt(t *testing.T) {
 	}
 }
 
+func TestDNSPack(t *testing.T) {
+	rrs := []RR{
+		&RR_TXT{RR_Header{"foo.local.", TypeTXT, ClassINET, 10, 0}, []string{"foo1", "foo2"}},
+		&RR_TXT{RR_Header{"bar.local.", TypeTXT, ClassINET, 20, 0}, []string{"bar1", "bar2"}},
+		&RR_TXT{RR_Header{"baz.local.", TypeTXT, ClassINET, 30, 0}, []string{"baz1", "baz2"}},
+	}
+
+	msg := &Msg{Answer: []RR{rrs[0]}}
+	data, ok := msg.Pack()
+	if !ok {
+		t.Fatalf("failed to pack message %v", msg)
+	}
+	for i := 1; i < len(rrs); i++ {
+		msg = &Msg{Answer: []RR{rrs[i]}}
+		data, ok = msg.PackTo(data)
+		if !ok {
+			t.Fatalf("failed to pack message %v", msg)
+		}
+	}
+	msg = new(Msg)
+	msg.Unpack(data)
+	if !reflect.DeepEqual(rrs, msg.Answer) {
+		t.Errorf("expected %v, but got %v", rrs, msg.Answer)
+	}
+}
+
 func TestDNSParseSRVReply(t *testing.T) {
 	data, err := hex.DecodeString(dnsSRVReply)
 	if err != nil {
@@ -71,9 +97,9 @@ func TestDNSParseSRVReply(t *testing.T) {
 	msg2.Unpack(data2)
 	switch {
 	case !ok:
-		t.Errorf("failed to repack message")
+		t.Error("failed to repack message")
 	case !reflect.DeepEqual(msg, msg2):
-		t.Errorf("repacked message differs from original")
+		t.Error("repacked message differs from original")
 	}
 }
 
