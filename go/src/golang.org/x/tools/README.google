@@ -8,3 +8,5 @@ Packages and tools supporting the Go programming language.
 
 Local Modifications:
 Whitelisting Vanadium named slice types for go vet checks.
+Removed two test cases from go/vcs/vcs_test.go that fail now that
+code.google.com is in archive mode.
