@@ -1,0 +1,10 @@
+URL: https://github.com/mattn/go-sqlite3/archive/f33c9767fbdd0d10fab2b7bf056e80bdf30c8ed1.zip
+Version: f33c9767fbdd0d10fab2b7bf056e80bdf30c8ed1.zip
+License: MIT
+License File: LICENSE
+
+Description:
+Package sqlite3 provides interface to SQLite3 databases.
+
+Local Modifications:
+None.
