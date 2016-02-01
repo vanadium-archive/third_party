@@ -507,6 +507,9 @@ func packStruct(any dnsStruct, msg []byte, off int) (off1 int, ok bool) {
 			off += 2
 		case *uint32:
 			i := *fv
+			if off+4 > len(msg) {
+				return false
+			}
 			msg[off] = byte(i >> 24)
 			msg[off+1] = byte(i >> 16)
 			msg[off+2] = byte(i >> 8)
