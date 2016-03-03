@@ -1,0 +1,12 @@
+URL: https://github.com/jan-molak/jenkins-build-monitor-plugin/archive/a0d11af3aa20f3b71448085f26f8f9474eafd26b.zip
+Version: a0d11af3aa20f3b71448085f26f8f9474eafd26b
+License: MIT, portions BSD, Apache 2.0
+License File: LICENSE
+
+Description:
+Build Monitor Plugin provides a highly visible view of the status of selected
+Jenkins jobs.
+
+Local Modifications:
+UI tweaks to better serve our needs.
+Change name of the plugin to "vanadium build monitor".

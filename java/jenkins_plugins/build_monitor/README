@@ -1,0 +1,5 @@
+To build and use the plugin:
+- Run: mvn install -Dmaven.test.skip=true
+- Upload target/vanadium-build-monitor-plugin.hpi to Jenkins using "Upload Plugin" at:
+  http://dev.v.io/jenkins/pluginManager/advanced.
+
