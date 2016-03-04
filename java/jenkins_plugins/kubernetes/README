@@ -1,0 +1,7 @@
+To build and use the plugin:
+- Run: mvn install
+- Upload target/vanadium_kubernetes.hpi to Jenkins using "Upload Plugin" at:
+  http://dev.v.io/jenkins/pluginManager/advanced.
+- Check the "restart Jenkins" checkbox. Jenkins will wait until there are
+  no pending jobs before restarting, this might take some time during busy
+  periods.

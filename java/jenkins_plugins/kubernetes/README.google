@@ -1,0 +1,10 @@
+URL: https://github.com/jenkinsci/kubernetes-plugin/archive/28507c1a8ca34969fe8010079be88db344cac239.zip
+Version: 28507c1a8ca34969fe8010079be88db344cac239
+License: Apache 2.0, MIT
+License File: LICENSE
+
+Description:
+Run dynamic slaves in a Kubernetes/Docker environment.
+
+Local Modifications:
+None.
