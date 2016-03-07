@@ -7,4 +7,5 @@ Description:
 Run dynamic slaves in a Kubernetes/Docker environment.
 
 Local Modifications:
-None.
+- Fixed a bug about how pods are counted and capped.
+- Minor UI tweaks.

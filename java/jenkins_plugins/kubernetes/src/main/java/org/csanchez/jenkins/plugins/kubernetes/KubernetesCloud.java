@@ -1,15 +1,23 @@
 package org.csanchez.jenkins.plugins.kubernetes;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.AtomicLongMap;
+
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Computer;
@@ -21,16 +29,17 @@ import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.ContainerStatus;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodBuilder;
+import io.fabric8.kubernetes.api.model.PodList;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 
-import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.net.URL;
 import java.security.KeyStoreException;
@@ -47,11 +56,13 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.CheckForNull;
+
 /**
  * Kubernetes cloud provider.
- * 
+ *
  * Starts slaves in a Kubernetes cluster using defined Docker templates for each label.
- * 
+ *
  * @author Carlos Sanchez carlos@apache.org
  */
 public class KubernetesCloud extends Cloud {
@@ -86,6 +97,13 @@ public class KubernetesCloud extends Cloud {
     private final int retentionTimeout;
 
     private transient KubernetesClient client;
+
+    /**
+     * Keeps track of number of "queued" pods, indexed by templates.
+     *
+     * Queued pods are the ones that are being created that Jenkins doesn't know about.
+     */
+    private AtomicLongMap<PodTemplate> queuedPodsCounts;
 
     @DataBoundConstructor
     public KubernetesCloud(String name, List<? extends PodTemplate> templates, String serverUrl, String namespace,
@@ -287,7 +305,19 @@ public class KubernetesCloud extends Cloud {
     public synchronized Collection<NodeProvisioner.PlannedNode> provision(final Label label, final int excessWorkload) {
         try {
 
-            LOGGER.log(Level.INFO, "Excess workload after pending Spot instances: " + excessWorkload);
+            LOGGER.log(Level.INFO,
+                "Excess workload for label '" + label.getName()
+                    + "' after pending Spot instances: "
+                    + excessWorkload);
+
+            // The constructor of this class will only be invoked when the kubernetes cloud
+            // configuration is created in Jenkins' "Configure System" page. It won't be invoked
+            // when Jenkins is restarted.
+            //
+            // To make sure queuedPodsCounts is initialized properly we do it here.
+            if (queuedPodsCounts == null) {
+              queuedPodsCounts = AtomicLongMap.create();
+            }
 
             List<NodeProvisioner.PlannedNode> r = new ArrayList<NodeProvisioner.PlannedNode>();
 
@@ -317,8 +347,12 @@ public class KubernetesCloud extends Cloud {
             this.cloud = cloud;
             this.t = t;
             this.label = label;
+
+            // Increase queued slave count for this pod template.
+            queuedPodsCounts.incrementAndGet(t);
         }
 
+        @Override
         public Node call() throws Exception {
             KubernetesSlave slave = null;
             try {
@@ -391,6 +425,9 @@ public class KubernetesCloud extends Cloud {
                 LOGGER.log(Level.SEVERE, "Error in provisioning; slave={0}, template={1}", new Object[] { slave, t });
                 ex.printStackTrace();
                 throw Throwables.propagate(ex);
+            } finally {
+              // Decrease the count of queued pods.
+              queuedPodsCounts.decrementAndGet(t);
             }
         }
     }
@@ -412,17 +449,30 @@ public class KubernetesCloud extends Cloud {
             return true;
         }
 
+        LOGGER.log(Level.INFO,
+            "Checking caps for label '" + label.getName()
+                + "' in template '" + template.getName() + "'");
+        long totalQueuedPods = queuedPodsCounts.sum();
+        long queuedPodsForThisTemplate = queuedPodsCounts.get(template);
+
         KubernetesClient client = connect();
         PodList slaveList = client.pods().inNamespace(namespace).withLabels(POD_LABEL).list();
         PodList namedList = client.pods().inNamespace(namespace).withLabel("name", getIdForLabel(label)).list();
 
+        LOGGER.log(Level.INFO,
+          "global container cap: " + containerCap + "\n"
+              + "template container cap: " + template.getInstanceCap() + "\n"
+              + "total running pods: " + slaveList.getItems().size() + "\n"
+              + "total queued pods: " + totalQueuedPods + "\n"
+              + "running pods for '" + label.getName() + "': " + namedList.getItems().size() + "\n"
+              + "queued pods for '" + label.getName() + "': " + queuedPodsForThisTemplate + "\n");
 
-        if (containerCap < slaveList.getItems().size()) {
+        if (containerCap <= slaveList.getItems().size() + totalQueuedPods) {
             LOGGER.log(Level.INFO, "Total container cap of " + containerCap + " reached, not provisioning.");
             return false;
         }
 
-        if (template.getInstanceCap() < namedList.getItems().size()) {
+        if (template.getInstanceCap() <= namedList.getItems().size() + queuedPodsForThisTemplate) {
             LOGGER.log(Level.INFO, "Template instance cap of " + template.getInstanceCap() + " reached for template "
                     + template.getImage() + ", not provisioning.");
             return false; // maxed out
@@ -480,7 +530,7 @@ public class KubernetesCloud extends Cloud {
     public static class DescriptorImpl extends Descriptor<Cloud> {
         @Override
         public String getDisplayName() {
-            return "Kubernetes";
+            return "Vanadium Kubernetes";
         }
 
         public FormValidation doTestConnection(@QueryParameter URL serverUrl, @QueryParameter String credentialsId,
