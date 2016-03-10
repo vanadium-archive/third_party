@@ -1,5 +1,5 @@
-URL: https://github.com/jmoiron/sqlx/archive/69738bd209812c5a381786011aff17944a384554.zip
-Version: 69738bd209812c5a381786011aff17944a384554
+URL: https://github.com/jmoiron/sqlx/archive/398dd5876282499cdfd4cb8ea0f31a672abe9495.zip
+Version: 398dd5876282499cdfd4cb8ea0f31a672abe9495
 License: MIT
 License File: LICENSE
 
@@ -7,11 +7,8 @@ Description:
 sqlx provides a set of extensions on go's standard database/sql library.
 
 Local Modifications:
-
-Added newlines to sqlx_test.go debug output on lines 74 and 82 to prevent it
-from crashing our test runner.
-
-Remove the following imports from sqlx_test.go:
+- Added newlines to sqlx_test.go debug output on lines 77 and 87 to keep
+  our test runner happy
+- Removed the following import from sqlx_test.go:
   * github.com/lib/pq
-  * github.com/mattn/go-sqlite3
 
