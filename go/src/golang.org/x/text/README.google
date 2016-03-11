@@ -1,5 +1,5 @@
-URL: https://go.googlesource.com/text/+archive/3eb7007b740b66a77f3c85f2660a0240b284115a.tar.gz
-Version: 3eb7007b740b66a77f3c85f2660a0240b284115a
+URL: https://go.googlesource.com/text/+archive/a71fd10341b064c10f4a81ceac72bcf70f26ea34.tar.gz
+Version: a71fd10341b064c10f4a81ceac72bcf70f26ea34
 License: New BSD
 License File: LICENSE
 
@@ -7,4 +7,4 @@ Description:
 Supplementary Go text processing libraries.
 
 Local Modifications:
-Ran go generate ./... to make tests pass.
+None

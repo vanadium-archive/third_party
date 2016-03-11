@@ -148,7 +148,7 @@ func TestMap(t *testing.T) {
 		desc:    "short src",
 		szDst:   2,
 		atEOF:   false,
-		in:      "a\xc0",
+		in:      "a\xc2",
 		out:     "ç",
 		outFull: "ç\ufffd",
 		err:     transform.ErrShortSrc,
@@ -197,7 +197,7 @@ func TestMap(t *testing.T) {
 		desc:    "misc correct and invalid, short src",
 		szDst:   large,
 		atEOF:   false,
-		in:      "Hello\x80 w\x80orl\xc0d!\xc0",
+		in:      "Hello\x80 w\x80orl\xc0d!\xc2",
 		out:     "Hello\ufffd w\ufffdorl\ufffdd!",
 		outFull: "Hello\ufffd w\ufffdorl\ufffdd!\ufffd",
 		err:     transform.ErrShortSrc,
@@ -206,7 +206,7 @@ func TestMap(t *testing.T) {
 		desc:    "misc correct and invalid, short src, replacing RuneError",
 		szDst:   large,
 		atEOF:   false,
-		in:      "Hel\ufffdlo\x80 w\x80orl\xc0d!\xc0",
+		in:      "Hel\ufffdlo\x80 w\x80orl\xc0d!\xc2",
 		out:     "Hel?lo? w?orl?d!",
 		outFull: "Hel?lo? w?orl?d!?",
 		err:     transform.ErrShortSrc,
@@ -296,7 +296,7 @@ func TestRemove(t *testing.T) {
 		8: {
 			szDst:   1,
 			atEOF:   false,
-			in:      "a\xc0",
+			in:      "a\xc2",
 			out:     "",
 			outFull: "\ufffd",
 			err:     transform.ErrShortSrc,
@@ -345,7 +345,7 @@ func TestRemove(t *testing.T) {
 		14: {
 			szDst:   large,
 			atEOF:   false,
-			in:      "Hello\x80 w\x80orl\xc0d!\xc0",
+			in:      "Hello\x80 w\x80orl\xc0d!\xc2",
 			out:     "Hll\ufffd w\ufffdrl\ufffdd!",
 			outFull: "Hll\ufffd w\ufffdrl\ufffdd!\ufffd",
 			err:     transform.ErrShortSrc,
@@ -354,7 +354,7 @@ func TestRemove(t *testing.T) {
 		15: {
 			szDst:   large,
 			atEOF:   false,
-			in:      "Hel\ufffdlo\x80 w\x80orl\xc0d!\xc0",
+			in:      "Hel\ufffdlo\x80 w\x80orl\xc0d!\xc2",
 			out:     "Hello world!",
 			outFull: "Hello world!",
 			err:     transform.ErrShortSrc,
@@ -392,6 +392,117 @@ func TestRemove(t *testing.T) {
 	}
 }
 
+func TestReplaceIllFormed(t *testing.T) {
+	replace := ReplaceIllFormed()
+
+	for i, tt := range []transformTest{
+		0: {
+			szDst:   large,
+			atEOF:   true,
+			in:      "",
+			out:     "",
+			outFull: "",
+			t:       replace,
+		},
+		1: {
+			szDst:   1,
+			atEOF:   true,
+			in:      "aa",
+			out:     "a",
+			outFull: "aa",
+			err:     transform.ErrShortDst,
+			t:       replace,
+		},
+		2: {
+			szDst:   1,
+			atEOF:   true,
+			in:      "a\x80",
+			out:     "a",
+			outFull: "a\ufffd",
+			err:     transform.ErrShortDst,
+			t:       replace,
+		},
+		3: {
+			szDst:   1,
+			atEOF:   true,
+			in:      "a\xc0",
+			out:     "a",
+			outFull: "a\ufffd",
+			err:     transform.ErrShortDst,
+			t:       replace,
+		},
+		4: {
+			szDst:   large,
+			atEOF:   true,
+			in:      "\x80",
+			out:     "\ufffd",
+			outFull: "\ufffd",
+			t:       replace,
+		},
+		5: {
+			szDst:   large,
+			atEOF:   false,
+			in:      "\x80",
+			out:     "\ufffd",
+			outFull: "\ufffd",
+			t:       replace,
+		},
+		6: {
+			szDst:   large,
+			atEOF:   true,
+			in:      "\xc2",
+			out:     "\ufffd",
+			outFull: "\ufffd",
+			t:       replace,
+		},
+		7: {
+			szDst:   large,
+			atEOF:   false,
+			in:      "\xc2",
+			out:     "",
+			outFull: "\ufffd",
+			err:     transform.ErrShortSrc,
+			t:       replace,
+		},
+		8: {
+			szDst:   large,
+			atEOF:   true,
+			in:      "Hello world!",
+			out:     "Hello world!",
+			outFull: "Hello world!",
+			t:       replace,
+		},
+		9: {
+			szDst:   large,
+			atEOF:   true,
+			in:      "Hello\x80 w\x80orl\xc2d!\xc2",
+			out:     "Hello\ufffd w\ufffdorl\ufffdd!\ufffd",
+			outFull: "Hello\ufffd w\ufffdorl\ufffdd!\ufffd",
+			t:       replace,
+		},
+		10: {
+			szDst:   large,
+			atEOF:   false,
+			in:      "Hello\x80 w\x80orl\xc2d!\xc2",
+			out:     "Hello\ufffd w\ufffdorl\ufffdd!",
+			outFull: "Hello\ufffd w\ufffdorl\ufffdd!\ufffd",
+			err:     transform.ErrShortSrc,
+			t:       replace,
+		},
+		16: {
+			szDst:   10,
+			atEOF:   false,
+			in:      "\x80Hello\x80",
+			out:     "\ufffdHello",
+			outFull: "\ufffdHello\ufffd",
+			err:     transform.ErrShortDst,
+			t:       replace,
+		},
+	} {
+		tt.check(t, i)
+	}
+}
+
 func TestMapAlloc(t *testing.T) {
 	if n := testing.AllocsPerRun(3, func() {
 		Map(idem).Transform(nil, nil, false)
@@ -405,6 +516,14 @@ func rmNop(r rune) bool { return false }
 func TestRemoveAlloc(t *testing.T) {
 	if n := testing.AllocsPerRun(3, func() {
 		Remove(Predicate(rmNop)).Transform(nil, nil, false)
+	}); n > 0 {
+		t.Errorf("got %f; want 0", n)
+	}
+}
+
+func TestReplaceIllFormedAlloc(t *testing.T) {
+	if n := testing.AllocsPerRun(3, func() {
+		ReplaceIllFormed().Transform(nil, nil, false)
 	}); n > 0 {
 		t.Errorf("got %f; want 0", n)
 	}
@@ -443,6 +562,18 @@ func BenchmarkMapNone(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		r.Transform(dst, src, true)
+	}
+}
+
+func BenchmarkReplaceIllFormed(b *testing.B) {
+	dst := make([]byte, 2*len(input))
+	src := []byte(input)
+
+	t := ReplaceIllFormed()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		t.Transform(dst, src, true)
 	}
 }
 

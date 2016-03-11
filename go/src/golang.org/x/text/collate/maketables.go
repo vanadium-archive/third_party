@@ -25,12 +25,12 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"golang.org/x/text/cldr"
 	"golang.org/x/text/collate"
 	"golang.org/x/text/collate/build"
 	"golang.org/x/text/collate/colltab"
 	"golang.org/x/text/internal/gen"
 	"golang.org/x/text/language"
+	"golang.org/x/text/unicode/cldr"
 )
 
 var (
@@ -434,11 +434,8 @@ func parseCollation(b *build.Builder) {
 		for _, c := range cs {
 			id, err := language.Parse(loc)
 			if err != nil {
-				if loc == "en-US-posix" {
-					fmt.Fprintf(os.Stderr, "invalid locale: %q", err.Error())
-					continue
-				}
-				id = language.Make("en-US-u-va-posix")
+				fmt.Fprintf(os.Stderr, "invalid locale: %q", err)
+				continue
 			}
 			// Support both old- and new-style defaults.
 			d := c.Type
