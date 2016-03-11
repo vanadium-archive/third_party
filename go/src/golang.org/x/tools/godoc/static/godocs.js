@@ -248,7 +248,7 @@ function toggleHash() {
 function personalizeInstallInstructions() {
   var prefix = '?download=';
   var s = window.location.search;
-  if (!s.startsWith(prefix)) {
+  if (s.indexOf(prefix) != 0) {
     // No 'download' query string; bail.
     return;
   }
@@ -273,6 +273,8 @@ function personalizeInstallInstructions() {
   }
   if (os != 'windows') {
     $('#windowsInstructions').hide();
+    $('.testUnix').show();
+    $('.testWindows').hide();
   } else {
     if (ext != 'msi') {
       $('#windowsInstallerInstructions').hide();
@@ -280,6 +282,8 @@ function personalizeInstallInstructions() {
     if (ext != 'zip') {
       $('#windowsZipInstructions').hide();
     }
+    $('.testUnix').hide();
+    $('.testWindows').show();
   }
 
   var download = "https://storage.googleapis.com/golang/" + filename;

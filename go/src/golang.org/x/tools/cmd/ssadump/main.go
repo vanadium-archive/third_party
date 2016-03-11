@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// +build go1.5
+
 // ssadump: a tool for displaying and interpreting the SSA form of Go programs.
 package main // import "golang.org/x/tools/cmd/ssadump"
 
@@ -9,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
+	"go/types"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -18,7 +21,6 @@ import (
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/interp"
 	"golang.org/x/tools/go/ssa/ssautil"
-	"golang.org/x/tools/go/types"
 )
 
 var (
@@ -147,7 +149,7 @@ func doMain() error {
 
 	// Run the interpreter.
 	if *runFlag {
-		prog.BuildAll()
+		prog.Build()
 
 		var main *ssa.Package
 		pkgs := prog.AllPackages()
@@ -162,7 +164,7 @@ func doMain() error {
 		} else {
 			// Otherwise, run main.main.
 			for _, pkg := range pkgs {
-				if pkg.Object.Name() == "main" {
+				if pkg.Pkg.Name() == "main" {
 					main = pkg
 					if main.Func("main") == nil {
 						return fmt.Errorf("no func main() in main package")
@@ -180,7 +182,7 @@ func doMain() error {
 				build.Default.GOARCH, runtime.GOARCH)
 		}
 
-		interp.Interpret(main, interpMode, conf.TypeChecker.Sizes, main.Object.Path(), args)
+		interp.Interpret(main, interpMode, conf.TypeChecker.Sizes, main.Pkg.Path(), args)
 	}
 	return nil
 }
