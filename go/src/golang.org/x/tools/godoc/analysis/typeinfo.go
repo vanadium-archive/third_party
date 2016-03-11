@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// +build go1.5
+
 package analysis
 
 // This file computes the markup for information from go/types:
@@ -20,12 +22,12 @@ package analysis
 
 import (
 	"fmt"
+	"go/types"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/loader"
-	"golang.org/x/tools/go/types"
 	"golang.org/x/tools/go/types/typeutil"
 )
 

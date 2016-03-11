@@ -2,21 +2,23 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// +build go1.6
+
 package oracle
 
 import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	exact "go/constant"
 	"go/token"
+	"go/types"
 	"log"
 	"os"
 	"strings"
 
 	"golang.org/x/tools/go/ast/astutil"
-	"golang.org/x/tools/go/exact"
 	"golang.org/x/tools/go/loader"
-	"golang.org/x/tools/go/types"
 	"golang.org/x/tools/go/types/typeutil"
 	"golang.org/x/tools/oracle/serial"
 )
@@ -31,7 +33,7 @@ func describe(q *Query) error {
 	lconf := loader.Config{Build: q.Build}
 	allowErrors(&lconf)
 
-	if err := importQueryPackage(q.Pos, &lconf); err != nil {
+	if _, err := importQueryPackage(q.Pos, &lconf); err != nil {
 		return err
 	}
 
@@ -513,11 +515,15 @@ func describePackage(qpos *queryPos, path []ast.Node) (*describePackageResult, e
 	var pkg *types.Package
 	switch n := path[0].(type) {
 	case *ast.ImportSpec:
-		var pkgname *types.PkgName
+		var obj types.Object
 		if n.Name != nil {
-			pkgname = qpos.info.Defs[n.Name].(*types.PkgName)
-		} else if p := qpos.info.Implicits[n]; p != nil {
-			pkgname = p.(*types.PkgName)
+			obj = qpos.info.Defs[n.Name]
+		} else {
+			obj = qpos.info.Implicits[n]
+		}
+		pkgname, _ := obj.(*types.PkgName)
+		if pkgname == nil {
+			return nil, fmt.Errorf("can't import package %s", n.Path.Value)
 		}
 		pkg = pkgname.Imported()
 		description = fmt.Sprintf("import of package %q", pkg.Path())
@@ -674,6 +680,12 @@ func tokenOf(o types.Object) string {
 		return "const"
 	case *types.PkgName:
 		return "package"
+	case *types.Builtin:
+		return "builtin" // e.g. when describing package "unsafe"
+	case *types.Nil:
+		return "nil"
+	case *types.Label:
+		return "label"
 	}
 	panic(o)
 }

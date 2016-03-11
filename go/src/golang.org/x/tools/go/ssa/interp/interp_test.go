@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// +build go1.5
+
 // +build !android,!windows,!plan9
 
 package interp_test
@@ -10,6 +12,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/build"
+	"go/types"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +23,6 @@ import (
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/interp"
 	"golang.org/x/tools/go/ssa/ssautil"
-	"golang.org/x/tools/go/types"
 )
 
 // Each line contains a space-separated list of $GOROOT/test/
@@ -158,20 +160,19 @@ var gorootSrcTests = []string{
 	"encoding/hex",
 	// "encoding/pem", // TODO(adonovan): implement (reflect.Value).SetString
 	// "testing",      // TODO(adonovan): implement runtime.Goexit correctly
-	"unicode",
+	// "hash/crc32",   // TODO(adonovan): implement hash/crc32.haveCLMUL
+	// "log",          // TODO(adonovan): implement runtime.Callers correctly
 
 	// Too slow:
 	// "container/ring",
 	// "hash/adler32",
 
-	// TODO(adonovan): packages with Examples require os.Pipe (unimplemented):
-	// "hash/crc32",
-	// "unicode/utf8",
-	// "log",
-	// "path",
-	// "flag",
-	// "encoding/csv"
-	// "text/scanner"
+	"unicode/utf8",
+	"path",
+	"flag",
+	"encoding/csv",
+	"text/scanner",
+	"unicode",
 }
 
 type successPredicate func(exitcode int, output string) error
@@ -210,7 +211,7 @@ func run(t *testing.T, dir, input string, success successPredicate) bool {
 		interp.CapturedOutput = nil
 	}()
 
-	hint = fmt.Sprintf("To dump SSA representation, run:\n%% go build golang.org/x/tools/cmd/ssadump && ./ssadump -build=CFP %s\n", input)
+	hint = fmt.Sprintf("To dump SSA representation, run:\n%% go build golang.org/x/tools/cmd/ssadump && ./ssadump -test -build=CFP %s\n", input)
 
 	iprog, err := conf.Load()
 	if err != nil {
@@ -219,7 +220,7 @@ func run(t *testing.T, dir, input string, success successPredicate) bool {
 	}
 
 	prog := ssautil.CreateProgram(iprog, ssa.SanityCheckFunctions)
-	prog.BuildAll()
+	prog.Build()
 
 	var mainPkg *ssa.Package
 	var initialPkgs []*ssa.Package

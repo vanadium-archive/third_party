@@ -1,5 +1,5 @@
-URL: https://go.googlesource.com/tools/+archive/b60a44a905945100f46b6fc9184df866dbccf955.tar.gz
-Version: b60a44a905945100f46b6fc9184df866dbccf955
+URL: https://go.googlesource.com/tools/+archive/c887be1b2ebd11663d4bf2fbca508c449172339e.tar.gz
+Version: c887be1b2ebd11663d4bf2fbca508c449172339e
 License: New BSD
 License File: LICENSE
 
@@ -7,6 +7,4 @@ Description:
 Packages and tools supporting the Go programming language.
 
 Local Modifications:
-Whitelisting Vanadium named slice types for go vet checks.
-Removed two test cases from go/vcs/vcs_test.go that fail now that
-code.google.com is in archive mode.
+- Applied https://go-review.googlesource.com/#/c/19189/

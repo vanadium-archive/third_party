@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// +build go1.5
+
 // Package analysis performs type and pointer analysis
 // and generates mark-up for the Go source view.
 //
@@ -45,8 +47,10 @@ package analysis // import "golang.org/x/tools/godoc/analysis"
 import (
 	"fmt"
 	"go/build"
+	exact "go/constant"
 	"go/scanner"
 	"go/token"
+	"go/types"
 	"html"
 	"io"
 	"log"
@@ -57,12 +61,10 @@ import (
 	"strings"
 	"sync"
 
-	"golang.org/x/tools/go/exact"
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/pointer"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
-	"golang.org/x/tools/go/types"
 )
 
 // -- links ------------------------------------------------------------
@@ -405,7 +407,7 @@ func Run(pta bool, result *Result) {
 		}
 	}
 	for _, pkg := range allPackages {
-		if pkg.Object.Name() == "main" && pkg.Func("main") != nil {
+		if pkg.Pkg.Name() == "main" && pkg.Func("main") != nil {
 			mainPkgs = append(mainPkgs, pkg)
 		}
 	}
@@ -413,7 +415,7 @@ func Run(pta bool, result *Result) {
 
 	// Build SSA code for bodies of all functions in the whole program.
 	result.setStatusf("Constructing SSA form...")
-	prog.BuildAll()
+	prog.Build()
 	log.Print("SSA construction complete")
 
 	a := analysis{
