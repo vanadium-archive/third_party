@@ -1,0 +1,10 @@
+URL: https://github.com/jteeuwen/go-bindata/archive/a0ff2567cfb70903282db057e799fd826784d41d.zip
+Version: a0ff2567cfb70903282db057e799fd826784d41d
+License: CC0 1.0
+License File: LICENSE
+
+Description:
+A package for bundling static resources into go binaries.
+
+Local Modifications:
+No modifications.
