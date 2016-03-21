@@ -30,6 +30,7 @@ func TestConvertUUID(t *testing.T) {
 }
 
 func TestConvertSlice(t *testing.T) {
+	t.Skip("Skipping till https://github.com/vanadium/build/issues/36 is resolved")
 	arr := []string{"one", "two", "three"}
 
 	xv := goToXpc(arr)
@@ -51,6 +52,7 @@ func TestConvertSlice(t *testing.T) {
 }
 
 func TestConvertSliceUUID(t *testing.T) {
+	t.Skip("Skipping till https://github.com/vanadium/build/issues/36 is resolved")
 	arr := []UUID{MakeUUID("0000000000000000"), MakeUUID("1111111111111111"), MakeUUID("2222222222222222")}
 
 	xv := goToXpc(arr)
@@ -75,6 +77,7 @@ func TestConvertSliceUUID(t *testing.T) {
 }
 
 func TestConvertMap(t *testing.T) {
+	t.Skip("Skipping till https://github.com/vanadium/build/issues/36 is resolved")
 	d := Dict{
 		"number": int64(42),
 		"text":   "hello gopher",

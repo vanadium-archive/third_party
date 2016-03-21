@@ -7,4 +7,7 @@ Description:
 Gatt is a Go package for building Bluetooth Low Energy peripherals
 
 Local Modifications:
-Modified xpc/xpc_darwin_test.go to get tests to pass.  This will be upstreamed shortly.
+- Modified xpc/xpc_darwin_test.go to get tests to pass.  This will be upstreamed shortly.
+- Disabled tests in xpc/xpc_darwin_test.go because of https://github.com/paypal/gatt/issues/64
+  which is okay for now since we aren't actively using paypal/gatt on OS X, but should be changed
+  at some point.
