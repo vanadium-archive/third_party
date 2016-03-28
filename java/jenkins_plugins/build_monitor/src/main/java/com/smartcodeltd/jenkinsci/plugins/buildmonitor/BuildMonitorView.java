@@ -49,10 +49,13 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -201,8 +204,12 @@ public class BuildMonitorView extends ListView {
   }
 
   private String getOncall() {
-    ProcessBuilder ps = new ProcessBuilder("ssh", "veyron@git-mirror",
-        "JIRI_ROOT=/home/veyron/vanadium", "/home/veyron/vanadium/devtools/bin/jiri-oncall");
+    String postSubmitRoot =
+        "/usr/local/google/home/veyron/.jenkins/jobs/vanadium-postsubmit-poll/workspace/root";
+    Path path = Paths.get(postSubmitRoot, ".jiri_root/bin/jiri-oncall");
+    ProcessBuilder ps = new ProcessBuilder(path.toString());
+    Map<String, String> env = ps.environment();
+    env.put("JIRI_ROOT", postSubmitRoot);
     ps.redirectErrorStream(true);
     String output = "";
     BufferedReader in = null;
