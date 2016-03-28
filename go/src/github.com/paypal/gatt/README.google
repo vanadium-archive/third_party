@@ -11,3 +11,6 @@ Local Modifications:
 - Disabled tests in xpc/xpc_darwin_test.go because of https://github.com/paypal/gatt/issues/64
   which is okay for now since we aren't actively using paypal/gatt on OS X, but should be changed
   at some point.
+- Modified central_linux.go to make Notifier.Write return the correct integer value of
+  bytes written. It was incorrectly including framing bytes in the returned value. The upstream
+  pull request is at https://github.com/paypal/gatt/pull/69.
