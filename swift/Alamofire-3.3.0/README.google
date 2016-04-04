@@ -1,0 +1,10 @@
+URL: https://github.com/Alamofire/Alamofire/archive/3.3.0.zip
+Version: 3.3.0 (commit fad7390adcaa38480cd44cd62dfbd8506af92151)
+License: MIT
+License File: LICENSE
+
+Description:
+An HTTP networking library for iOS and OS X.
+
+Local Modifications:
+None
