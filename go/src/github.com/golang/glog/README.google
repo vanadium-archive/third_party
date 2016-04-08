@@ -1,0 +1,10 @@
+URL: https://github.com/golang/protobuf/archive/23def4e6c14b4da8ac2ed8007337bc5eb5007998.zip
+Version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+License: Apache 2.0
+License File: LICENSE
+
+Description:
+Leveled execution logs for Go.
+
+Local Modifications:
+No modifications.

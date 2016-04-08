@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/lDyElxcTuD_AINzagoHaFK_1_Y4\"",
+ "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/WRSrXd8ZFNmuEU1-lWdcTz7dfu4\"",
  "discoveryVersion": "v1",
  "id": "fitness:v1",
  "name": "fitness",
  "version": "v1",
- "revision": "20150222",
+ "revision": "20151021",
  "title": "Fitness",
  "description": "Google Fit API",
  "ownerDomain": "google.com",
@@ -91,6 +91,138 @@
   }
  },
  "schemas": {
+  "AggregateBucket": {
+   "id": "AggregateBucket",
+   "type": "object",
+   "properties": {
+    "activity": {
+     "type": "integer",
+     "description": "Available for Bucket.Type.ACTIVITY_TYPE, Bucket.Type.ACTIVITY_SEGMENT",
+     "format": "int32"
+    },
+    "dataset": {
+     "type": "array",
+     "description": "There will be one dataset per AggregateBy in the request.",
+     "items": {
+      "$ref": "Dataset"
+     }
+    },
+    "endTimeMillis": {
+     "type": "string",
+     "description": "The end time for the aggregated data, in milliseconds since epoch, inclusive.",
+     "format": "int64"
+    },
+    "session": {
+     "$ref": "Session",
+     "description": "Available for Bucket.Type.SESSION"
+    },
+    "startTimeMillis": {
+     "type": "string",
+     "description": "The start time for the aggregated data, in milliseconds since epoch, inclusive.",
+     "format": "int64"
+    },
+    "type": {
+     "type": "string",
+     "description": "The type of a bucket signifies how the data aggregation is performed in the bucket.",
+     "enum": [
+      "activitySegment",
+      "activityType",
+      "session",
+      "time",
+      "unknown"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      "",
+      "",
+      ""
+     ]
+    }
+   }
+  },
+  "AggregateBy": {
+   "id": "AggregateBy",
+   "type": "object",
+   "description": "The specification of which data to aggregate.",
+   "properties": {
+    "dataSourceId": {
+     "type": "string",
+     "description": "A data source ID to aggregate. Mutually exclusive of dataTypeName. Only data from the specified data source ID will be included in the aggregation. The dataset in the response will have the same data source ID."
+    },
+    "dataTypeName": {
+     "type": "string",
+     "description": "The data type to aggregate. All data sources providing this data type will contribute data to the aggregation. The response will contain a single dataset for this data type name. The dataset will have a data source ID of derived:com.google.:com.google.android.gms:aggregated"
+    }
+   }
+  },
+  "AggregateRequest": {
+   "id": "AggregateRequest",
+   "type": "object",
+   "properties": {
+    "aggregateBy": {
+     "type": "array",
+     "description": "The specification of data to be aggregated. At least one aggregateBy spec must be provided. All data that is specified will be aggregated using the same bucketing criteria. There will be one dataset in the response for every aggregateBy spec.",
+     "items": {
+      "$ref": "AggregateBy"
+     },
+     "annotations": {
+      "required": [
+       "fitness.users.dataset.aggregate"
+      ]
+     }
+    },
+    "bucketByActivitySegment": {
+     "$ref": "BucketByActivity",
+     "description": "Specifies that data be aggregated each activity segment recored for a user. Similar to bucketByActivitySegment, but bucketing is done for each activity segment rather than all segments of the same type. Mutually exclusive of other bucketing specifications."
+    },
+    "bucketByActivityType": {
+     "$ref": "BucketByActivity",
+     "description": "Specifies that data be aggregated by the type of activity being performed when the data was recorded. All data that was recorded during a certain activity type (for the given time range) will be aggregated into the same bucket. Data that was recorded while the user was not active will not be included in the response. Mutually exclusive of other bucketing specifications."
+    },
+    "bucketBySession": {
+     "$ref": "BucketBySession",
+     "description": "Specifies that data be aggregated by user sessions. Data that does not fall within the time range of a session will not be included in the response. Mutually exclusive of other bucketing specifications."
+    },
+    "bucketByTime": {
+     "$ref": "BucketByTime",
+     "description": "Specifies that data be aggregated by a single time interval. Mutually exclusive of other bucketing specifications."
+    },
+    "endTimeMillis": {
+     "type": "string",
+     "description": "The end of a window of time. Data that intersects with this time window will be aggregated. The time is in milliseconds since epoch, inclusive.",
+     "format": "int64",
+     "annotations": {
+      "required": [
+       "fitness.users.dataset.aggregate"
+      ]
+     }
+    },
+    "startTimeMillis": {
+     "type": "string",
+     "description": "The start of a window of time. Data that intersects with this time window will be aggregated. The time is in milliseconds since epoch, inclusive.",
+     "format": "int64",
+     "annotations": {
+      "required": [
+       "fitness.users.dataset.aggregate"
+      ]
+     }
+    }
+   }
+  },
+  "AggregateResponse": {
+   "id": "AggregateResponse",
+   "type": "object",
+   "properties": {
+    "bucket": {
+     "type": "array",
+     "description": "A list of buckets containing the aggregated data.",
+     "items": {
+      "$ref": "AggregateBucket"
+     }
+    }
+   }
+  },
   "Application": {
    "id": "Application",
    "type": "object",
@@ -118,6 +250,43 @@
     "version": {
      "type": "string",
      "description": "Version of the application. You should update this field whenever the application changes in a way that affects the computation of the data."
+    }
+   }
+  },
+  "BucketByActivity": {
+   "id": "BucketByActivity",
+   "type": "object",
+   "properties": {
+    "activityDataSourceId": {
+     "type": "string",
+     "description": "The default activity stream will be used if a specific activityDataSourceId is not specified."
+    },
+    "minDurationMillis": {
+     "type": "string",
+     "description": "Specifies that only activity segments of duration longer than minDurationMillis are considered and used as a container for aggregated data.",
+     "format": "int64"
+    }
+   }
+  },
+  "BucketBySession": {
+   "id": "BucketBySession",
+   "type": "object",
+   "properties": {
+    "minDurationMillis": {
+     "type": "string",
+     "description": "Specifies that only sessions of duration longer than minDurationMillis are considered and used as a container for aggregated data.",
+     "format": "int64"
+    }
+   }
+  },
+  "BucketByTime": {
+   "id": "BucketByTime",
+   "type": "object",
+   "properties": {
+    "durationMillis": {
+     "type": "string",
+     "description": "Specifies that result buckets aggregate data by exactly durationMillis time frames. Time frames that contain no data will be included in the response with an empty dataset.",
+     "format": "int64"
     }
    }
   },
@@ -299,10 +468,20 @@
      "type": "string",
      "description": "The different supported formats for each field in a data type.",
      "enum": [
+      "blob",
+      "floatList",
       "floatPoint",
-      "integer"
+      "integer",
+      "integerList",
+      "map",
+      "string"
      ],
      "enumDescriptions": [
+      "",
+      "",
+      "",
+      "",
+      "",
       "",
       ""
      ],
@@ -490,11 +669,28 @@
     }
    }
   },
+  "MapValue": {
+   "id": "MapValue",
+   "type": "object",
+   "description": "Holder object for the value of an entry in a map field of a data point.\n\nA map value supports a subset of the formats that the regular Value supports.",
+   "properties": {
+    "fpVal": {
+     "type": "number",
+     "description": "Floating point value.",
+     "format": "double"
+    }
+   }
+  },
   "Session": {
    "id": "Session",
    "type": "object",
    "description": "Sessions contain metadata, such as a user-friendly name and time interval information.",
    "properties": {
+    "activeTimeMillis": {
+     "type": "string",
+     "description": "Session active time. While start_time_millis and end_time_millis define the full session time, the active time can be shorter and specified by active_time_millis. If the inactive time during the session is known, it should also be inserted via a com.google.activity.segment data point with a STILL activity value",
+     "format": "int64"
+    },
     "activityType": {
      "type": "integer",
      "description": "The type of activity this session represents.",
@@ -570,13 +766,36 @@
    "properties": {
     "fpVal": {
      "type": "number",
-     "description": "Floating point value. When this is set, intVal must not be set.",
+     "description": "Floating point value. When this is set, other values must not be set.",
      "format": "double"
     },
     "intVal": {
      "type": "integer",
-     "description": "Integer value. When this is set, fpVal must not be set.",
+     "description": "Integer value. When this is set, other values must not be set.",
      "format": "int32"
+    },
+    "mapVal": {
+     "type": "array",
+     "description": "Map value. The valid key space and units for the corresponding value of each entry should be documented as part of the data type definition. Keys should be kept small whenever possible. Data streams with large keys and high data frequency may be down sampled.",
+     "items": {
+      "$ref": "ValueMapValEntry"
+     }
+    },
+    "stringVal": {
+     "type": "string",
+     "description": "String value. When this is set, other values must not be set. Strings should be kept small whenever possible. Data streams with large string values and high data frequency may be down sampled."
+    }
+   }
+  },
+  "ValueMapValEntry": {
+   "id": "ValueMapValEntry",
+   "type": "object",
+   "properties": {
+    "key": {
+     "type": "string"
+    },
+    "value": {
+     "$ref": "MapValue"
     }
    }
   }
@@ -605,6 +824,38 @@
        "request": {
         "$ref": "DataSource"
        },
+       "response": {
+        "$ref": "DataSource"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/fitness.activity.write",
+        "https://www.googleapis.com/auth/fitness.body.write",
+        "https://www.googleapis.com/auth/fitness.location.write"
+       ]
+      },
+      "delete": {
+       "id": "fitness.users.dataSources.delete",
+       "path": "{userId}/dataSources/{dataSourceId}",
+       "httpMethod": "DELETE",
+       "description": "Delete the data source if there are no datapoints associated with it",
+       "parameters": {
+        "dataSourceId": {
+         "type": "string",
+         "description": "The data stream ID of the data source to delete.",
+         "required": true,
+         "location": "path"
+        },
+        "userId": {
+         "type": "string",
+         "description": "Retrieve a data source for the person identified. Use me to indicate the authenticated user. Only me is supported at this time.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "userId",
+        "dataSourceId"
+       ],
        "response": {
         "$ref": "DataSource"
        },
@@ -907,6 +1158,41 @@
          ]
         }
        }
+      }
+     }
+    },
+    "dataset": {
+     "methods": {
+      "aggregate": {
+       "id": "fitness.users.dataset.aggregate",
+       "path": "{userId}/dataset:aggregate",
+       "httpMethod": "POST",
+       "description": "Aggregates data of a certain type or stream into buckets divided by a given type of boundary. Multiple data sets of multiple types and from multiple sources can be aggreated into exactly one bucket type per request.",
+       "parameters": {
+        "userId": {
+         "type": "string",
+         "description": "Aggregate data for the person identified. Use me to indicate the authenticated user. Only me is supported at this time.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "userId"
+       ],
+       "request": {
+        "$ref": "AggregateRequest"
+       },
+       "response": {
+        "$ref": "AggregateResponse"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/fitness.activity.read",
+        "https://www.googleapis.com/auth/fitness.activity.write",
+        "https://www.googleapis.com/auth/fitness.body.read",
+        "https://www.googleapis.com/auth/fitness.body.write",
+        "https://www.googleapis.com/auth/fitness.location.read",
+        "https://www.googleapis.com/auth/fitness.location.write"
+       ]
       }
      }
     },

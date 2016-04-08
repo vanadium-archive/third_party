@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"go/format"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -20,12 +21,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 )
 
-// goGenVersion is the version of the Go code generator
-const goGenVersion = "0.5"
+const googleDiscoveryURL = "https://www.googleapis.com/discovery/v1/apis"
 
 var (
 	apiToGenerate = flag.String("api", "*", "The API ID to generate, like 'tasks:v1'. A value of '*' means all.")
@@ -33,14 +34,20 @@ var (
 	genDir        = flag.String("gendir", "", "Directory to use to write out generated Go files")
 	build         = flag.Bool("build", false, "Compile generated packages.")
 	install       = flag.Bool("install", false, "Install generated packages.")
-	apisURL       = flag.String("discoveryurl", "https://www.googleapis.com/discovery/v1/apis", "URL to root discovery document")
+	apisURL       = flag.String("discoveryurl", googleDiscoveryURL, "URL to root discovery document")
 
 	publicOnly = flag.Bool("publiconly", true, "Only build public, released APIs. Only applicable for Google employees.")
 
-	jsonFile     = flag.String("api_json_file", "", "If non-empty, the path to a local file on disk containing the API to generate. Exclusive with setting --api.")
-	output       = flag.String("output", "", "(optional) Path to source output file. If not specified, the API name and version are used to construct an output path (e.g. tasks/v1).")
-	googleAPIPkg = flag.String("googleapi_pkg", "google.golang.org/api/googleapi", "Go package path of the 'googleapi' support package.")
-	contextPkg   = flag.String("context_pkg", "golang.org/x/net/context", "Go package path of the 'context' support package.")
+	jsonFile       = flag.String("api_json_file", "", "If non-empty, the path to a local file on disk containing the API to generate. Exclusive with setting --api.")
+	output         = flag.String("output", "", "(optional) Path to source output file. If not specified, the API name and version are used to construct an output path (e.g. tasks/v1).")
+	apiPackageBase = flag.String("api_pkg_base", "google.golang.org/api", "Go package prefix to use for all generated APIs.")
+	baseURL        = flag.String("base_url", "", "(optional) Override the default service API URL. If empty, the service's root URL will be used.")
+	headerPath     = flag.String("header_path", "", "If non-empty, prepend the contents of this file to generated services.")
+
+	contextHTTPPkg = flag.String("ctxhttp_pkg", "golang.org/x/net/context/ctxhttp", "Go package path of the 'ctxhttp' package.")
+	contextPkg     = flag.String("context_pkg", "golang.org/x/net/context", "Go package path of the 'context' package.")
+	gensupportPkg  = flag.String("gensupport_pkg", "google.golang.org/api/gensupport", "Go package path of the 'api/gensupport' support package.")
+	googleapiPkg   = flag.String("googleapi_pkg", "google.golang.org/api/googleapi", "Go package path of the 'api/googleapi' support package.")
 )
 
 // API represents an API to generate, as well as its state while it's
@@ -50,19 +57,20 @@ type API struct {
 	Name          string `json:"name"`
 	Version       string `json:"version"`
 	Title         string `json:"title"`
-	DiscoveryLink string `json:"discoveryLink"` // relative
+	DiscoveryLink string `json:"discoveryRestUrl"` // absolute
 	RootURL       string `json:"rootUrl"`
 	ServicePath   string `json:"servicePath"`
 	Preferred     bool   `json:"preferred"`
 
 	m map[string]interface{}
 
-	forceJSON []byte // if non-nil, the JSON schema file. else fetched.
-	usedNames namePool
-	schemas   map[string]*Schema // apiName -> schema
+	forceJSON     []byte // if non-nil, the JSON schema file. else fetched.
+	usedNames     namePool
+	schemas       map[string]*Schema // apiName -> schema
+	responseTypes map[string]bool
 
 	p  func(format string, args ...interface{}) // print raw
-	pn func(format string, args ...interface{}) // print with indent and newline
+	pn func(format string, args ...interface{}) // print with newline
 }
 
 func (a *API) sortedSchemaNames() (names []string) {
@@ -75,6 +83,20 @@ func (a *API) sortedSchemaNames() (names []string) {
 
 type AllAPIs struct {
 	Items []*API `json:"items"`
+}
+
+func (all *AllAPIs) addAPI(api string) {
+	parts := strings.Split(api, ":")
+	if len(parts) != 2 {
+		panicf("malformed API name: %q", api)
+	}
+	apiName := parts[0]
+	apiVersion := parts[1]
+	all.Items = append(all.Items, &API{
+		ID:      api,
+		Name:    apiName,
+		Version: apiVersion,
+	})
 }
 
 type generateError struct {
@@ -148,13 +170,18 @@ func main() {
 }
 
 func (a *API) want() bool {
-	if strings.Contains(a.ID, "buzz") {
-		// R.I.P.
-		return false
+	if *jsonFile != "" {
+		// Return true early, before calling a.JSONFile()
+		// which will require a GOPATH be set.  This is for
+		// integration with Google's build system genrules
+		// where there is no GOPATH.
+		return true
 	}
-	if strings.Contains(a.ID, "fusiontables") {
-		// TODO(bradfitz): broken codegen.
-		return false
+	// Skip this API if we're in cached mode and the files don't exist on disk.
+	if *useCache {
+		if _, err := os.Stat(a.JSONFile()); os.IsNotExist(err) {
+			return false
+		}
 	}
 	return *apiToGenerate == "*" || *apiToGenerate == a.ID
 }
@@ -164,20 +191,30 @@ func getAPIs() []*API {
 		return getAPIsFromFile()
 	}
 	var all AllAPIs
-	disco := slurpURL(*apisURL)
+	var disco []byte
+	apiListFile := filepath.Join(genDirRoot(), "api-list.json")
+	if *useCache {
+		if !*publicOnly {
+			log.Fatalf("-cached=true not compatible with -publiconly=false")
+		}
+		var err error
+		disco, err = ioutil.ReadFile(apiListFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		disco = slurpURL(*apisURL)
+		if *publicOnly {
+			if err := writeFile(apiListFile, disco); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 	if err := json.Unmarshal(disco, &all); err != nil {
-		log.Fatalf("error decoding JSON in %s: %v", apisURL, err)
+		log.Fatalf("error decoding JSON in %s: %v", *apisURL, err)
 	}
 	if !*publicOnly && *apiToGenerate != "*" {
-		parts := strings.SplitN(*apiToGenerate, ":", 2)
-		apiName := parts[0]
-		apiVersion := parts[1]
-		all.Items = append(all.Items, &API{
-			ID:            *apiToGenerate,
-			Name:          apiName,
-			Version:       apiVersion,
-			DiscoveryLink: fmt.Sprintf("./apis/%s/%s/rest", apiName, apiVersion),
-		})
+		all.addAPI(*apiToGenerate)
 	}
 	return all.Items
 }
@@ -218,27 +255,26 @@ func writeFile(file string, contents []byte) error {
 	if err == nil && (bytes.Equal(existing, contents) || basicallyEqual(existing, contents)) {
 		return nil
 	}
+	outdir := filepath.Dir(file)
+	if err = os.MkdirAll(outdir, 0755); err != nil {
+		return fmt.Errorf("failed to Mkdir %s: %v", outdir, err)
+	}
 	return ioutil.WriteFile(file, contents, 0644)
 }
 
-var etagLine = regexp.MustCompile(`(?m)^\s+"etag": ".+\n`)
+var ignoreLines = regexp.MustCompile(`(?m)^\s+"(?:etag|revision)": ".+\n`)
 
 // basicallyEqual reports whether a and b are equal except for boring
 // differences like ETag updates.
 func basicallyEqual(a, b []byte) bool {
-	return etagLine.Match(a) && etagLine.Match(b) &&
-		bytes.Equal(etagLine.ReplaceAll(a, nil), etagLine.ReplaceAll(b, nil))
+	return ignoreLines.Match(a) && ignoreLines.Match(b) &&
+		bytes.Equal(ignoreLines.ReplaceAll(a, nil), ignoreLines.ReplaceAll(b, nil))
 }
 
 func slurpURL(urlStr string) []byte {
-	diskFile := filepath.Join(os.TempDir(), "google-api-cache-"+url.QueryEscape(urlStr))
 	if *useCache {
-		bs, err := ioutil.ReadFile(diskFile)
-		if err == nil && len(bs) > 0 {
-			return bs
-		}
+		log.Fatalf("Invalid use of slurpURL in cached mode for URL %s", urlStr)
 	}
-
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -254,11 +290,6 @@ func slurpURL(urlStr string) []byte {
 	if err != nil {
 		log.Fatalf("Error reading body of URL %s: %v", urlStr, err)
 	}
-	if *useCache {
-		if err := ioutil.WriteFile(diskFile, bs, 0666); err != nil {
-			log.Printf("Warning: failed to write JSON of %s to disk file %s: %v", urlStr, diskFile, err)
-		}
-	}
 	return bs
 }
 
@@ -270,6 +301,26 @@ func panicf(format string, args ...interface{}) {
 // preferred name
 type namePool struct {
 	m map[string]bool // lazily initialized
+}
+
+// oddVersionRE matches unusual API names like directory_v1.
+var oddVersionRE = regexp.MustCompile(`^(.+)_(v[\d\.]+)$`)
+
+// renameVersion conditionally rewrites the provided version such
+// that the final path component of the import path doesn't look
+// like a Go identifier. This keeps the consistency that import paths
+// for the generated Go packages look like:
+//     google.golang.org/api/NAME/v<version>
+// and have package NAME.
+// See https://github.com/google/google-api-go-client/issues/78
+func renameVersion(version string) string {
+	if version == "alpha" || version == "beta" {
+		return "v0." + version
+	}
+	if m := oddVersionRE.FindStringSubmatch(version); m != nil {
+		return m[1] + "/" + m[2]
+	}
+	return version
 }
 
 func (p *namePool) Get(preferred string) string {
@@ -286,26 +337,26 @@ func (p *namePool) Get(preferred string) string {
 	return name
 }
 
-func (a *API) SourceDir() string {
-	if *genDir == "" {
-		paths := filepath.SplitList(os.Getenv("GOPATH"))
-		if len(paths) > 0 && paths[0] != "" {
-			*genDir = filepath.Join(paths[0], "src", "google.golang.org", "api")
-		}
+func genDirRoot() string {
+	if *genDir != "" {
+		return *genDir
 	}
-	return filepath.Join(*genDir, a.Package(), a.Version)
+	paths := filepath.SplitList(os.Getenv("GOPATH"))
+	if len(paths) == 0 {
+		log.Fatalf("No GOPATH set.")
+	}
+	return filepath.Join(paths[0], "src", "google.golang.org", "api")
+}
+
+func (a *API) SourceDir() string {
+	return filepath.Join(genDirRoot(), a.Package(), renameVersion(a.Version))
 }
 
 func (a *API) DiscoveryURL() string {
 	if a.DiscoveryLink == "" {
 		log.Fatalf("API %s has no DiscoveryLink", a.ID)
 	}
-	base, _ := url.Parse(*apisURL)
-	u, err := base.Parse(a.DiscoveryLink)
-	if err != nil {
-		log.Fatalf("API %s has bogus DiscoveryLink %s: %v", a.ID, a.DiscoveryLink, err)
-	}
-	return u.String()
+	return a.DiscoveryLink
 }
 
 func (a *API) Package() string {
@@ -313,7 +364,7 @@ func (a *API) Package() string {
 }
 
 func (a *API) Target() string {
-	return fmt.Sprintf("google.golang.org/api/%s/%s", a.Package(), a.Version)
+	return fmt.Sprintf("%s/%s/%s", *apiPackageBase, a.Package(), renameVersion(a.Version))
 }
 
 // GetName returns a free top-level function/type identifier in the package.
@@ -323,10 +374,16 @@ func (a *API) GetName(preferred string) string {
 }
 
 func (a *API) apiBaseURL() string {
-	if a.RootURL != "" {
-		return a.RootURL + a.ServicePath
+	var base, rel string
+	switch {
+	case *baseURL != "":
+		base, rel = *baseURL, jstr(a.m, "basePath")
+	case a.RootURL != "":
+		base, rel = a.RootURL, a.ServicePath
+	default:
+		base, rel = *apisURL, jstr(a.m, "basePath")
 	}
-	return resolveRelative(*apisURL, jstr(a.m, "basePath"))
+	return resolveRelative(base, rel)
 }
 
 func (a *API) needsDataWrapper() bool {
@@ -342,21 +399,32 @@ func (a *API) jsonBytes() []byte {
 	if v := a.forceJSON; v != nil {
 		return v
 	}
+	if *useCache {
+		slurp, err := ioutil.ReadFile(a.JSONFile())
+		if err != nil {
+			log.Fatal(err)
+		}
+		return slurp
+	}
 	return slurpURL(a.DiscoveryURL())
 }
 
+func (a *API) JSONFile() string {
+	return filepath.Join(a.SourceDir(), a.Package()+"-api.json")
+}
+
 func (a *API) WriteGeneratedCode() error {
-	outdir := a.SourceDir()
-	err := os.MkdirAll(outdir, 0755)
-	if err != nil {
-		return fmt.Errorf("failed to Mkdir %s: %v", outdir, err)
-	}
-
-	pkg := a.Package()
-	writeFile(filepath.Join(outdir, a.Package()+"-api.json"), a.jsonBytes())
-
 	genfilename := *output
 	if genfilename == "" {
+		if err := writeFile(a.JSONFile(), a.jsonBytes()); err != nil {
+			return err
+		}
+		outdir := a.SourceDir()
+		err := os.MkdirAll(outdir, 0755)
+		if err != nil {
+			return fmt.Errorf("failed to Mkdir %s: %v", outdir, err)
+		}
+		pkg := a.Package()
 		genfilename = filepath.Join(outdir, pkg+"-gen.go")
 	}
 
@@ -380,8 +448,14 @@ func (a *API) GenerateCode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Because the Discovery JSON may not have all the fields populated that the actual
+	// API JSON has (e.g. rootUrl and servicePath), the API should be repopulated from
+	// the JSON here.
+	if err := json.Unmarshal(jsonBytes, a); err != nil {
+		return nil, err
+	}
 
-	// Buffer the output in memory, for gofmt'ing later in the defer.
+	// Buffer the output in memory, for gofmt'ing later.
 	var buf bytes.Buffer
 	a.p = func(format string, args ...interface{}) {
 		_, err := fmt.Fprintf(&buf, format, args...)
@@ -392,42 +466,67 @@ func (a *API) GenerateCode() ([]byte, error) {
 	a.pn = func(format string, args ...interface{}) {
 		a.p(format+"\n", args...)
 	}
+	wf := func(path string) error {
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		_, err = io.Copy(&buf, f)
+		return err
+	}
 
 	p, pn := a.p, a.pn
 	reslist := a.Resources(a.m, "")
 
-	p("// Package %s provides access to the %s.\n", pkg, jstr(m, "title"))
+	if *headerPath != "" {
+		if err := wf(*headerPath); err != nil {
+			return nil, err
+		}
+	}
+
+	pn("// Package %s provides access to the %s.", pkg, jstr(m, "title"))
 	docsLink = jstr(m, "documentationLink")
 	if docsLink != "" {
-		p("//\n")
-		p("// See %s\n", docsLink)
+		pn("//")
+		pn("// See %s", docsLink)
 	}
-	p("//\n// Usage example:\n")
-	p("//\n")
-	p("//   import %q\n", a.Target())
-	p("//   ...\n")
-	p("//   %sService, err := %s.New(oauthHttpClient)\n", pkg, pkg)
+	pn("//\n// Usage example:")
+	pn("//")
+	pn("//   import %q", a.Target())
+	pn("//   ...")
+	pn("//   %sService, err := %s.New(oauthHttpClient)", pkg, pkg)
 
-	p("package %s\n", pkg)
+	pn("package %s // import %q", pkg, a.Target())
 	p("\n")
-	p("import (\n")
-	for _, pkg := range []string{
-		"bytes",
-		*googleAPIPkg,
-		"encoding/json",
-		"errors",
-		"fmt",
-		"io",
-		"net/http",
-		"net/url",
-		"strconv",
-		"strings",
-		*contextPkg,
+	pn("import (")
+	for _, imp := range []struct {
+		pkg   string
+		lname string
+	}{
+		{"bytes", ""},
+		{"encoding/json", ""},
+		{"errors", ""},
+		{"fmt", ""},
+		{"io", ""},
+		{"net/http", ""},
+		{"net/url", ""},
+		{"strconv", ""},
+		{"strings", ""},
+		{*contextHTTPPkg, "ctxhttp"},
+		{*contextPkg, "context"},
+		{*gensupportPkg, "gensupport"},
+		{*googleapiPkg, "googleapi"},
 	} {
-		p("\t%q\n", pkg)
+		if imp.lname == "" {
+			pn("  %q", imp.pkg)
+		} else {
+			pn("  %s %q", imp.lname, imp.pkg)
+		}
 	}
-	p(")\n\n")
-	pn("// Always reference these packages, just in case the auto-generated code")
+	pn(")")
+	pn("\n// Always reference these packages, just in case the auto-generated code")
 	pn("// below doesn't.")
 	pn("var _ = bytes.NewBuffer")
 	pn("var _ = strconv.Itoa")
@@ -435,16 +534,17 @@ func (a *API) GenerateCode() ([]byte, error) {
 	pn("var _ = json.NewDecoder")
 	pn("var _ = io.Copy")
 	pn("var _ = url.Parse")
+	pn("var _ = gensupport.MarshalJSON")
 	pn("var _ = googleapi.Version")
 	pn("var _ = errors.New")
 	pn("var _ = strings.Replace")
-	pn("var _ = context.Background")
+	pn("var _ = context.Canceled")
+	pn("var _ = ctxhttp.Do")
 	pn("")
 	pn("const apiId = %q", jstr(m, "id"))
 	pn("const apiName = %q", jstr(m, "name"))
 	pn("const apiVersion = %q", jstr(m, "version"))
-	p("const basePath = %q\n", a.apiBaseURL())
-	p("\n")
+	pn("const basePath = %q", a.apiBaseURL())
 
 	a.generateScopeConstants()
 
@@ -459,20 +559,33 @@ func (a *API) GenerateCode() ([]byte, error) {
 	pn("}")
 
 	a.GetName("Service") // ignore return value; no user-defined names yet
-	p("\ntype Service struct {\n")
-	p("\tclient *http.Client\n")
-	p("\tBasePath string // API endpoint base URL\n")
+	pn("\ntype Service struct {")
+	pn(" client *http.Client")
+	pn(" BasePath string // API endpoint base URL")
+	pn(" UserAgent string // optional additional User-Agent fragment")
 
 	for _, res := range reslist {
-		p("\n\t%s\t*%s\n", res.GoField(), res.GoType())
+		pn("\n\t%s\t*%s", res.GoField(), res.GoType())
 	}
-	p("}\n")
+	pn("}")
+	pn("\nfunc (s *Service) userAgent() string {")
+	pn(` if s.UserAgent == "" { return googleapi.UserAgent }`)
+	pn(` return googleapi.UserAgent + " " + s.UserAgent`)
+	pn("}\n")
 
 	for _, res := range reslist {
 		res.generateType()
 	}
 
 	a.PopulateSchemas()
+
+	a.responseTypes = make(map[string]bool)
+	for _, meth := range a.APIMethods() {
+		meth.cacheResponseTypes(a)
+	}
+	for _, res := range reslist {
+		res.cacheResponseTypes(a)
+	}
 
 	for _, name := range a.sortedSchemaNames() {
 		a.schemas[name].writeSchemaCode(a)
@@ -507,8 +620,8 @@ func (a *API) generateScopeConstants() {
 		return
 	}
 
-	a.p("// OAuth2 scopes used by this API.\n")
-	a.p("const (\n")
+	a.pn("// OAuth2 scopes used by this API.")
+	a.pn("const (")
 	n := 0
 	for _, scopeName := range sortedKeys(scopes) {
 		mi := scopes[scopeName]
@@ -520,7 +633,7 @@ func (a *API) generateScopeConstants() {
 		if des := jstr(mi.(map[string]interface{}), "description"); des != "" {
 			a.p("%s", asComment("\t", des))
 		}
-		a.p("\t%s = %q\n", ident, scopeName)
+		a.pn("\t%s = %q", ident, scopeName)
 	}
 	a.p(")\n\n")
 }
@@ -573,8 +686,146 @@ func (p *Property) APIName() string {
 	return p.apiName
 }
 
+func (p *Property) Default() string {
+	return jstr(p.m, "default")
+}
+
 func (p *Property) Description() string {
 	return jstr(p.m, "description")
+}
+
+func (p *Property) Enum() ([]string, bool) {
+	if enums := jstrlist(p.m, "enum"); enums != nil {
+		return enums, true
+	}
+	// Check if this has an array of string enums.
+	if items := jobj(p.m, "items"); items != nil {
+		if enums := jstrlist(items, "enum"); enums != nil && jstr(items, "type") == "string" {
+			return enums, true
+		}
+	}
+	return nil, false
+}
+
+func (p *Property) EnumDescriptions() []string {
+	if desc := jstrlist(p.m, "enumDescriptions"); desc != nil {
+		return desc
+	}
+	// Check if this has an array of string enum descriptions.
+	if items := jobj(p.m, "items"); items != nil {
+		if desc := jstrlist(items, "enumDescriptions"); desc != nil {
+			return desc
+		}
+	}
+	return nil
+}
+
+func (p *Property) Pattern() (string, bool) {
+	if s, ok := p.m["pattern"].(string); ok {
+		return s, true
+	}
+	return "", false
+}
+
+// A FieldName uniquely identifies a field within a Schema struct for an API.
+type fieldName struct {
+	api    string // The ID of an API.
+	schema string // The Go name of a Schema struct.
+	field  string // The Go name of a field.
+}
+
+// pointerFields is a list of fields that should use a pointer type.
+// This makes it possible to distinguish between a field being unset vs having
+// an empty value.
+var pointerFields = []fieldName{
+	{api: "cloudmonitoring:v2beta2", schema: "Point", field: "BoolValue"},
+	{api: "cloudmonitoring:v2beta2", schema: "Point", field: "DoubleValue"},
+	{api: "cloudmonitoring:v2beta2", schema: "Point", field: "Int64Value"},
+	{api: "cloudmonitoring:v2beta2", schema: "Point", field: "StringValue"},
+	{api: "compute:v1", schema: "MetadataItems", field: "Value"},
+	{api: "content:v2", schema: "AccountUser", field: "Admin"},
+	{api: "datastore:v1beta2", schema: "Property", field: "BlobKeyValue"},
+	{api: "datastore:v1beta2", schema: "Property", field: "BlobValue"},
+	{api: "datastore:v1beta2", schema: "Property", field: "BooleanValue"},
+	{api: "datastore:v1beta2", schema: "Property", field: "DateTimeValue"},
+	{api: "datastore:v1beta2", schema: "Property", field: "DoubleValue"},
+	{api: "datastore:v1beta2", schema: "Property", field: "Indexed"},
+	{api: "datastore:v1beta2", schema: "Property", field: "IntegerValue"},
+	{api: "datastore:v1beta2", schema: "Property", field: "StringValue"},
+	{api: "genomics:v1beta2", schema: "Dataset", field: "IsPublic"},
+	{api: "tasks:v1", schema: "Task", field: "Completed"},
+	{api: "youtube:v3", schema: "ChannelSectionSnippet", field: "Position"},
+}
+
+// forcePointerType reports whether p should be represented as a pointer type in its parent schema struct.
+func (p *Property) forcePointerType() bool {
+	if p.UnfortunateDefault() {
+		return true
+	}
+
+	name := fieldName{api: p.s.api.ID, schema: p.s.GoName(), field: p.GoName()}
+	for _, pf := range pointerFields {
+		if pf == name {
+			return true
+		}
+	}
+	return false
+}
+
+// UnfortunateDefault reports whether p may be set to a zero value, but has a non-zero default.
+func (p *Property) UnfortunateDefault() bool {
+	switch p.Type().AsGo() {
+	default:
+		return false
+
+	case "bool":
+		return p.Default() == "true"
+
+	case "string":
+		if p.Default() == "" {
+			return false
+		}
+		// String fields are considered to "allow" a zero value if either:
+		//  (a) they are an enum, and one of the permitted enum values is the empty string, or
+		//  (b) they have a validation pattern which matches the empty string.
+		pattern, hasPat := p.Pattern()
+		enum, hasEnum := p.Enum()
+		if hasPat && hasEnum {
+			log.Printf("Encountered enum property which also has a pattern: %#v", p)
+			return false // don't know how to handle this, so ignore.
+		}
+		return (hasPat && emptyPattern(pattern)) ||
+			(hasEnum && emptyEnum(enum))
+
+	case "float64", "int64", "uint64", "int32", "uint32":
+		if p.Default() == "" {
+			return false
+		}
+		if f, err := strconv.ParseFloat(p.Default(), 64); err == nil {
+			return f != 0.0
+		}
+		// The default value has an unexpected form.  Whatever it is, it's non-zero.
+		return true
+	}
+}
+
+// emptyPattern reports whether a pattern matches the empty string.
+func emptyPattern(pattern string) bool {
+	if re, err := regexp.Compile(pattern); err == nil {
+		return re.MatchString("")
+	}
+	log.Printf("Encountered bad pattern: %s", pattern)
+	return false
+}
+
+// emptyEnum reports whether a property enum list contains the empty string.
+func emptyEnum(enum []string) bool {
+	for _, val := range enum {
+		if val == "" {
+			return true
+		}
+	}
+	return false
 }
 
 type Type struct {
@@ -643,12 +894,16 @@ func (t *Type) AsGo() string {
 	if typ, ok := t.MapType(); ok {
 		return typ
 	}
-	if t.IsStruct() {
+	isAny := t.IsAny()
+	if t.IsStruct() || isAny {
 		if apiName, ok := t.m["_apiName"].(string); ok {
 			s := t.api.schemas[apiName]
 			if s == nil {
 				panic(fmt.Sprintf("in Type.AsGo, _apiName of %q didn't point to a valid schema; json: %s",
 					apiName, prettyJSON(t.m)))
+			}
+			if isAny {
+				return s.GoName() // interface type; no pointer.
 			}
 			if v := jobj(s.m, "variant"); v != nil {
 				return s.GoName()
@@ -669,6 +924,16 @@ func (t *Type) IsStruct() bool {
 	return t.apiType() == "object"
 }
 
+func (t *Type) IsAny() bool {
+	if t.apiType() == "object" {
+		props := jobj(t.m, "additionalProperties")
+		if props != nil && jstr(props, "type") == "any" {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *Type) Reference() (apiName string, ok bool) {
 	apiName = jstr(t.m, "$ref")
 	ok = apiName != ""
@@ -687,6 +952,9 @@ func (t *Type) MapType() (typ string, ok bool) {
 		return "", false
 	}
 	s := jstr(props, "type")
+	if s == "any" {
+		return "", false
+	}
 	if s == "string" {
 		return "map[string]string", true
 	}
@@ -696,6 +964,9 @@ func (t *Type) MapType() (typ string, ok bool) {
 			if s != "" {
 				return "map[string]" + s, true
 			}
+		}
+		if s == "any" {
+			return "map[string]interface{}", true
 		}
 		log.Printf("Warning: found map to type %q which is not implemented yet.", s)
 		return "", false
@@ -712,6 +983,10 @@ func (t *Type) MapType() (typ string, ok bool) {
 				return "map[string][]" + s, true
 			}
 		}
+		if s == "any" {
+			return "map[string][]interface{}", true
+		}
+
 		log.Printf("Warning: found map of arrays of type %q which is not implemented yet.", s)
 		return "", false
 	}
@@ -893,6 +1168,10 @@ func (s *Schema) GoReturnType() string {
 }
 
 func (s *Schema) writeSchemaCode(api *API) {
+	if s.Type().IsAny() {
+		s.api.pn("\ntype %s interface{}", s.GoName())
+		return
+	}
 	if s.Type().IsStruct() && !s.Type().IsMap() {
 		s.writeSchemaStruct(api)
 		return
@@ -905,16 +1184,16 @@ func (s *Schema) writeSchemaCode(api *API) {
 
 	if destSchema, ok := s.Type().ReferenceSchema(); ok {
 		// Convert it to a struct using embedding.
-		s.api.p("\ntype %s struct {\n", s.GoName())
-		s.api.p("\t%s\n", destSchema.GoName())
-		s.api.p("}\n")
+		s.api.pn("\ntype %s struct {", s.GoName())
+		s.api.pn(" %s", destSchema.GoName())
+		s.api.pn("}")
 		return
 	}
 
 	if s.Type().IsSimple() {
 		apitype := jstr(s.m, "type")
 		typ := mustSimpleTypeConvert(apitype, jstr(s.m, "format"))
-		s.api.p("\ntype %s %s\n", s.GoName(), typ)
+		s.api.pn("\ntype %s %s", s.GoName(), typ)
 		return
 	}
 
@@ -930,8 +1209,8 @@ func (s *Schema) writeVariant(api *API, v map[string]interface{}) {
 	s.api.p("\ntype %s map[string]interface{}\n\n", s.GoName())
 
 	// Write out the "Type" method that identifies the variant type.
-	s.api.p("func (t %s) Type() string {\n", s.GoName())
-	s.api.p("  return googleapi.VariantType(t)\n")
+	s.api.pn("func (t %s) Type() string {", s.GoName())
+	s.api.pn("  return googleapi.VariantType(t)")
 	s.api.p("}\n\n")
 
 	// Write out helper methods to convert each possible variant.
@@ -949,14 +1228,18 @@ func (s *Schema) writeVariant(api *API, v map[string]interface{}) {
 			continue
 		}
 
-		s.api.p("func (t %s) %s() (r %s, ok bool) {\n", s.GoName(), initialCap(val), reftype)
-		s.api.p("  if t.Type() != %q {\n", initialCap(val))
-		s.api.p("    return r, false\n")
-		s.api.p("  }\n")
-		s.api.p("  ok = googleapi.ConvertVariant(map[string]interface{}(t), &r)\n")
-		s.api.p("  return r, ok\n")
+		s.api.pn("func (t %s) %s() (r %s, ok bool) {", s.GoName(), initialCap(val), reftype)
+		s.api.pn(" if t.Type() != %q {", initialCap(val))
+		s.api.pn("  return r, false")
+		s.api.pn(" }")
+		s.api.pn(" ok = googleapi.ConvertVariant(map[string]interface{}(t), &r)")
+		s.api.pn(" return r, ok")
 		s.api.p("}\n\n")
 	}
+}
+
+func (s *Schema) Description() string {
+	return jstr(s.m, "description")
 }
 
 func (s *Schema) writeSchemaStruct(api *API) {
@@ -964,23 +1247,94 @@ func (s *Schema) writeSchemaStruct(api *API) {
 		s.writeVariant(api, v)
 		return
 	}
-	// TODO: description
-	s.api.p("\ntype %s struct {\n", s.GoName())
+	s.api.p("\n")
+	des := s.Description()
+	if des != "" {
+		s.api.p("%s", asComment("", fmt.Sprintf("%s: %s", s.GoName(), des)))
+	}
+	s.api.pn("type %s struct {", s.GoName())
+
+	np := new(namePool)
+	forceSendName := np.Get("ForceSendFields")
+	if s.isResponseType() {
+		np.Get("ServerResponse") // reserve the name
+	}
+
+	firstFieldName := "" // used to store a struct field name for use in documentation.
 	for i, p := range s.properties() {
 		if i > 0 {
 			s.api.p("\n")
 		}
-		pname := p.GoName()
-		if des := p.Description(); des != "" {
+		pname := np.Get(p.GoName())
+		des := p.Description()
+		if des != "" {
 			s.api.p("%s", asComment("\t", fmt.Sprintf("%s: %s", pname, des)))
 		}
+		addFieldValueComments(s.api.p, p, "\t", des != "")
+
 		var extraOpt string
 		if p.Type().isIntAsString() {
 			extraOpt += ",string"
 		}
-		s.api.p("\t%s %s `json:\"%s,omitempty%s\"`\n", pname, p.Type().AsGo(), p.APIName(), extraOpt)
+
+		typ := p.Type().AsGo()
+		if p.forcePointerType() {
+			typ = "*" + typ
+		}
+
+		s.api.pn(" %s %s `json:\"%s,omitempty%s\"`", pname, typ, p.APIName(), extraOpt)
+		if firstFieldName == "" {
+			firstFieldName = pname
+		}
 	}
-	s.api.p("}\n")
+
+	if s.isResponseType() {
+		if firstFieldName != "" {
+			s.api.p("\n")
+		}
+		s.api.p("%s", asComment("\t", "ServerResponse contains the HTTP response code and headers from the server."))
+		s.api.pn(" googleapi.ServerResponse `json:\"-\"`")
+	}
+
+	if firstFieldName == "" {
+		// There were no fields in the struct, so there is no point
+		// adding any custom JSON marshaling code.
+		s.api.pn("}")
+		return
+	}
+
+	commentFmtStr := "%s is a list of field names (e.g. %q) to " +
+		"unconditionally include in API requests. By default, fields " +
+		"with empty values are omitted from API requests. However, " +
+		"any non-pointer, non-interface field appearing in %s will " +
+		"be sent to the server regardless of whether the field is " +
+		"empty or not. This may be used to include empty fields in " +
+		"Patch requests."
+	comment := fmt.Sprintf(commentFmtStr, forceSendName, firstFieldName, forceSendName)
+	s.api.p("\n")
+	s.api.p("%s", asComment("\t", comment))
+
+	s.api.pn("\t%s []string `json:\"-\"`", forceSendName)
+	s.api.pn("}")
+	s.writeSchemaMarshal(forceSendName)
+	return
+}
+
+// writeSchemaMarshal writes a custom MarshalJSON function for s, which allows
+// fields to be explicitly transmitted by listing them in the field identified
+// by forceSendFieldName.
+func (s *Schema) writeSchemaMarshal(forceSendFieldName string) {
+	s.api.pn("func (s *%s) MarshalJSON() ([]byte, error) {", s.GoName())
+	s.api.pn("\ttype noMethod %s", s.GoName())
+	// pass schema as methodless type to prevent subsequent calls to MarshalJSON from recursing indefinitely.
+	s.api.pn("\traw := noMethod(*s)")
+	s.api.pn("\treturn gensupport.MarshalJSON(raw, s.%s)", forceSendFieldName)
+	s.api.pn("}")
+}
+
+// isResponseType returns true for all types that are used as a response.
+func (s *Schema) isResponseType() bool {
+	return s.api.responseTypes["*"+s.goName]
 }
 
 // PopulateSchemas reads all the API types ("schemas") from the JSON file
@@ -1027,7 +1381,7 @@ type Resource struct {
 }
 
 func (r *Resource) generateType() {
-	p, pn := r.api.p, r.api.pn
+	pn := r.api.pn
 	t := r.GoType()
 	pn(fmt.Sprintf("func New%s(s *Service) *%s {", t, t))
 	pn("rs := &%s{s : s}", t)
@@ -1037,15 +1391,24 @@ func (r *Resource) generateType() {
 	pn("return rs")
 	pn("}")
 
-	p("\ntype %s struct {\n", t)
-	p("\ts *Service\n")
+	pn("\ntype %s struct {", t)
+	pn(" s *Service")
 	for _, res := range r.resources {
-		p("\n\t%s\t*%s\n", res.GoField(), res.GoType())
+		pn("\n\t%s\t*%s", res.GoField(), res.GoType())
 	}
-	p("}\n")
+	pn("}")
 
 	for _, res := range r.resources {
 		res.generateType()
+	}
+}
+
+func (r *Resource) cacheResponseTypes(api *API) {
+	for _, meth := range r.Methods() {
+		meth.cacheResponseTypes(api)
+	}
+	for _, res := range r.resources {
+		res.cacheResponseTypes(api)
 	}
 }
 
@@ -1095,6 +1458,11 @@ func (m *Method) Id() string {
 	return jstr(m.m, "id")
 }
 
+func (m *Method) responseType() *Schema {
+	ref := jstr(jobj(m.m, "response"), "$ref")
+	return m.api.schemas[ref]
+}
+
 func (m *Method) supportsMediaUpload() bool {
 	return jobj(m.m, "mediaUpload") != nil
 }
@@ -1103,11 +1471,63 @@ func (m *Method) mediaUploadPath() string {
 	return jstr(jobj(jobj(jobj(m.m, "mediaUpload"), "protocols"), "simple"), "path")
 }
 
+func (m *Method) supportsMediaDownload() bool {
+	if m.supportsMediaUpload() {
+		// storage.objects.insert claims support for download in
+		// addition to upload but attempting to do so fails.
+		// This situation doesn't apply to any other methods.
+		return false
+	}
+	if v, ok := m.m["supportsMediaDownload"].(bool); ok {
+		return v
+	}
+	return false
+}
+
+func (m *Method) supportsPaging() (callField, respField string, ok bool) {
+	if jstr(m.m, "httpMethod") != "GET" {
+		// Probably a POST, like "calendar.acl.watch",
+		// which, despite having a pageToken parameter,
+		// isn't actually a paged method.
+		return "", "", false
+	}
+	if pt := jobj(jobj(m.m, "parameters"), "pageToken"); pt == nil {
+		return "", "", false
+	} else if jbool(pt, "required") {
+		// The page token is a required parameter (e.g. because there is
+		// a separate API call to start an iteration), and so the relevant
+		// call factory method takes the page token instead.
+		return "", "", false
+	}
+
+	// Check that the response type has the next page token.
+	// It may appear under different names.
+	s := m.responseType()
+	if s == nil || !s.Type().IsStruct() {
+		return "", "", false
+	}
+	props := s.properties()
+
+	opts := [...]string{
+		"nextPageToken",
+		"pageToken",
+	}
+	for _, n := range opts {
+		for _, prop := range props {
+			if prop.apiName == n && prop.Type().apiType() == "string" {
+				return "PageToken", prop.GoName(), true
+			}
+		}
+	}
+
+	return "", "", false
+}
+
 func (m *Method) Params() []*Param {
 	if m.params == nil {
-		paramMap := jobj(m.m, "parameters")
-		for _, name := range sortedKeys(paramMap) {
-			mi := paramMap[name]
+		parameters := jobj(m.m, "parameters")
+		for _, name := range sortedKeys(parameters) {
+			mi := parameters[name]
 			pm := mi.(map[string]interface{})
 			m.params = append(m.params, &Param{
 				name:   name,
@@ -1148,16 +1568,20 @@ func (m *Method) OptParams() []*Param {
 	})
 }
 
-func (m *Method) RequiredRepeatedQueryParams() []*Param {
-	return m.grepParams(func(p *Param) bool {
-		return p.IsRequired() && p.IsRepeated() && p.Location() == "query"
-	})
+func (meth *Method) cacheResponseTypes(api *API) {
+	if retType := responseType(api, meth.m); retType != "" && strings.HasPrefix(retType, "*") {
+		api.responseTypes[retType] = true
+	}
 }
 
-func (m *Method) RequiredQueryParams() []*Param {
-	return m.grepParams(func(p *Param) bool {
-		return p.IsRequired() && !p.IsRepeated() && p.Location() == "query"
-	})
+// convertMultiParams builds a []string temp variable from a slice
+// of non-strings and returns the name of the temp variable.
+func convertMultiParams(a *API, param string) string {
+	a.pn(" var %v_ []string", param)
+	a.pn(" for _, v := range %v {", param)
+	a.pn("  %v_ = append(%v_, fmt.Sprint(v))", param, param)
+	a.pn(" }")
+	return param + "_"
 }
 
 func (meth *Method) generateCode() {
@@ -1167,7 +1591,8 @@ func (meth *Method) generateCode() {
 
 	pn("\n// method id %q:", meth.Id())
 
-	retTypeComma := responseType(a, meth.m)
+	retType := responseType(a, meth.m)
+	retTypeComma := retType
 	if retTypeComma != "" {
 		retTypeComma += ", "
 	}
@@ -1180,20 +1605,29 @@ func (meth *Method) generateCode() {
 	}
 	callName := a.GetName(prefix + methodName + "Call")
 
-	p("\ntype %s struct {\n", callName)
-	p("\ts *Service\n")
+	pn("\ntype %s struct {", callName)
+	pn(" s *Service")
 	for _, arg := range args.l {
-		p("\t%s %s\n", arg.goname, arg.gotype)
+		if arg.location != "query" {
+			pn(" %s %s", arg.goname, arg.gotype)
+		}
 	}
-	p("\topt_ map[string]interface{}\n")
+	pn(" urlParams_ gensupport.URLParams")
+	httpMethod := jstr(meth.m, "httpMethod")
+	if httpMethod == "GET" {
+		pn(" ifNoneMatch_ string")
+	}
+
 	if meth.supportsMediaUpload() {
-		p("\tmedia_     io.Reader\n")
-		p("\tresumable_ googleapi.SizeReaderAt\n")
-		p("\tmediaType_ string\n")
-		p("\tctx_       context.Context\n")
-		p("\tprotocol_  string\n")
+		// At most one of media_ and resumbableBuffer_ will be set.
+		pn(" media_     io.Reader")
+		pn(" resumableBuffer_ *gensupport.ResumableBuffer")
+		pn(" mediaType_ string")
+		pn(" mediaSize_  int64 // mediaSize, if known.  Used only for calls to progressUpdater_.")
+		pn(" progressUpdater_  googleapi.ProgressUpdater")
 	}
-	p("}\n")
+	pn(" ctx_ context.Context")
+	pn("}")
 
 	p("\n%s", asComment("", methodName+": "+jstr(meth.m, "description")))
 	if res != nil {
@@ -1204,135 +1638,206 @@ func (meth *Method) generateCode() {
 
 	var servicePtr string
 	if res == nil {
-		p("func (s *Service) %s(%s) *%s {\n", methodName, args, callName)
+		pn("func (s *Service) %s(%s) *%s {", methodName, args, callName)
 		servicePtr = "s"
 	} else {
-		p("func (r *%s) %s(%s) *%s {\n", res.GoType(), methodName, args, callName)
+		pn("func (r *%s) %s(%s) *%s {", res.GoType(), methodName, args, callName)
 		servicePtr = "r.s"
 	}
 
-	p("\tc := &%s{s: %s, opt_: make(map[string]interface{})}\n", callName, servicePtr)
+	pn(" c := &%s{s: %s, urlParams_: make(gensupport.URLParams)}", callName, servicePtr)
 	for _, arg := range args.l {
-		p("\tc.%s = %s\n", arg.goname, arg.goname)
+		// TODO(gmlewis): clean up and consolidate this section.
+		// See: https://code-review.googlesource.com/#/c/3520/18/google-api-go-generator/gen.go
+		if arg.location == "query" {
+			switch arg.gotype {
+			case "[]string":
+				pn(" c.urlParams_.SetMulti(%q, append([]string{}, %v...))", arg.apiname, arg.goname)
+			case "string":
+				pn(" c.urlParams_.Set(%q, %v)", arg.apiname, arg.goname)
+			default:
+				if strings.HasPrefix(arg.gotype, "[]") {
+					tmpVar := convertMultiParams(a, arg.goname)
+					pn(" c.urlParams_.SetMulti(%q, %v)", arg.apiname, tmpVar)
+				} else {
+					pn(" c.urlParams_.Set(%q, fmt.Sprint(%v))", arg.apiname, arg.goname)
+				}
+			}
+			continue
+		}
+		if arg.gotype == "[]string" {
+			pn(" c.%s = append([]string{}, %s...)", arg.goname, arg.goname) // Make a copy of the []string.
+			continue
+		}
+		pn(" c.%s = %s", arg.goname, arg.goname)
 	}
-	p("\treturn c\n")
-	p("}\n")
+	pn(" return c")
+	pn("}")
 
 	for _, opt := range meth.OptParams() {
+		if opt.Location() != "query" {
+			panicf("optional parameter has unsupported location %q", opt.Location())
+		}
 		setter := initialCap(opt.name)
 		des := jstr(opt.m, "description")
 		des = strings.Replace(des, "Optional.", "", 1)
 		des = strings.TrimSpace(des)
 		p("\n%s", asComment("", fmt.Sprintf("%s sets the optional parameter %q: %s", setter, opt.name, des)))
+		addFieldValueComments(p, opt, "", true)
 		np := new(namePool)
 		np.Get("c") // take the receiver's name
 		paramName := np.Get(validGoIdentifer(opt.name))
-		p("func (c *%s) %s(%s %s) *%s {\n", callName, setter, paramName, opt.GoType(), callName)
-		p("c.opt_[%q] = %s\n", opt.name, paramName)
-		p("return c\n")
-		p("}\n")
+		typePrefix := ""
+		if opt.IsRepeated() {
+			typePrefix = "..."
+		}
+		pn("func (c *%s) %s(%s %s%s) *%s {", callName, setter, paramName, typePrefix, opt.GoType(), callName)
+		if opt.IsRepeated() {
+			if opt.GoType() == "string" {
+				pn("c.urlParams_.SetMulti(%q, append([]string{}, %v...))", opt.name, paramName)
+			} else {
+				tmpVar := convertMultiParams(a, paramName)
+				pn(" c.urlParams_.SetMulti(%q, %v)", opt.name, tmpVar)
+			}
+		} else {
+			if opt.GoType() == "string" {
+				pn("c.urlParams_.Set(%q, %v)", opt.name, paramName)
+			} else {
+				pn("c.urlParams_.Set(%q, fmt.Sprint(%v))", opt.name, paramName)
+			}
+		}
+		pn("return c")
+		pn("}")
 	}
 
 	if meth.supportsMediaUpload() {
-		pn("\n// Media specifies the media to upload in a single chunk.")
-		pn("// At most one of Media and ResumableMedia may be set.")
-		pn("func (c *%s) Media(r io.Reader) *%s {", callName, callName)
-		pn("c.media_ = r")
-		pn(`c.protocol_ = "multipart"`)
-		pn("return c")
+		comment := "Media specifies the media to upload in one or more chunks. " +
+			"The chunk size may be controlled by supplying a MediaOption generated by googleapi.ChunkSize. " +
+			"The chunk size defaults to googleapi.DefaultUploadChunkSize." +
+			"The Content-Type header used in the upload request will be determined by sniffing the contents of r, " +
+			"unless a MediaOption generated by googleapi.ContentType is supplied." +
+			"\nAt most one of Media and ResumableMedia may be set."
+		// TODO(mcgreevy): Ensure that r is always closed before Do returns, and document this.
+		// See comments on https://code-review.googlesource.com/#/c/3970/
+		p("\n%s", asComment("", comment))
+		pn("func (c *%s) Media(r io.Reader, options ...googleapi.MediaOption) *%s {", callName, callName)
+		pn(" opts := googleapi.ProcessMediaOptions(options)")
+		pn(" chunkSize := opts.ChunkSize")
+		pn(" if !opts.ForceEmptyContentType {")
+		pn("  r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)")
+		pn(" }")
+		pn(" c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)")
+		pn(" return c")
 		pn("}")
-		pn("\n// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.")
-		pn("// At most one of Media and ResumableMedia may be set.")
-		pn(`// mediaType identifies the MIME media type of the upload, such as "image/png".`)
-		pn(`// If mediaType is "", it will be auto-detected.`)
+		comment = "ResumableMedia specifies the media to upload in chunks and can be canceled with ctx. " +
+			"\n\nDeprecated: use Media instead." +
+			"\n\nAt most one of Media and ResumableMedia may be set. " +
+			`mediaType identifies the MIME media type of the upload, such as "image/png". ` +
+			`If mediaType is "", it will be auto-detected. ` +
+			`The provided ctx will supersede any context previously provided to ` +
+			`the Context method.`
+		p("\n%s", asComment("", comment))
 		pn("func (c *%s) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *%s {", callName, callName)
-		pn("c.ctx_ = ctx")
-		pn("c.resumable_ = io.NewSectionReader(r, 0, size)")
-		pn("c.mediaType_ = mediaType")
-		pn(`c.protocol_ = "resumable"`)
-		pn("return c")
+		pn(" c.ctx_ = ctx")
+		pn(" rdr := gensupport.ReaderAtToReader(r, size)")
+		pn(" rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)")
+		pn(" c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)")
+		pn(" c.media_ = nil")
+		pn(" c.mediaSize_ = size")
+		pn(" return c")
 		pn("}")
-		pn("\n// ProgressUpdater provides a callback function that will be called after every chunk.")
-		pn("// It should be a low-latency function in order to not slow down the upload operation.")
-		pn("// This should only be called when using ResumableMedia (as opposed to Media).")
+		comment = "ProgressUpdater provides a callback function that will be called after every chunk. " +
+			"It should be a low-latency function in order to not slow down the upload operation. " +
+			"This should only be called when using ResumableMedia (as opposed to Media)."
+		p("\n%s", asComment("", comment))
 		pn("func (c *%s) ProgressUpdater(pu googleapi.ProgressUpdater) *%s {", callName, callName)
-		pn(`c.opt_["progressUpdater"] = pu`)
+		pn(`c.progressUpdater_ = pu`)
 		pn("return c")
 		pn("}")
 	}
 
-	pn("\n// Fields allows partial responses to be retrieved.")
-	pn("// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse")
-	pn("// for more information.")
+	comment := "Fields allows partial responses to be retrieved. " +
+		"See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse " +
+		"for more information."
+	p("\n%s", asComment("", comment))
 	pn("func (c *%s) Fields(s ...googleapi.Field) *%s {", callName, callName)
-	pn(`c.opt_["fields"] = googleapi.CombineFields(s)`)
+	pn(`c.urlParams_.Set("fields", googleapi.CombineFields(s))`)
+	pn("return c")
+	pn("}")
+	if httpMethod == "GET" {
+		// Note that non-GET responses are excluded from supporting If-None-Match.
+		// See https://github.com/google/google-api-go-client/issues/107 for more info.
+		comment := "IfNoneMatch sets the optional parameter which makes the operation fail if " +
+			"the object's ETag matches the given value. This is useful for getting updates " +
+			"only after the object has changed since the last request. " +
+			"Use googleapi.IsNotModified to check whether the response error from Do " +
+			"is the result of In-None-Match."
+		p("\n%s", asComment("", comment))
+		pn("func (c *%s) IfNoneMatch(entityTag string) *%s {", callName, callName)
+		pn(" c.ifNoneMatch_ = entityTag")
+		pn(" return c")
+		pn("}")
+	}
+
+	doMethod := "Do method"
+	if meth.supportsMediaDownload() {
+		doMethod = "Do and Download methods"
+	}
+	commentFmtStr := "Context sets the context to be used in this call's %s. " +
+		"Any pending HTTP request will be aborted if the provided context is canceled."
+	comment = fmt.Sprintf(commentFmtStr, doMethod)
+	p("\n%s", asComment("", comment))
+	if meth.supportsMediaUpload() {
+		comment = "This context will supersede any context previously provided to " +
+			"the ResumableMedia method."
+		p("%s", asComment("", comment))
+	}
+	pn("func (c *%s) Context(ctx context.Context) *%s {", callName, callName)
+	pn(`c.ctx_ = ctx`)
 	pn("return c")
 	pn("}")
 
-	pn("\nfunc (c *%s) Do() (%serror) {", callName, retTypeComma)
-
-	nilRet := ""
-	if retTypeComma != "" {
-		nilRet = "nil, "
-	}
+	pn("\nfunc (c *%s) doRequest(alt string) (*http.Response, error) {", callName)
 	pn("var body io.Reader = nil")
-	hasContentType := false
-	httpMethod := jstr(meth.m, "httpMethod")
+	hasContentType := false // Whether ctype has been set.  It is always set in conjunction with body.
 	if ba := args.bodyArg(); ba != nil && httpMethod != "GET" {
 		style := "WithoutDataWrapper"
 		if a.needsDataWrapper() {
 			style = "WithDataWrapper"
 		}
 		pn("body, err := googleapi.%s.JSONReader(c.%s)", style, ba.goname)
-		pn("if err != nil { return %serr }", nilRet)
+		pn("if err != nil { return nil, err }")
 		pn(`ctype := "application/json"`)
 		hasContentType = true
 	}
-	pn("params := make(url.Values)")
-	// Set this first. if they override it, though, might be gross.  We don't expect
-	// XML replies elsewhere.  TODO(bradfitz): hide this option in the generated code?
-	pn(`params.Set("alt", "json")`)
-	for _, p := range meth.RequiredQueryParams() {
-		pn("params.Set(%q, fmt.Sprintf(\"%%v\", c.%s))", p.name, p.goCallFieldName())
-	}
-	for _, p := range meth.RequiredRepeatedQueryParams() {
-		pn("for _, v := range c.%s { params.Add(%q, fmt.Sprintf(\"%%v\", v)) }",
-			p.name, p.name)
-	}
-	opts := meth.OptParams()
-	opts = append(opts, &Param{name: "fields"})
-	for _, p := range opts {
-		pn("if v, ok := c.opt_[%q]; ok { params.Set(%q, fmt.Sprintf(\"%%v\", v)) }",
-			p.name, p.name)
-	}
+	pn(`c.urlParams_.Set("alt", alt)`)
 
-	p("urls := googleapi.ResolveRelative(c.s.BasePath, %q)\n", jstr(meth.m, "path"))
+	pn("urls := googleapi.ResolveRelative(c.s.BasePath, %q)", jstr(meth.m, "path"))
 	if meth.supportsMediaUpload() {
-		pn("var progressUpdater_ googleapi.ProgressUpdater")
-		pn("if v, ok := c.opt_[\"progressUpdater\"]; ok {")
-		pn(" if pu, ok := v.(googleapi.ProgressUpdater); ok {")
-		pn("  progressUpdater_ = pu")
-		pn(" }")
-		pn("}")
-		pn("if c.media_ != nil || c.resumable_ != nil {")
+		pn("if c.media_ != nil || c.resumableBuffer_ != nil{")
 		// Hack guess, since we get a 404 otherwise:
 		//pn("urls = googleapi.ResolveRelative(%q, %q)", a.apiBaseURL(), meth.mediaUploadPath())
 		// Further hack.  Discovery doc is wrong?
-		pn("urls = strings.Replace(urls, %q, %q, 1)", "https://www.googleapis.com/", "https://www.googleapis.com/upload/")
-		pn(`params.Set("uploadType", c.protocol_)`)
+		pn("  urls = strings.Replace(urls, %q, %q, 1)", "https://www.googleapis.com/", "https://www.googleapis.com/upload/")
+		pn(`  protocol := "multipart"`)
+		pn("  if c.resumableBuffer_ != nil {")
+		pn(`   protocol = "resumable"`)
+		pn("  }")
+		pn(`  c.urlParams_.Set("uploadType", protocol)`)
 		pn("}")
 	}
-	pn("urls += \"?\" + params.Encode()")
+	pn("urls += \"?\" + c.urlParams_.Encode()")
 	if meth.supportsMediaUpload() && httpMethod != "GET" {
-		if !hasContentType { // Support mediaUpload but no ctype set.
+		if !hasContentType {
 			pn("body = new(bytes.Buffer)")
 			pn(`ctype := "application/json"`)
 			hasContentType = true
 		}
-		pn(`if c.protocol_ != "resumable" {`)
-		pn(`  var cancel func()`)
-		pn("  cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)")
-		pn("  if cancel != nil { defer cancel() }")
+		pn(`if c.media_ != nil {`)
+		pn("  var combined io.ReadCloser")
+		pn("  combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)")
+		pn("  defer combined.Close()")
+		pn("  body = combined")
 		pn("}")
 	}
 	pn("req, _ := http.NewRequest(%q, urls, body)", httpMethod)
@@ -1351,44 +1856,121 @@ func (meth *Method) generateCode() {
 	}
 
 	if meth.supportsMediaUpload() {
-		pn(`if c.protocol_ == "resumable" {`)
-		pn(" req.ContentLength = 0")
-		pn(` if c.mediaType_ == "" {`)
-		pn("  c.mediaType_ = googleapi.DetectMediaType(c.resumable_)")
-		pn(" }")
+		pn(`if c.resumableBuffer_ != nil && c.mediaType_ != ""{`)
 		pn(` req.Header.Set("X-Upload-Content-Type", c.mediaType_)`)
-		pn(" req.Body = nil")
-		pn("} else {")
-		pn(` req.Header.Set("Content-Type", ctype)`)
 		pn("}")
-	} else if hasContentType {
+	}
+
+	if hasContentType {
 		pn(`req.Header.Set("Content-Type", ctype)`)
 	}
-	pn(`req.Header.Set("User-Agent", "google-api-go-client/` + goGenVersion + `")`)
-	pn("res, err := c.s.client.Do(req);")
+
+	pn(`req.Header.Set("User-Agent", c.s.userAgent())`)
+	if httpMethod == "GET" {
+		pn(`if c.ifNoneMatch_ != "" {`)
+		pn(` req.Header.Set("If-None-Match", c.ifNoneMatch_)`)
+		pn("}")
+	}
+	pn("if c.ctx_ != nil {")
+	pn(" return ctxhttp.Do(c.ctx_, c.s.client, req)")
+	pn("}")
+	pn("return c.s.client.Do(req)")
+	pn("}")
+
+	if meth.supportsMediaDownload() {
+		pn("\n// Download fetches the API endpoint's \"media\" value, instead of the normal")
+		pn("// API response value. If the returned error is nil, the Response is guaranteed to")
+		pn("// have a 2xx status code. Callers must close the Response.Body as usual.")
+		pn("func (c *%s) Download(opts ...googleapi.CallOption) (*http.Response, error) {", callName)
+		pn(`gensupport.SetOptions(c.urlParams_, opts...)`)
+		pn(`res, err := c.doRequest("media")`)
+		pn("if err != nil { return nil, err }")
+		pn("if err := googleapi.CheckMediaResponse(res); err != nil {")
+		pn("res.Body.Close()")
+		pn("return nil, err")
+		pn("}")
+		pn("return res, nil")
+		pn("}")
+	}
+
+	mapRetType := strings.HasPrefix(retTypeComma, "map[")
+	pn("\n// Do executes the %q call.", jstr(meth.m, "id"))
+	if retTypeComma != "" && !mapRetType {
+		commentFmtStr := "Exactly one of %v or error will be non-nil. " +
+			"Any non-2xx status code is an error. " +
+			"Response headers are in either %v.ServerResponse.Header " +
+			"or (if a response was returned at all) in error.(*googleapi.Error).Header. " +
+			"Use googleapi.IsNotModified to check whether the returned error was because " +
+			"http.StatusNotModified was returned."
+		comment := fmt.Sprintf(commentFmtStr, retType, retType)
+		p("%s", asComment("", comment))
+	}
+	pn("func (c *%s) Do(opts ...googleapi.CallOption) (%serror) {", callName, retTypeComma)
+	nilRet := ""
+	if retTypeComma != "" {
+		nilRet = "nil, "
+	}
+	pn(`gensupport.SetOptions(c.urlParams_, opts...)`)
+	if meth.supportsMediaUpload() {
+		// Automatically retry failed upload requests.
+		pn(`res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {`)
+		pn(`  return c.doRequest("json")`)
+		pn(`}, gensupport.DefaultBackoffStrategy())`)
+	} else {
+		pn(`res, err := c.doRequest("json")`)
+	}
+
+	if retTypeComma != "" && !mapRetType {
+		pn("if res != nil && res.StatusCode == http.StatusNotModified {")
+		pn(" if res.Body != nil { res.Body.Close() }")
+		pn(" return nil, &googleapi.Error{")
+		pn("  Code: res.StatusCode,")
+		pn("  Header: res.Header,")
+		pn(" }")
+		pn("}")
+	}
 	pn("if err != nil { return %serr }", nilRet)
 	pn("defer googleapi.CloseBody(res)")
 	pn("if err := googleapi.CheckResponse(res); err != nil { return %serr }", nilRet)
 	if meth.supportsMediaUpload() {
-		pn(`if c.protocol_ == "resumable" {`)
+		pn("if c.resumableBuffer_ != nil {")
 		pn(` loc := res.Header.Get("Location")`)
-		pn(" rx := &googleapi.ResumableUpload{")
+		pn(" rx := &gensupport.ResumableUpload{")
 		pn("  Client:        c.s.client,")
+		pn("  UserAgent:     c.s.userAgent(),")
 		pn("  URI:           loc,")
-		pn("  Media:         c.resumable_,")
+		pn("  Media:         c.resumableBuffer_,")
 		pn("  MediaType:     c.mediaType_,")
-		pn("  ContentLength: c.resumable_.Size(),")
-		pn("  Callback:      progressUpdater_,")
+		pn("  Callback:      func(curr int64){")
+		pn("   if c.progressUpdater_ != nil {")
+		pn("    c.progressUpdater_(curr, c.mediaSize_)")
+		pn("   }")
+		pn("  },")
 		pn(" }")
-		pn(" res, err = rx.Upload(c.ctx_)")
+		pn(" ctx := c.ctx_")
+		pn(" if ctx == nil {")
+		// TODO(mcgreevy): Require context when calling Media, or Do.
+		pn("  ctx = context.TODO()")
+		pn(" }")
+		pn(" res, err = rx.Upload(ctx)")
 		pn(" if err != nil { return %serr }", nilRet)
 		pn(" defer res.Body.Close()")
+		pn(" if err := googleapi.CheckResponse(res); err != nil { return %serr }", nilRet)
 		pn("}")
 	}
 	if retTypeComma == "" {
 		pn("return nil")
 	} else {
-		pn("var ret %s", responseType(a, meth.m))
+		if mapRetType {
+			pn("var ret %s", responseType(a, meth.m))
+		} else {
+			pn("ret := &%s{", responseTypeLiteral(a, meth.m))
+			pn(" ServerResponse: googleapi.ServerResponse{")
+			pn("  Header: res.Header,")
+			pn("  HTTPStatusCode: res.StatusCode,")
+			pn(" },")
+			pn("}")
+		}
 		pn("if err := json.NewDecoder(res.Body).Decode(&ret); err != nil { return nil, err }")
 		pn("return ret, nil")
 	}
@@ -1396,6 +1978,33 @@ func (meth *Method) generateCode() {
 	bs, _ := json.MarshalIndent(meth.m, "\t// ", "  ")
 	pn("// %s\n", string(bs))
 	pn("}")
+
+	if cname, rname, ok := meth.supportsPaging(); ok {
+		// We can assume retType is non-empty.
+		pn("")
+		pn("// Pages invokes f for each page of results.")
+		pn("// A non-nil error returned from f will halt the iteration.")
+		pn("// The provided context supersedes any context provided to the Context method.")
+		pn("func (c *%s) Pages(ctx context.Context, f func(%s) error) error {", callName, retType)
+		pn(" c.ctx_ = ctx")
+		pn(` defer c.%s(c.urlParams_.Get(%q)) // reset paging to original point`, cname, "pageToken")
+		pn(" for {")
+		pn("  x, err := c.Do()")
+		pn("  if err != nil { return err }")
+		pn("  if err := f(x); err != nil { return err }")
+		pn(`  if x.%s == "" { return nil }`, rname)
+		pn("  c.%s(x.%s)", cname, rname)
+		pn(" }")
+		pn("}")
+	}
+}
+
+// A Field provides methods that describe the characteristics of a Param or Property.
+type Field interface {
+	Default() string
+	Enum() ([]string, bool)
+	EnumDescriptions() []string
+	UnfortunateDefault() bool
 }
 
 type Param struct {
@@ -1403,6 +2012,26 @@ type Param struct {
 	name          string
 	m             map[string]interface{}
 	callFieldName string // empty means to use the default
+}
+
+func (p *Param) Default() string {
+	return jstr(p.m, "default")
+}
+
+func (p *Param) Enum() ([]string, bool) {
+	if e := jstrlist(p.m, "enum"); e != nil {
+		return e, true
+	}
+	return nil, false
+}
+
+func (p *Param) EnumDescriptions() []string {
+	return jstrlist(p.m, "enumDescriptions")
+}
+
+func (p *Param) UnfortunateDefault() bool {
+	// We do not do anything special for Params with unfortunate defaults.
+	return false
 }
 
 func (p *Param) IsRequired() bool {
@@ -1611,24 +2240,34 @@ func (a *arguments) String() string {
 	return buf.String()
 }
 
+var urlRE = regexp.MustCompile(`^http\S+$`)
+
 func asComment(pfx, c string) string {
 	var buf bytes.Buffer
 	const maxLen = 70
-	removeNewlines := func(s string) string {
-		return strings.Replace(s, "\n", "\n"+pfx+"// ", -1)
-	}
+	r := strings.NewReplacer(
+		"\n", "\n"+pfx+"// ",
+		"`\"", `"`,
+		"\"`", `"`,
+	)
 	for len(c) > 0 {
 		line := c
 		if len(line) < maxLen {
-			fmt.Fprintf(&buf, "%s// %s\n", pfx, removeNewlines(line))
+			fmt.Fprintf(&buf, "%s// %s\n", pfx, r.Replace(line))
 			break
 		}
-		line = line[:maxLen]
+		// Don't break URLs.
+		if !urlRE.MatchString(line[:maxLen]) {
+			line = line[:maxLen]
+		}
 		si := strings.LastIndex(line, " ")
+		if nl := strings.Index(line, "\n"); nl != -1 && nl < si {
+			si = nl
+		}
 		if si != -1 {
 			line = line[:si]
 		}
-		fmt.Fprintf(&buf, "%s// %s\n", pfx, removeNewlines(line))
+		fmt.Fprintf(&buf, "%s// %s\n", pfx, r.Replace(line))
 		c = c[len(line):]
 		if si != -1 {
 			c = c[1:]
@@ -1700,6 +2339,15 @@ func responseType(api *API, m map[string]interface{}) string {
 	return ""
 }
 
+// Strips the leading '*' from a type name so that it can be used to create a literal.
+func responseTypeLiteral(api *API, m map[string]interface{}) string {
+	v := responseType(api, m)
+	if strings.HasPrefix(v, "*") {
+		return v[1:]
+	}
+	return v
+}
+
 // initialCap returns the identifier with a leading capital letter.
 // it also maps "foo-bar" to "FooBar".
 func initialCap(ident string) string {
@@ -1722,11 +2370,22 @@ func validGoIdentifer(ident string) string {
 	return id
 }
 
-// depunct removes '-', '.', '$', '/' from identifers, making the
-// following character uppercase
+// depunct removes '-', '.', '$', '/', '_' from identifers, making the
+// following character uppercase. Multiple '_' are preserved.
 func depunct(ident string, needCap bool) string {
 	var buf bytes.Buffer
-	for _, c := range ident {
+	preserve_ := false
+	for i, c := range ident {
+		if c == '_' {
+			if preserve_ || strings.HasPrefix(ident[i:], "__") {
+				preserve_ = true
+			} else {
+				needCap = true
+				continue
+			}
+		} else {
+			preserve_ = false
+		}
 		if c == '-' || c == '.' || c == '$' || c == '/' {
 			needCap = true
 			continue
@@ -1756,6 +2415,13 @@ func jstr(m map[string]interface{}, key string) string {
 	return ""
 }
 
+func jbool(m map[string]interface{}, key string) bool {
+	if b, ok := m[key].(bool); ok {
+		return b
+	}
+	return false
+}
+
 func sortedKeys(m map[string]interface{}) (keys []string) {
 	for key := range m {
 		keys = append(keys, key)
@@ -1764,6 +2430,7 @@ func sortedKeys(m map[string]interface{}) (keys []string) {
 	return
 }
 
+// jobj looks up the JSON object indexed by key in m.
 func jobj(m map[string]interface{}, key string) map[string]interface{} {
 	if m, ok := m[key].(map[string]interface{}); ok {
 		return m
@@ -1771,6 +2438,7 @@ func jobj(m map[string]interface{}, key string) map[string]interface{} {
 	return nil
 }
 
+// jobj looks up the list of JSON objects indexed by key in m.
 func jobjlist(m map[string]interface{}, key string) []map[string]interface{} {
 	si, ok := m[key].([]interface{})
 	if !ok {
@@ -1793,4 +2461,32 @@ func jstrlist(m map[string]interface{}, key string) []string {
 		sl = append(sl, si.(string))
 	}
 	return sl
+}
+
+func addFieldValueComments(p func(format string, args ...interface{}), field Field, indent string, blankLine bool) {
+	var lines []string
+
+	if enum, ok := field.Enum(); ok {
+		desc := field.EnumDescriptions()
+		lines = append(lines, asComment(indent, "Possible values:"))
+		defval := field.Default()
+		for i, v := range enum {
+			more := ""
+			if v == defval {
+				more = " (default)"
+			}
+			if len(desc) > i && desc[i] != "" {
+				more = more + " - " + desc[i]
+			}
+			lines = append(lines, asComment(indent, `  "`+v+`"`+more))
+		}
+	} else if field.UnfortunateDefault() {
+		lines = append(lines, asComment("\t", fmt.Sprintf("Default: %s", field.Default())))
+	}
+	if blankLine && len(lines) > 0 {
+		p(indent + "//\n")
+	}
+	for _, l := range lines {
+		p("%s", l)
+	}
 }

@@ -12,105 +12,153 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build integration
-
 package pubsub
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
+	"google.golang.org/cloud"
 	"google.golang.org/cloud/internal/testutil"
 )
 
-func TestAll(t *testing.T) {
-	ctx := testutil.Context(ScopePubSub, ScopeCloudPlatform)
-	now := time.Now()
-	topic := fmt.Sprintf("topic-%d", now.Unix())
-	subscription := fmt.Sprintf("subscription-%d", now.Unix())
+// messageData is used to hold the contents of a message so that it can be compared againts the contents
+// of another message without regard to irrelevant fields.
+type messageData struct {
+	ID         string
+	Data       []byte
+	Attributes map[string]string
+}
 
-	if err := CreateTopic(ctx, topic); err != nil {
+func extractMessageData(m *Message) *messageData {
+	return &messageData{
+		ID:         m.ID,
+		Data:       m.Data,
+		Attributes: m.Attributes,
+	}
+}
+
+func TestAll(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Integration tests skipped in short mode")
+	}
+	ctx := context.Background()
+	ts := testutil.TokenSource(ctx, ScopePubSub, ScopeCloudPlatform)
+	if ts == nil {
+		t.Skip("Integration tests skipped. See CONTRIBUTING.md for details")
+	}
+
+	now := time.Now()
+	topicName := fmt.Sprintf("topic-%d", now.Unix())
+	subName := fmt.Sprintf("subscription-%d", now.Unix())
+
+	client, err := NewClient(ctx, testutil.ProjID(), cloud.WithTokenSource(ts))
+	if err != nil {
+		t.Fatalf("Creating client error: %v", err)
+	}
+
+	var topic *TopicHandle
+	if topic, err = client.NewTopic(ctx, topicName); err != nil {
 		t.Errorf("CreateTopic error: %v", err)
 	}
 
-	if err := CreateSub(ctx, subscription, topic, time.Duration(0), ""); err != nil {
+	var sub *SubscriptionHandle
+	if sub, err = client.NewSubscription(ctx, subName, topic, 0, nil); err != nil {
 		t.Errorf("CreateSub error: %v", err)
 	}
 
-	exists, err := TopicExists(ctx, topic)
+	exists, err := topic.Exists(ctx)
 	if err != nil {
-		t.Errorf("TopicExists error: %v", err)
+		t.Fatalf("TopicExists error: %v", err)
 	}
 	if !exists {
 		t.Errorf("topic %s should exist, but it doesn't", topic)
 	}
 
-	exists, err = SubExists(ctx, subscription)
+	exists, err = sub.Exists(ctx)
 	if err != nil {
-		t.Errorf("SubExists error: %v", err)
+		t.Fatalf("SubExists error: %v", err)
 	}
 	if !exists {
-		t.Errorf("subscription %s should exist, but it doesn't", subscription)
+		t.Errorf("subscription %s should exist, but it doesn't", subName)
 	}
 
-	max := 10
-	msgs := make([]*Message, max)
-	expectedMsgs := make(map[string]bool, max)
-	for i := 0; i < max; i++ {
+	msgs := []*Message{}
+	for i := 0; i < 10; i++ {
 		text := fmt.Sprintf("a message with an index %d", i)
-		labels := make(map[string]string)
-		labels["foo"] = "bar"
-		msgs[i] = &Message{
-			Data:   []byte(text),
-			Labels: labels,
-		}
-		expectedMsgs[text] = false
+		attrs := make(map[string]string)
+		attrs["foo"] = "bar"
+		msgs = append(msgs, &Message{
+			Data:       []byte(text),
+			Attributes: attrs,
+		})
 	}
 
-	ids, err := Publish(ctx, topic, msgs...)
+	ids, err := topic.Publish(ctx, msgs...)
 	if err != nil {
-		t.Errorf("Publish (1) error: %v", err)
-	}
-	if len(ids) != max {
-		t.Errorf("unexpected number of message IDs received; %d, want %d", len(ids), max)
-	}
-	expectedIDs := make(map[string]bool, max)
-	for _, id := range ids {
-		expectedIDs[id] = false
+		t.Fatalf("Publish (1) error: %v", err)
 	}
 
-	received, err := PullWait(ctx, subscription, max)
+	if len(ids) != len(msgs) {
+		t.Errorf("unexpected number of message IDs received; %d, want %d", len(ids), len(msgs))
+	}
+
+	want := make(map[string]*messageData)
+	for i, m := range msgs {
+		md := extractMessageData(m)
+		md.ID = ids[i]
+		want[md.ID] = md
+	}
+
+	// Use a timeout to ensure that Pull does not block indefinitely if there are unexpectedly few messages available.
+	timeoutCtx, _ := context.WithTimeout(ctx, time.Minute)
+	it, err := sub.Pull(timeoutCtx)
 	if err != nil {
-		t.Errorf("PullWait error: %v", err)
+		t.Fatalf("error constructing iterator: %v", err)
 	}
-	if len(received) != max {
-		t.Errorf("unexpected number of messages received; %d, want %d", len(received), max)
-	}
-	for _, msg := range received {
-		expectedMsgs[string(msg.Data)] = true
-		expectedIDs[msg.ID] = true
-		if msg.Labels["foo"] != "bar" {
-			t.Errorf("message label foo is expected to be 'bar', found '%s'", msg.Labels["foo"])
+	defer it.Stop()
+	got := make(map[string]*messageData)
+	for i := 0; i < len(want); i++ {
+		m, err := it.Next()
+		if err != nil {
+			t.Fatalf("error getting next message:", err) // TODO: add deadline to context.
 		}
-	}
-	for msg, found := range expectedMsgs {
-		if !found {
-			t.Errorf("message '%s' should be received", msg)
-		}
-	}
-	for id, found := range expectedIDs {
-		if !found {
-			t.Errorf("message with the message id '%s' should be received", id)
-		}
+		md := extractMessageData(m)
+		got[md.ID] = md
+		m.Done(true)
 	}
 
-	err = DeleteSub(ctx, subscription)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("messages: got: %v ; want: %v", got, want)
+	}
+
+	// base64 test
+	data := "=@~"
+	_, err = topic.Publish(ctx, &Message{Data: []byte(data)})
+	if err != nil {
+		t.Fatalf("Publish error: %v", err)
+	}
+
+	m, err := it.Next()
+	if err != nil {
+		t.Fatalf("Pull error: %v", err)
+	}
+
+	if string(m.Data) != data {
+		t.Errorf("unexpected message received; %s, want %s", string(m.Data), data)
+	}
+	m.Done(true)
+
+	err = sub.Delete(ctx)
 	if err != nil {
 		t.Errorf("DeleteSub error: %v", err)
 	}
 
-	err = DeleteTopic(ctx, topic)
+	err = topic.Delete(ctx)
 	if err != nil {
 		t.Errorf("DeleteTopic error: %v", err)
 	}

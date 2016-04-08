@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/replicapool/v1beta1"
 //   ...
 //   replicapoolService, err := replicapool.New(oauthHttpClient)
-package replicapool
+package replicapool // import "google.golang.org/api/replicapool/v1beta1"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "replicapool:v1beta1"
 const apiName = "replicapool"
@@ -45,6 +49,9 @@ const basePath = "https://www.googleapis.com/replicapool/v1beta1/projects/"
 const (
 	// View and manage your data across Google Cloud Platform services
 	CloudPlatformScope = "https://www.googleapis.com/auth/cloud-platform"
+
+	// View your data across Google Cloud Platform services
+	CloudPlatformReadOnlyScope = "https://www.googleapis.com/auth/cloud-platform.read-only"
 
 	// View and manage your Google Cloud Platform management resources and
 	// deployment status information
@@ -72,12 +79,20 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Pools *PoolsService
 
 	Replicas *ReplicasService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewPoolsService(s *Service) *PoolsService {
@@ -98,6 +113,8 @@ type ReplicasService struct {
 	s *Service
 }
 
+// AccessConfig: A Compute Engine network accessConfig. Identical to the
+// accessConfig on corresponding Compute Engine resource.
 type AccessConfig struct {
 	// Name: Name of this access configuration.
 	Name string `json:"name,omitempty"`
@@ -108,8 +125,24 @@ type AccessConfig struct {
 	// Type: Type of this access configuration file. Currently only
 	// ONE_TO_ONE_NAT is supported.
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AccessConfig) MarshalJSON() ([]byte, error) {
+	type noMethod AccessConfig
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Action: An action that gets executed during initialization of the
+// replicas.
 type Action struct {
 	// Commands: A list of commands to run, one per line. If any command
 	// fails, the whole action is considered a failure and no further
@@ -128,8 +161,23 @@ type Action struct {
 	// action's commands. The default is the max allowed value, 1 hour (i.e.
 	// 3600000 milliseconds).
 	TimeoutMilliSeconds int64 `json:"timeoutMilliSeconds,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Commands") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Action) MarshalJSON() ([]byte, error) {
+	type noMethod Action
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DiskAttachment: Specifies how to attach a disk to a Replica.
 type DiskAttachment struct {
 	// DeviceName: The device name of this disk.
 	DeviceName string `json:"deviceName,omitempty"`
@@ -137,8 +185,23 @@ type DiskAttachment struct {
 	// Index: A zero-based index to assign to this disk, where 0 is reserved
 	// for the boot disk. If not specified, this is assigned by the server.
 	Index int64 `json:"index,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DeviceName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DiskAttachment) MarshalJSON() ([]byte, error) {
+	type noMethod DiskAttachment
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// EnvVariable: An environment variable to set for an action.
 type EnvVariable struct {
 	// Hidden: Deprecated, do not use.
 	Hidden bool `json:"hidden,omitempty"`
@@ -148,8 +211,24 @@ type EnvVariable struct {
 
 	// Value: The value of the variable.
 	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Hidden") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *EnvVariable) MarshalJSON() ([]byte, error) {
+	type noMethod EnvVariable
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ExistingDisk: A pre-existing persistent disk that will be attached to
+// every Replica in the Pool in READ_ONLY mode.
 type ExistingDisk struct {
 	// Attachment: How the disk will be attached to the Replica.
 	Attachment *DiskAttachment `json:"attachment,omitempty"`
@@ -157,6 +236,20 @@ type ExistingDisk struct {
 	// Source: The name of the Persistent Disk resource. The Persistent Disk
 	// resource must be in the same zone as the Pool.
 	Source string `json:"source,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Attachment") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ExistingDisk) MarshalJSON() ([]byte, error) {
+	type noMethod ExistingDisk
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type HealthCheck struct {
@@ -195,16 +288,47 @@ type HealthCheck struct {
 	// that need to fail in order to consider the replica unhealthy. The
 	// default value is 2.
 	UnhealthyThreshold int64 `json:"unhealthyThreshold,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CheckIntervalSec") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *HealthCheck) MarshalJSON() ([]byte, error) {
+	type noMethod HealthCheck
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Label: A label to apply to this replica pool.
 type Label struct {
 	// Key: The key for this label.
 	Key string `json:"key,omitempty"`
 
 	// Value: The value of this label.
 	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Key") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Label) MarshalJSON() ([]byte, error) {
+	type noMethod Label
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Metadata: A Compute Engine metadata entry. Identical to the metadata
+// on the corresponding Compute Engine resource.
 type Metadata struct {
 	// FingerPrint: The fingerprint of the metadata. Required for updating
 	// the metadata entries for this instance.
@@ -212,16 +336,50 @@ type Metadata struct {
 
 	// Items: A list of metadata items.
 	Items []*MetadataItem `json:"items,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FingerPrint") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Metadata) MarshalJSON() ([]byte, error) {
+	type noMethod Metadata
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// MetadataItem: A Compute Engine metadata item, defined as a key:value
+// pair. Identical to the metadata on the corresponding Compute Engine
+// resource.
 type MetadataItem struct {
 	// Key: A metadata key.
 	Key string `json:"key,omitempty"`
 
 	// Value: A metadata value.
 	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Key") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *MetadataItem) MarshalJSON() ([]byte, error) {
+	type noMethod MetadataItem
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// NetworkInterface: A Compute Engine NetworkInterface resource.
+// Identical to the NetworkInterface on the corresponding Compute Engine
+// resource.
 type NetworkInterface struct {
 	// AccessConfigs: An array of configurations for this interface. This
 	// specifies how this interface is configured to interact with other
@@ -234,8 +392,26 @@ type NetworkInterface struct {
 	// NetworkIp: An optional IPV4 internal network address to assign to the
 	// instance for this network interface.
 	NetworkIp string `json:"networkIp,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AccessConfigs") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *NetworkInterface) MarshalJSON() ([]byte, error) {
+	type noMethod NetworkInterface
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// NewDisk: A Persistent Disk resource that will be created and attached
+// to each Replica in the Pool. Each Replica will have a unique
+// persistent disk that is created and attached to that Replica in
+// READ_WRITE mode.
 type NewDisk struct {
 	// Attachment: How the disk will be attached to the Replica.
 	Attachment *DiskAttachment `json:"attachment,omitempty"`
@@ -250,8 +426,24 @@ type NewDisk struct {
 	// InitializeParams: Create the new disk using these parameters. The
 	// name of the disk will be <instance_name>-<four_random_charactersgt;.
 	InitializeParams *NewDiskInitializeParams `json:"initializeParams,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Attachment") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *NewDisk) MarshalJSON() ([]byte, error) {
+	type noMethod NewDisk
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// NewDiskInitializeParams: Initialization parameters for creating a new
+// disk.
 type NewDiskInitializeParams struct {
 	// DiskSizeGb: The size of the created disk in gigabytes.
 	DiskSizeGb int64 `json:"diskSizeGb,omitempty,string"`
@@ -270,6 +462,20 @@ type NewDiskInitializeParams struct {
 	// http://www.googleapis.com/compute/v1/projects/debian-cloud/
 	// global/images/debian-wheezy-7-vYYYYMMDD
 	SourceImage string `json:"sourceImage,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DiskSizeGb") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *NewDiskInitializeParams) MarshalJSON() ([]byte, error) {
+	type noMethod NewDiskInitializeParams
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Pool struct {
@@ -283,8 +489,7 @@ type Pool struct {
 	// format <base-instance-name>-<ID>. The <ID> postfix will be a four
 	// character alphanumeric identifier generated by the service.
 	//
-	// If this
-	// is not specified by the user, a random base instance name is
+	// If this is not specified by the user, a random base instance name is
 	// generated by the service.
 	BaseInstanceName string `json:"baseInstanceName,omitempty"`
 
@@ -338,6 +543,24 @@ type Pool struct {
 
 	// Type: Deprecated! Do not set.
 	Type string `json:"type,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AutoRestart") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Pool) MarshalJSON() ([]byte, error) {
+	type noMethod Pool
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type PoolsDeleteRequest struct {
@@ -345,14 +568,49 @@ type PoolsDeleteRequest struct {
 	// can specify them here. These instances won't be deleted, but the
 	// associated replica objects will be removed.
 	AbandonInstances []string `json:"abandonInstances,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AbandonInstances") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *PoolsDeleteRequest) MarshalJSON() ([]byte, error) {
+	type noMethod PoolsDeleteRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type PoolsListResponse struct {
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	Resources []*Pool `json:"resources,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PoolsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod PoolsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Replica: An individual Replica within a Pool. Replicas are
+// automatically created by the replica pool, using the template
+// provided by the user. You cannot directly create replicas.
 type Replica struct {
 	// Name: [Output Only] The name of the Replica object.
 	Name string `json:"name,omitempty"`
@@ -362,8 +620,27 @@ type Replica struct {
 
 	// Status: [Output Only] Last known status of the Replica.
 	Status *ReplicaStatus `json:"status,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Replica) MarshalJSON() ([]byte, error) {
+	type noMethod Replica
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReplicaStatus: The current status of a Replica.
 type ReplicaStatus struct {
 	// Details: [Output Only] Human-readable details about the current state
 	// of the replica
@@ -384,6 +661,20 @@ type ReplicaStatus struct {
 	// RUNNING state, in RFC 3339 format. If the start time is unknown,
 	// UNKNOWN is returned.
 	VmStartTime string `json:"vmStartTime,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Details") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ReplicaStatus) MarshalJSON() ([]byte, error) {
+	type noMethod ReplicaStatus
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ReplicasDeleteRequest struct {
@@ -393,14 +684,48 @@ type ReplicasDeleteRequest struct {
 	// default, this is set to false and the instance will be deleted along
 	// with the replica.
 	AbandonInstance bool `json:"abandonInstance,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AbandonInstance") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ReplicasDeleteRequest) MarshalJSON() ([]byte, error) {
+	type noMethod ReplicasDeleteRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ReplicasListResponse struct {
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	Resources []*Replica `json:"resources,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReplicasListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ReplicasListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ServiceAccount: A Compute Engine service account, identical to the
+// Compute Engine resource.
 type ServiceAccount struct {
 	// Email: The service account email address, for example:
 	// 123845678986@project.gserviceaccount.com
@@ -409,8 +734,24 @@ type ServiceAccount struct {
 	// Scopes: The list of OAuth2 scopes to obtain for the service account,
 	// for example: https://www.googleapis.com/auth/devstorage.full_control
 	Scopes []string `json:"scopes,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Email") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ServiceAccount) MarshalJSON() ([]byte, error) {
+	type noMethod ServiceAccount
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Tag: A Compute Engine Instance tag, identical to the tags on the
+// corresponding Compute Engine Instance resource.
 type Tag struct {
 	// FingerPrint: The fingerprint of the tag. Required for updating the
 	// list of tags.
@@ -418,8 +759,23 @@ type Tag struct {
 
 	// Items: Items contained in this tag.
 	Items []string `json:"items,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FingerPrint") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Tag) MarshalJSON() ([]byte, error) {
+	type noMethod Tag
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Template: The template used for creating replicas in the pool.
 type Template struct {
 	// Action: An action to run during initialization of your replicas. An
 	// action is run as shell commands which are executed one after the
@@ -441,8 +797,25 @@ type Template struct {
 	// image of replicas in this pool. This is required if replica type is
 	// SMART_VM.
 	VmParams *VmParams `json:"vmParams,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Action") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Template) MarshalJSON() ([]byte, error) {
+	type noMethod Template
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// VmParams: Parameters for creating a Compute Engine Instance resource.
+// Most fields are identical to the corresponding Compute Engine
+// resource.
 type VmParams struct {
 	// BaseInstanceName: Deprecated. Please use baseInstanceName instead.
 	BaseInstanceName string `json:"baseInstanceName,omitempty"`
@@ -487,6 +860,20 @@ type VmParams struct {
 	// Tags: A list of tags to apply to the Google Compute Engine instance
 	// to identify resources.
 	Tags *Tag `json:"tags,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BaseInstanceName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *VmParams) MarshalJSON() ([]byte, error) {
+	type noMethod VmParams
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "replicapool.pools.delete":
@@ -497,12 +884,13 @@ type PoolsDeleteCall struct {
 	zone               string
 	poolName           string
 	poolsdeleterequest *PoolsDeleteRequest
-	opt_               map[string]interface{}
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
 }
 
 // Delete: Deletes a replica pool.
 func (r *PoolsService) Delete(projectName string, zone string, poolName string, poolsdeleterequest *PoolsDeleteRequest) *PoolsDeleteCall {
-	c := &PoolsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PoolsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	c.poolName = poolName
@@ -510,28 +898,32 @@ func (r *PoolsService) Delete(projectName string, zone string, poolName string, 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PoolsDeleteCall) Fields(s ...googleapi.Field) *PoolsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PoolsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PoolsDeleteCall) Context(ctx context.Context) *PoolsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PoolsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.poolsdeleterequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools/{poolName}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
@@ -539,8 +931,17 @@ func (c *PoolsDeleteCall) Do() error {
 		"poolName":    c.poolName,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.pools.delete" call.
+func (c *PoolsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -594,47 +995,90 @@ func (c *PoolsDeleteCall) Do() error {
 // method id "replicapool.pools.get":
 
 type PoolsGetCall struct {
-	s           *Service
-	projectName string
-	zone        string
-	poolName    string
-	opt_        map[string]interface{}
+	s            *Service
+	projectName  string
+	zone         string
+	poolName     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets information about a single replica pool.
 func (r *PoolsService) Get(projectName string, zone string, poolName string) *PoolsGetCall {
-	c := &PoolsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PoolsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	c.poolName = poolName
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PoolsGetCall) Fields(s ...googleapi.Field) *PoolsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PoolsGetCall) Do() (*Pool, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PoolsGetCall) IfNoneMatch(entityTag string) *PoolsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PoolsGetCall) Context(ctx context.Context) *PoolsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PoolsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools/{poolName}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
 		"zone":        c.zone,
 		"poolName":    c.poolName,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.pools.get" call.
+// Exactly one of *Pool or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Pool.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *PoolsGetCall) Do(opts ...googleapi.CallOption) (*Pool, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -642,7 +1086,12 @@ func (c *PoolsGetCall) Do() (*Pool, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Pool
+	ret := &Pool{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -682,6 +1131,7 @@ func (c *PoolsGetCall) Do() (*Pool, error) {
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-platform.read-only",
 	//     "https://www.googleapis.com/auth/ndev.cloudman",
 	//     "https://www.googleapis.com/auth/ndev.cloudman.readonly",
 	//     "https://www.googleapis.com/auth/replicapool",
@@ -698,48 +1148,77 @@ type PoolsInsertCall struct {
 	projectName string
 	zone        string
 	pool        *Pool
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
 // Insert: Inserts a new replica pool.
 func (r *PoolsService) Insert(projectName string, zone string, pool *Pool) *PoolsInsertCall {
-	c := &PoolsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PoolsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	c.pool = pool
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PoolsInsertCall) Fields(s ...googleapi.Field) *PoolsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PoolsInsertCall) Do() (*Pool, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PoolsInsertCall) Context(ctx context.Context) *PoolsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PoolsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pool)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
 		"zone":        c.zone,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.pools.insert" call.
+// Exactly one of *Pool or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Pool.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *PoolsInsertCall) Do(opts ...googleapi.CallOption) (*Pool, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -747,7 +1226,12 @@ func (c *PoolsInsertCall) Do() (*Pool, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Pool
+	ret := &Pool{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -793,15 +1277,17 @@ func (c *PoolsInsertCall) Do() (*Pool, error) {
 // method id "replicapool.pools.list":
 
 type PoolsListCall struct {
-	s           *Service
-	projectName string
-	zone        string
-	opt_        map[string]interface{}
+	s            *Service
+	projectName  string
+	zone         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: List all replica pools.
 func (r *PoolsService) List(projectName string, zone string) *PoolsListCall {
-	c := &PoolsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PoolsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	return c
@@ -811,7 +1297,7 @@ func (r *PoolsService) List(projectName string, zone string) *PoolsListCall {
 // results to be returned. Acceptable values are 0 to 100, inclusive.
 // (Default: 50)
 func (c *PoolsListCall) MaxResults(maxResults int64) *PoolsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -819,40 +1305,75 @@ func (c *PoolsListCall) MaxResults(maxResults int64) *PoolsListCall {
 // nextPageToken value returned by a previous list request to obtain the
 // next page of results from the previous list request.
 func (c *PoolsListCall) PageToken(pageToken string) *PoolsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PoolsListCall) Fields(s ...googleapi.Field) *PoolsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PoolsListCall) Do() (*PoolsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PoolsListCall) IfNoneMatch(entityTag string) *PoolsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PoolsListCall) Context(ctx context.Context) *PoolsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PoolsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
 		"zone":        c.zone,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.pools.list" call.
+// Exactly one of *PoolsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PoolsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PoolsListCall) Do(opts ...googleapi.CallOption) (*PoolsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -860,7 +1381,12 @@ func (c *PoolsListCall) Do() (*PoolsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PoolsListResponse
+	ret := &PoolsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -907,6 +1433,7 @@ func (c *PoolsListCall) Do() (*PoolsListResponse, error) {
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-platform.read-only",
 	//     "https://www.googleapis.com/auth/ndev.cloudman",
 	//     "https://www.googleapis.com/auth/ndev.cloudman.readonly",
 	//     "https://www.googleapis.com/auth/replicapool",
@@ -916,6 +1443,27 @@ func (c *PoolsListCall) Do() (*PoolsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *PoolsListCall) Pages(ctx context.Context, f func(*PoolsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "replicapool.pools.resize":
 
 type PoolsResizeCall struct {
@@ -923,14 +1471,15 @@ type PoolsResizeCall struct {
 	projectName string
 	zone        string
 	poolName    string
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
 // Resize: Resize a pool. This is an asynchronous operation, and
 // multiple overlapping resize requests can be made. Replica Pools will
 // use the information from the last resize request.
 func (r *PoolsService) Resize(projectName string, zone string, poolName string) *PoolsResizeCall {
-	c := &PoolsResizeCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PoolsResizeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	c.poolName = poolName
@@ -942,38 +1491,63 @@ func (r *PoolsService) Resize(projectName string, zone string, poolName string) 
 // existing number of replicas, new replicas will be added. If the
 // number is smaller, then existing replicas will be deleted.
 func (c *PoolsResizeCall) NumReplicas(numReplicas int64) *PoolsResizeCall {
-	c.opt_["numReplicas"] = numReplicas
+	c.urlParams_.Set("numReplicas", fmt.Sprint(numReplicas))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PoolsResizeCall) Fields(s ...googleapi.Field) *PoolsResizeCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PoolsResizeCall) Do() (*Pool, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PoolsResizeCall) Context(ctx context.Context) *PoolsResizeCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PoolsResizeCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["numReplicas"]; ok {
-		params.Set("numReplicas", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools/{poolName}/resize")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
 		"zone":        c.zone,
 		"poolName":    c.poolName,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.pools.resize" call.
+// Exactly one of *Pool or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Pool.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *PoolsResizeCall) Do(opts ...googleapi.CallOption) (*Pool, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -981,7 +1555,12 @@ func (c *PoolsResizeCall) Do() (*Pool, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Pool
+	ret := &Pool{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1042,12 +1621,13 @@ type PoolsUpdatetemplateCall struct {
 	zone        string
 	poolName    string
 	template    *Template
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
 // Updatetemplate: Update the template used by the pool.
 func (r *PoolsService) Updatetemplate(projectName string, zone string, poolName string, template *Template) *PoolsUpdatetemplateCall {
-	c := &PoolsUpdatetemplateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PoolsUpdatetemplateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	c.poolName = poolName
@@ -1055,28 +1635,32 @@ func (r *PoolsService) Updatetemplate(projectName string, zone string, poolName 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PoolsUpdatetemplateCall) Fields(s ...googleapi.Field) *PoolsUpdatetemplateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PoolsUpdatetemplateCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PoolsUpdatetemplateCall) Context(ctx context.Context) *PoolsUpdatetemplateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PoolsUpdatetemplateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.template)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools/{poolName}/updateTemplate")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
@@ -1084,8 +1668,17 @@ func (c *PoolsUpdatetemplateCall) Do() error {
 		"poolName":    c.poolName,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.pools.updatetemplate" call.
+func (c *PoolsUpdatetemplateCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -1145,12 +1738,13 @@ type ReplicasDeleteCall struct {
 	poolName              string
 	replicaName           string
 	replicasdeleterequest *ReplicasDeleteRequest
-	opt_                  map[string]interface{}
+	urlParams_            gensupport.URLParams
+	ctx_                  context.Context
 }
 
 // Delete: Deletes a replica from the pool.
 func (r *ReplicasService) Delete(projectName string, zone string, poolName string, replicaName string, replicasdeleterequest *ReplicasDeleteRequest) *ReplicasDeleteCall {
-	c := &ReplicasDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReplicasDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	c.poolName = poolName
@@ -1159,28 +1753,32 @@ func (r *ReplicasService) Delete(projectName string, zone string, poolName strin
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReplicasDeleteCall) Fields(s ...googleapi.Field) *ReplicasDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReplicasDeleteCall) Do() (*Replica, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReplicasDeleteCall) Context(ctx context.Context) *ReplicasDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReplicasDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.replicasdeleterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools/{poolName}/replicas/{replicaName}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
@@ -1189,8 +1787,32 @@ func (c *ReplicasDeleteCall) Do() (*Replica, error) {
 		"replicaName": c.replicaName,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.replicas.delete" call.
+// Exactly one of *Replica or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Replica.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ReplicasDeleteCall) Do(opts ...googleapi.CallOption) (*Replica, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1198,7 +1820,12 @@ func (c *ReplicasDeleteCall) Do() (*Replica, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Replica
+	ret := &Replica{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1258,17 +1885,19 @@ func (c *ReplicasDeleteCall) Do() (*Replica, error) {
 // method id "replicapool.replicas.get":
 
 type ReplicasGetCall struct {
-	s           *Service
-	projectName string
-	zone        string
-	poolName    string
-	replicaName string
-	opt_        map[string]interface{}
+	s            *Service
+	projectName  string
+	zone         string
+	poolName     string
+	replicaName  string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets information about a specific replica.
 func (r *ReplicasService) Get(projectName string, zone string, poolName string, replicaName string) *ReplicasGetCall {
-	c := &ReplicasGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReplicasGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	c.poolName = poolName
@@ -1276,23 +1905,37 @@ func (r *ReplicasService) Get(projectName string, zone string, poolName string, 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReplicasGetCall) Fields(s ...googleapi.Field) *ReplicasGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReplicasGetCall) Do() (*Replica, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ReplicasGetCall) IfNoneMatch(entityTag string) *ReplicasGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReplicasGetCall) Context(ctx context.Context) *ReplicasGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReplicasGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools/{poolName}/replicas/{replicaName}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
@@ -1300,8 +1943,35 @@ func (c *ReplicasGetCall) Do() (*Replica, error) {
 		"poolName":    c.poolName,
 		"replicaName": c.replicaName,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.replicas.get" call.
+// Exactly one of *Replica or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Replica.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ReplicasGetCall) Do(opts ...googleapi.CallOption) (*Replica, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1309,7 +1979,12 @@ func (c *ReplicasGetCall) Do() (*Replica, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Replica
+	ret := &Replica{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1356,6 +2031,7 @@ func (c *ReplicasGetCall) Do() (*Replica, error) {
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-platform.read-only",
 	//     "https://www.googleapis.com/auth/ndev.cloudman",
 	//     "https://www.googleapis.com/auth/ndev.cloudman.readonly",
 	//     "https://www.googleapis.com/auth/replicapool",
@@ -1368,16 +2044,18 @@ func (c *ReplicasGetCall) Do() (*Replica, error) {
 // method id "replicapool.replicas.list":
 
 type ReplicasListCall struct {
-	s           *Service
-	projectName string
-	zone        string
-	poolName    string
-	opt_        map[string]interface{}
+	s            *Service
+	projectName  string
+	zone         string
+	poolName     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists all replicas in a pool.
 func (r *ReplicasService) List(projectName string, zone string, poolName string) *ReplicasListCall {
-	c := &ReplicasListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReplicasListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	c.poolName = poolName
@@ -1388,7 +2066,7 @@ func (r *ReplicasService) List(projectName string, zone string, poolName string)
 // results to be returned. Acceptable values are 0 to 100, inclusive.
 // (Default: 50)
 func (c *ReplicasListCall) MaxResults(maxResults int64) *ReplicasListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -1396,41 +2074,76 @@ func (c *ReplicasListCall) MaxResults(maxResults int64) *ReplicasListCall {
 // nextPageToken value returned by a previous list request to obtain the
 // next page of results from the previous list request.
 func (c *ReplicasListCall) PageToken(pageToken string) *ReplicasListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReplicasListCall) Fields(s ...googleapi.Field) *ReplicasListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReplicasListCall) Do() (*ReplicasListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ReplicasListCall) IfNoneMatch(entityTag string) *ReplicasListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReplicasListCall) Context(ctx context.Context) *ReplicasListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReplicasListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools/{poolName}/replicas")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
 		"zone":        c.zone,
 		"poolName":    c.poolName,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.replicas.list" call.
+// Exactly one of *ReplicasListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ReplicasListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ReplicasListCall) Do(opts ...googleapi.CallOption) (*ReplicasListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1438,7 +2151,12 @@ func (c *ReplicasListCall) Do() (*ReplicasListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ReplicasListResponse
+	ret := &ReplicasListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1492,6 +2210,7 @@ func (c *ReplicasListCall) Do() (*ReplicasListResponse, error) {
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-platform.read-only",
 	//     "https://www.googleapis.com/auth/ndev.cloudman",
 	//     "https://www.googleapis.com/auth/ndev.cloudman.readonly",
 	//     "https://www.googleapis.com/auth/replicapool",
@@ -1499,6 +2218,27 @@ func (c *ReplicasListCall) Do() (*ReplicasListResponse, error) {
 	//   ]
 	// }
 
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ReplicasListCall) Pages(ctx context.Context, f func(*ReplicasListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
 }
 
 // method id "replicapool.replicas.restart":
@@ -1509,12 +2249,13 @@ type ReplicasRestartCall struct {
 	zone        string
 	poolName    string
 	replicaName string
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
 // Restart: Restarts a replica in a pool.
 func (r *ReplicasService) Restart(projectName string, zone string, poolName string, replicaName string) *ReplicasRestartCall {
-	c := &ReplicasRestartCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReplicasRestartCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectName = projectName
 	c.zone = zone
 	c.poolName = poolName
@@ -1522,23 +2263,27 @@ func (r *ReplicasService) Restart(projectName string, zone string, poolName stri
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReplicasRestartCall) Fields(s ...googleapi.Field) *ReplicasRestartCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReplicasRestartCall) Do() (*Replica, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReplicasRestartCall) Context(ctx context.Context) *ReplicasRestartCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReplicasRestartCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/pools/{poolName}/replicas/{replicaName}/restart")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectName": c.projectName,
@@ -1546,8 +2291,32 @@ func (c *ReplicasRestartCall) Do() (*Replica, error) {
 		"poolName":    c.poolName,
 		"replicaName": c.replicaName,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "replicapool.replicas.restart" call.
+// Exactly one of *Replica or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Replica.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ReplicasRestartCall) Do(opts ...googleapi.CallOption) (*Replica, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1555,7 +2324,12 @@ func (c *ReplicasRestartCall) Do() (*Replica, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Replica
+	ret := &Replica{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

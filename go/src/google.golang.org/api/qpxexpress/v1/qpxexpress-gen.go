@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/qpxexpress/v1"
 //   ...
 //   qpxexpressService, err := qpxexpress.New(oauthHttpClient)
-package qpxexpress
+package qpxexpress // import "google.golang.org/api/qpxexpress/v1"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "qpxExpress:v1"
 const apiName = "qpxExpress"
@@ -51,10 +55,18 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Trips *TripsService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewTripsService(s *Service) *TripsService {
@@ -66,6 +78,7 @@ type TripsService struct {
 	s *Service
 }
 
+// AircraftData: The make, model, and type of an aircraft.
 type AircraftData struct {
 	// Code: The aircraft code. For example, for a Boeing 777 the code would
 	// be 777.
@@ -77,8 +90,23 @@ type AircraftData struct {
 
 	// Name: The name of an aircraft, for example Boeing 777.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AircraftData) MarshalJSON() ([]byte, error) {
+	type noMethod AircraftData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AirportData: An airport.
 type AirportData struct {
 	// City: The city code an airport is located in. For example, for JFK
 	// airport, this is NYC.
@@ -95,8 +123,23 @@ type AirportData struct {
 	// Name: The name of an airport. For example, for airport BOS the name
 	// is "Boston Logan International".
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "City") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AirportData) MarshalJSON() ([]byte, error) {
+	type noMethod AirportData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// BagDescriptor: Information about an item of baggage.
 type BagDescriptor struct {
 	// CommercialName: Provides the commercial name for an optional service.
 	CommercialName string `json:"commercialName,omitempty"`
@@ -114,8 +157,24 @@ type BagDescriptor struct {
 	// Subcode: The standard IATA subcode used to identify this optional
 	// service.
 	Subcode string `json:"subcode,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CommercialName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *BagDescriptor) MarshalJSON() ([]byte, error) {
+	type noMethod BagDescriptor
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CarrierData: Information about a carrier (ie. an airline, bus line,
+// railroad, etc) that might be useful to display to an end-user.
 type CarrierData struct {
 	// Code: The IATA designator of a carrier (airline, etc). For example,
 	// for American Airlines, the code is AA.
@@ -128,8 +187,24 @@ type CarrierData struct {
 	// Name: The long, full name of a carrier. For example: American
 	// Airlines.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CarrierData) MarshalJSON() ([]byte, error) {
+	type noMethod CarrierData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CityData: Information about a city that might be useful to an
+// end-user; typically the city of an airport.
 type CityData struct {
 	// Code: The IATA character ID of a city. For example, for Boston this
 	// is BOS.
@@ -145,8 +220,25 @@ type CityData struct {
 
 	// Name: The full name of a city. An example would be: New York.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CityData) MarshalJSON() ([]byte, error) {
+	type noMethod CityData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Data: Detailed information about components found in the solutions of
+// this response, including a trip's airport, city, taxes, airline, and
+// aircraft.
 type Data struct {
 	// Aircraft: The aircraft that is flying between an origin and
 	// destination.
@@ -170,8 +262,28 @@ type Data struct {
 
 	// Tax: The taxes due for flying between an origin and a destination.
 	Tax []*TaxData `json:"tax,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Aircraft") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Data) MarshalJSON() ([]byte, error) {
+	type noMethod Data
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FareInfo: Complete information about a fare used in the solution to a
+// low-fare search query. In the airline industry a fare is a price an
+// airline charges for one-way travel between two points. A fare
+// typically contains a carrier code, two city codes, a price, and a
+// fare basis. (A fare basis is a one-to-eight character alphanumeric
+// code used to identify a fare.)
 type FareInfo struct {
 	BasisCode string `json:"basisCode,omitempty"`
 
@@ -195,15 +307,53 @@ type FareInfo struct {
 	// Private: Whether this is a private fare, for example one offered only
 	// to select customers rather than the general public.
 	Private bool `json:"private,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BasisCode") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FareInfo) MarshalJSON() ([]byte, error) {
+	type noMethod FareInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FlightInfo: A flight is a sequence of legs with the same airline
+// carrier and flight number. (A leg is the smallest unit of travel, in
+// the case of a flight a takeoff immediately followed by a landing at
+// two set points on a particular carrier with a particular flight
+// number.) The naive view is that a flight is scheduled travel of an
+// aircraft between two points, with possibly intermediate stops, but
+// carriers will frequently list flights that require a change of
+// aircraft between legs.
 type FlightInfo struct {
 	Carrier string `json:"carrier,omitempty"`
 
 	// Number: The flight number.
 	Number string `json:"number,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Carrier") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FlightInfo) MarshalJSON() ([]byte, error) {
+	type noMethod FlightInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FreeBaggageAllowance: Information about free baggage allowed on one
+// segment of a trip.
 type FreeBaggageAllowance struct {
 	// BagDescriptor: A representation of a type of bag, such as an ATPCo
 	// subcode, Commercial Name, or other description.
@@ -226,8 +376,26 @@ type FreeBaggageAllowance struct {
 
 	// Pounds: The number of pounds of free baggage allowed.
 	Pounds int64 `json:"pounds,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BagDescriptor") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FreeBaggageAllowance) MarshalJSON() ([]byte, error) {
+	type noMethod FreeBaggageAllowance
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// LegInfo: Information about a leg. (A leg is the smallest unit of
+// travel, in the case of a flight a takeoff immediately followed by a
+// landing at two set points on a particular carrier with a particular
+// flight number.)
 type LegInfo struct {
 	// Aircraft: The aircraft (or bus, ferry, railcar, etc) travelling
 	// between the two points of this leg.
@@ -297,8 +465,25 @@ type LegInfo struct {
 	// States Transportation Security Administration (TSA) prior to
 	// departure.
 	Secure bool `json:"secure,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Aircraft") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *LegInfo) MarshalJSON() ([]byte, error) {
+	type noMethod LegInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PassengerCounts: The number and type of passengers. Unfortunately the
+// definition of an infant, child, adult, and senior citizen varies
+// across carriers and reservation systems.
 type PassengerCounts struct {
 	// AdultCount: The number of passengers that are adults.
 	AdultCount int64 `json:"adultCount,omitempty"`
@@ -321,8 +506,26 @@ type PassengerCounts struct {
 
 	// SeniorCount: The number of passengers that are senior citizens.
 	SeniorCount int64 `json:"seniorCount,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AdultCount") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PassengerCounts) MarshalJSON() ([]byte, error) {
+	type noMethod PassengerCounts
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PricingInfo: The price of one or more travel segments. The currency
+// used to purchase tickets is usually determined by the sale/ticketing
+// city or the sale/ticketing country, unless none are specified, in
+// which case it defaults to that of the journey origin country.
 type PricingInfo struct {
 	// BaseFareTotal: The total fare in the base fare currency (the currency
 	// of the country of origin). This element is only present when the
@@ -375,8 +578,27 @@ type PricingInfo struct {
 
 	// Tax: The taxes used to calculate the tax total per ticket.
 	Tax []*TaxInfo `json:"tax,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BaseFareTotal") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PricingInfo) MarshalJSON() ([]byte, error) {
+	type noMethod PricingInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SegmentInfo: Details of a segment of a flight; a segment is one or
+// more consecutive legs on the same flight. For example a hypothetical
+// flight ZZ001, from DFW to OGG, would have one segment with two legs:
+// DFW to HNL (leg 1), HNL to OGG (leg 2), and DFW to OGG (legs 1 and
+// 2).
 type SegmentInfo struct {
 	// BookingCode: The booking code or class for this segment.
 	BookingCode string `json:"bookingCode,omitempty"`
@@ -426,8 +648,23 @@ type SegmentInfo struct {
 	// SubjectToGovernmentApproval: Whether the operation of this segment
 	// remains subject to government approval.
 	SubjectToGovernmentApproval bool `json:"subjectToGovernmentApproval,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BookingCode") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SegmentInfo) MarshalJSON() ([]byte, error) {
+	type noMethod SegmentInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SegmentPricing: The price of this segment.
 type SegmentPricing struct {
 	// FareId: A segment identifier unique within a single solution. It is
 	// used to refer to different parts of the same solution.
@@ -444,8 +681,31 @@ type SegmentPricing struct {
 
 	// SegmentId: Unique identifier in the response of this segment.
 	SegmentId string `json:"segmentId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FareId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SegmentPricing) MarshalJSON() ([]byte, error) {
+	type noMethod SegmentPricing
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SliceInfo: Information about a slice. A slice represents a
+// traveller's intent, the portion of a low-fare search corresponding to
+// a traveler's request to get between two points. One-way journeys are
+// generally expressed using 1 slice, round-trips using 2. For example,
+// if a traveler specifies the following trip in a user interface:
+// | Origin | Destination | Departure Date | | BOS | LAX | March 10,
+// 2007 | | LAX | SYD | March 17, 2007 | | SYD | BOS | March 22, 2007
+// |
+// then this is a three slice trip.
 type SliceInfo struct {
 	// Duration: The duration of the slice in minutes.
 	Duration int64 `json:"duration,omitempty"`
@@ -459,8 +719,23 @@ type SliceInfo struct {
 
 	// Segment: The segment(s) constituting the slice.
 	Segment []*SegmentInfo `json:"segment,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Duration") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SliceInfo) MarshalJSON() ([]byte, error) {
+	type noMethod SliceInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SliceInput: Criteria a desired slice must satisfy.
 type SliceInput struct {
 	// Alliance: Slices with only the carriers in this alliance should be
 	// returned; do not use this field with permittedCarrier. Allowed values
@@ -504,8 +779,23 @@ type SliceInput struct {
 	// ProhibitedCarrier: A list of 2-letter IATA airline designators.
 	// Exclude slices that use these carriers.
 	ProhibitedCarrier []string `json:"prohibitedCarrier,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Alliance") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SliceInput) MarshalJSON() ([]byte, error) {
+	type noMethod SliceInput
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// TaxData: Tax data.
 type TaxData struct {
 	// Id: An identifier uniquely identifying a tax in a response.
 	Id string `json:"id,omitempty"`
@@ -516,8 +806,23 @@ type TaxData struct {
 
 	// Name: The name of a tax.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *TaxData) MarshalJSON() ([]byte, error) {
+	type noMethod TaxData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// TaxInfo: Tax information.
 type TaxInfo struct {
 	// ChargeType: Whether this is a government charge or a carrier
 	// surcharge.
@@ -539,8 +844,23 @@ type TaxInfo struct {
 
 	// SalePrice: The price of the tax in the sales or equivalent currency.
 	SalePrice string `json:"salePrice,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ChargeType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *TaxInfo) MarshalJSON() ([]byte, error) {
+	type noMethod TaxInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// TimeOfDayRange: Two times in a single day defining a time range.
 type TimeOfDayRange struct {
 	// EarliestTime: The earliest time of day in HH:MM format.
 	EarliestTime string `json:"earliestTime,omitempty"`
@@ -552,8 +872,23 @@ type TimeOfDayRange struct {
 
 	// LatestTime: The latest time of day in HH:MM format.
 	LatestTime string `json:"latestTime,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "EarliestTime") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *TimeOfDayRange) MarshalJSON() ([]byte, error) {
+	type noMethod TimeOfDayRange
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// TripOption: Trip information.
 type TripOption struct {
 	// Id: Identifier uniquely identifying this trip in a response.
 	Id string `json:"id,omitempty"`
@@ -571,8 +906,24 @@ type TripOption struct {
 
 	// Slice: The slices that make up this trip's itinerary.
 	Slice []*SliceInfo `json:"slice,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *TripOption) MarshalJSON() ([]byte, error) {
+	type noMethod TripOption
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// TripOptionsRequest: A QPX Express search request, which will yield
+// one or more solutions.
 type TripOptionsRequest struct {
 	// MaxPrice: Do not return solutions that cost more than this price. The
 	// alphabetical part of the price is in ISO 4217. The format, in regex,
@@ -600,8 +951,23 @@ type TripOptionsRequest struct {
 
 	// Solutions: The number of solutions to return, maximum 500.
 	Solutions int64 `json:"solutions,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "MaxPrice") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *TripOptionsRequest) MarshalJSON() ([]byte, error) {
+	type noMethod TripOptionsRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// TripOptionsResponse: A QPX Express search response.
 type TripOptionsResponse struct {
 	// Data: Informational data global to list of solutions.
 	Data *Data `json:"data,omitempty"`
@@ -617,14 +983,44 @@ type TripOptionsResponse struct {
 	// TripOption: A list of priced itinerary solutions to the QPX Express
 	// query.
 	TripOption []*TripOption `json:"tripOption,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Data") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *TripOptionsResponse) MarshalJSON() ([]byte, error) {
+	type noMethod TripOptionsResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// TripsSearchRequest: A QPX Express search request.
 type TripsSearchRequest struct {
 	// Request: A QPX Express search request. Required values are at least
 	// one adult or senior passenger, an origin, a destination, and a date.
 	Request *TripOptionsRequest `json:"request,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Request") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *TripsSearchRequest) MarshalJSON() ([]byte, error) {
+	type noMethod TripsSearchRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// TripsSearchResponse: A QPX Express search response.
 type TripsSearchResponse struct {
 	// Kind: Identifies this as a QPX Express API search response resource.
 	// Value: the fixed string qpxExpress#tripsSearch.
@@ -632,6 +1028,24 @@ type TripsSearchResponse struct {
 
 	// Trips: All possible solutions to the QPX Express search request.
 	Trips *TripOptionsResponse `json:"trips,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *TripsSearchResponse) MarshalJSON() ([]byte, error) {
+	type noMethod TripsSearchResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "qpxExpress.trips.search":
@@ -639,43 +1053,72 @@ type TripsSearchResponse struct {
 type TripsSearchCall struct {
 	s                  *Service
 	tripssearchrequest *TripsSearchRequest
-	opt_               map[string]interface{}
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
 }
 
 // Search: Returns a list of flights.
 func (r *TripsService) Search(tripssearchrequest *TripsSearchRequest) *TripsSearchCall {
-	c := &TripsSearchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TripsSearchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.tripssearchrequest = tripssearchrequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TripsSearchCall) Fields(s ...googleapi.Field) *TripsSearchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TripsSearchCall) Do() (*TripsSearchResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TripsSearchCall) Context(ctx context.Context) *TripsSearchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TripsSearchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.tripssearchrequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "search")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "qpxExpress.trips.search" call.
+// Exactly one of *TripsSearchResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *TripsSearchResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *TripsSearchCall) Do(opts ...googleapi.CallOption) (*TripsSearchResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -683,7 +1126,12 @@ func (c *TripsSearchCall) Do() (*TripsSearchResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *TripsSearchResponse
+	ret := &TripsSearchResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

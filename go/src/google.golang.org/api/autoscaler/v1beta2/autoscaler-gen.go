@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/autoscaler/v1beta2"
 //   ...
 //   autoscalerService, err := autoscaler.New(oauthHttpClient)
-package autoscaler
+package autoscaler // import "google.golang.org/api/autoscaler/v1beta2"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "autoscaler:v1beta2"
 const apiName = "autoscaler"
@@ -62,14 +66,22 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Autoscalers *AutoscalersService
 
 	ZoneOperations *ZoneOperationsService
 
 	Zones *ZonesService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewAutoscalersService(s *Service) *AutoscalersService {
@@ -99,6 +111,7 @@ type ZonesService struct {
 	s *Service
 }
 
+// Autoscaler: Cloud Autoscaler resource.
 type Autoscaler struct {
 	// AutoscalingPolicy: Configuration parameters for autoscaling
 	// algorithm.
@@ -131,6 +144,24 @@ type Autoscaler struct {
 	// only supported value is ReplicaPool?s URL. Note: it is illegal to
 	// specify multiple Autoscalers for the same target.
 	Target string `json:"target,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AutoscalingPolicy")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Autoscaler) MarshalJSON() ([]byte, error) {
+	type noMethod Autoscaler
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AutoscalerListResponse struct {
@@ -143,8 +174,27 @@ type AutoscalerListResponse struct {
 	// NextPageToken: [Output only] A token used to continue a truncated
 	// list request.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AutoscalerListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod AutoscalerListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AutoscalingPolicy: Cloud Autoscaler policy.
 type AutoscalingPolicy struct {
 	// CoolDownPeriodSec: The number of seconds that the Autoscaler should
 	// wait between two succeeding changes to the number of virtual
@@ -173,16 +223,47 @@ type AutoscalingPolicy struct {
 	// MinNumReplicas: The minimum number of replicas that the Autoscaler
 	// can scale down to.
 	MinNumReplicas int64 `json:"minNumReplicas,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CoolDownPeriodSec")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AutoscalingPolicy) MarshalJSON() ([]byte, error) {
+	type noMethod AutoscalingPolicy
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AutoscalingPolicyCpuUtilization: CPU utilization policy.
 type AutoscalingPolicyCpuUtilization struct {
 	// UtilizationTarget: The target utilization that the Autoscaler should
 	// maintain. It is represented as a fraction of used cores. For example:
 	// 6 cores used in 8-core VM are represented here as 0.75. Must be a
 	// float value between (0, 1]. If not defined, the default is 0.8.
 	UtilizationTarget float64 `json:"utilizationTarget,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "UtilizationTarget")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AutoscalingPolicyCpuUtilization) MarshalJSON() ([]byte, error) {
+	type noMethod AutoscalingPolicyCpuUtilization
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AutoscalingPolicyCustomMetricUtilization: Custom utilization metric
+// policy.
 type AutoscalingPolicyCustomMetricUtilization struct {
 	// Metric: Identifier of the metric. It should be a Cloud Monitoring
 	// metric. The metric can not have negative values. The metric should be
@@ -199,8 +280,24 @@ type AutoscalingPolicyCustomMetricUtilization struct {
 	// UtilizationTargetType: Defines type in which utilization_target is
 	// expressed.
 	UtilizationTargetType string `json:"utilizationTargetType,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Metric") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AutoscalingPolicyCustomMetricUtilization) MarshalJSON() ([]byte, error) {
+	type noMethod AutoscalingPolicyCustomMetricUtilization
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AutoscalingPolicyLoadBalancingUtilization: Load balancing utilization
+// policy.
 type AutoscalingPolicyLoadBalancingUtilization struct {
 	// UtilizationTarget: Fraction of backend capacity utilization (set in
 	// HTTP load balancing configuration) that Autoscaler should maintain.
@@ -210,6 +307,20 @@ type AutoscalingPolicyLoadBalancingUtilization struct {
 	// number of instances such that each instance receives 7 QPS on
 	// average, set this to 0.7.
 	UtilizationTarget float64 `json:"utilizationTarget,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "UtilizationTarget")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AutoscalingPolicyLoadBalancingUtilization) MarshalJSON() ([]byte, error) {
+	type noMethod AutoscalingPolicyLoadBalancingUtilization
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type DeprecationStatus struct {
@@ -222,6 +333,20 @@ type DeprecationStatus struct {
 	Replacement string `json:"replacement,omitempty"`
 
 	State string `json:"state,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Deleted") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *DeprecationStatus) MarshalJSON() ([]byte, error) {
+	type noMethod DeprecationStatus
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Operation struct {
@@ -241,8 +366,8 @@ type Operation struct {
 
 	InsertTime string `json:"insertTime,omitempty"`
 
-	// Kind: [Output Only] Type of the resource. Always kind#operation for
-	// Operation resources.
+	// Kind: [Output Only] Type of the resource. Always compute#Operation
+	// for Operation resources.
 	Kind string `json:"kind,omitempty"`
 
 	Name string `json:"name,omitempty"`
@@ -270,10 +395,42 @@ type Operation struct {
 	Warnings []*OperationWarnings `json:"warnings,omitempty"`
 
 	Zone string `json:"zone,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ClientOperationId")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Operation) MarshalJSON() ([]byte, error) {
+	type noMethod Operation
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type OperationError struct {
 	Errors []*OperationErrorErrors `json:"errors,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Errors") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *OperationError) MarshalJSON() ([]byte, error) {
+	type noMethod OperationError
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type OperationErrorErrors struct {
@@ -282,6 +439,20 @@ type OperationErrorErrors struct {
 	Location string `json:"location,omitempty"`
 
 	Message string `json:"message,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *OperationErrorErrors) MarshalJSON() ([]byte, error) {
+	type noMethod OperationErrorErrors
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type OperationWarnings struct {
@@ -290,12 +461,40 @@ type OperationWarnings struct {
 	Data []*OperationWarningsData `json:"data,omitempty"`
 
 	Message string `json:"message,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *OperationWarnings) MarshalJSON() ([]byte, error) {
+	type noMethod OperationWarnings
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type OperationWarningsData struct {
 	Key string `json:"key,omitempty"`
 
 	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Key") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *OperationWarningsData) MarshalJSON() ([]byte, error) {
+	type noMethod OperationWarningsData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type OperationList struct {
@@ -303,13 +502,31 @@ type OperationList struct {
 
 	Items []*Operation `json:"items,omitempty"`
 
-	// Kind: Type of resource. Always compute#operations for Operations
-	// resource.
+	// Kind: [Output Only] Type of resource. Always compute#operations for
+	// Operations resource.
 	Kind string `json:"kind,omitempty"`
 
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *OperationList) MarshalJSON() ([]byte, error) {
+	type noMethod OperationList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Zone struct {
@@ -321,7 +538,7 @@ type Zone struct {
 
 	Id uint64 `json:"id,omitempty,string"`
 
-	// Kind: Type of the resource.
+	// Kind: [Output Only] Type of the resource. Always kind#zone for zones.
 	Kind string `json:"kind,omitempty"`
 
 	MaintenanceWindows []*ZoneMaintenanceWindows `json:"maintenanceWindows,omitempty"`
@@ -330,10 +547,24 @@ type Zone struct {
 
 	Region string `json:"region,omitempty"`
 
-	// SelfLink: Server defined URL for the resource (output only).
+	// SelfLink: [Output Only] Server defined URL for the resource.
 	SelfLink string `json:"selfLink,omitempty"`
 
 	Status string `json:"status,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CreationTimestamp")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Zone) MarshalJSON() ([]byte, error) {
+	type noMethod Zone
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ZoneMaintenanceWindows struct {
@@ -344,6 +575,20 @@ type ZoneMaintenanceWindows struct {
 	EndTime string `json:"endTime,omitempty"`
 
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BeginTime") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ZoneMaintenanceWindows) MarshalJSON() ([]byte, error) {
+	type noMethod ZoneMaintenanceWindows
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ZoneList struct {
@@ -358,6 +603,24 @@ type ZoneList struct {
 
 	// SelfLink: Server defined URL for this resource (output only).
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ZoneList) MarshalJSON() ([]byte, error) {
+	type noMethod ZoneList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "autoscaler.autoscalers.delete":
@@ -367,43 +630,72 @@ type AutoscalersDeleteCall struct {
 	project    string
 	zone       string
 	autoscaler string
-	opt_       map[string]interface{}
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Deletes the specified Autoscaler resource.
 func (r *AutoscalersService) Delete(project string, zone string, autoscaler string) *AutoscalersDeleteCall {
-	c := &AutoscalersDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AutoscalersDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.zone = zone
 	c.autoscaler = autoscaler
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AutoscalersDeleteCall) Fields(s ...googleapi.Field) *AutoscalersDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AutoscalersDeleteCall) Do() (*Operation, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AutoscalersDeleteCall) Context(ctx context.Context) *AutoscalersDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AutoscalersDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/autoscalers/{autoscaler}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project":    c.project,
 		"zone":       c.zone,
 		"autoscaler": c.autoscaler,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.autoscalers.delete" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *AutoscalersDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +703,12 @@ func (c *AutoscalersDeleteCall) Do() (*Operation, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Operation
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -459,47 +756,90 @@ func (c *AutoscalersDeleteCall) Do() (*Operation, error) {
 // method id "autoscaler.autoscalers.get":
 
 type AutoscalersGetCall struct {
-	s          *Service
-	project    string
-	zone       string
-	autoscaler string
-	opt_       map[string]interface{}
+	s            *Service
+	project      string
+	zone         string
+	autoscaler   string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets the specified Autoscaler resource.
 func (r *AutoscalersService) Get(project string, zone string, autoscaler string) *AutoscalersGetCall {
-	c := &AutoscalersGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AutoscalersGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.zone = zone
 	c.autoscaler = autoscaler
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AutoscalersGetCall) Fields(s ...googleapi.Field) *AutoscalersGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AutoscalersGetCall) Do() (*Autoscaler, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AutoscalersGetCall) IfNoneMatch(entityTag string) *AutoscalersGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AutoscalersGetCall) Context(ctx context.Context) *AutoscalersGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AutoscalersGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/autoscalers/{autoscaler}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project":    c.project,
 		"zone":       c.zone,
 		"autoscaler": c.autoscaler,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.autoscalers.get" call.
+// Exactly one of *Autoscaler or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Autoscaler.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *AutoscalersGetCall) Do(opts ...googleapi.CallOption) (*Autoscaler, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -507,7 +847,12 @@ func (c *AutoscalersGetCall) Do() (*Autoscaler, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Autoscaler
+	ret := &Autoscaler{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -560,48 +905,77 @@ type AutoscalersInsertCall struct {
 	project    string
 	zone       string
 	autoscaler *Autoscaler
-	opt_       map[string]interface{}
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Insert: Adds new Autoscaler resource.
 func (r *AutoscalersService) Insert(project string, zone string, autoscaler *Autoscaler) *AutoscalersInsertCall {
-	c := &AutoscalersInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AutoscalersInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.zone = zone
 	c.autoscaler = autoscaler
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AutoscalersInsertCall) Fields(s ...googleapi.Field) *AutoscalersInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AutoscalersInsertCall) Do() (*Operation, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AutoscalersInsertCall) Context(ctx context.Context) *AutoscalersInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AutoscalersInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.autoscaler)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/autoscalers")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 		"zone":    c.zone,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.autoscalers.insert" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *AutoscalersInsertCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -609,7 +983,12 @@ func (c *AutoscalersInsertCall) Do() (*Operation, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Operation
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -653,15 +1032,17 @@ func (c *AutoscalersInsertCall) Do() (*Operation, error) {
 // method id "autoscaler.autoscalers.list":
 
 type AutoscalersListCall struct {
-	s       *Service
-	project string
-	zone    string
-	opt_    map[string]interface{}
+	s            *Service
+	project      string
+	zone         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists all Autoscaler resources in this zone.
 func (r *AutoscalersService) List(project string, zone string) *AutoscalersListCall {
-	c := &AutoscalersListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AutoscalersListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.zone = zone
 	return c
@@ -669,55 +1050,87 @@ func (r *AutoscalersService) List(project string, zone string) *AutoscalersListC
 
 // Filter sets the optional parameter "filter":
 func (c *AutoscalersListCall) Filter(filter string) *AutoscalersListCall {
-	c.opt_["filter"] = filter
+	c.urlParams_.Set("filter", filter)
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults":
 func (c *AutoscalersListCall) MaxResults(maxResults int64) *AutoscalersListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken":
 func (c *AutoscalersListCall) PageToken(pageToken string) *AutoscalersListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AutoscalersListCall) Fields(s ...googleapi.Field) *AutoscalersListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AutoscalersListCall) Do() (*AutoscalerListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AutoscalersListCall) IfNoneMatch(entityTag string) *AutoscalersListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AutoscalersListCall) Context(ctx context.Context) *AutoscalersListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AutoscalersListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["filter"]; ok {
-		params.Set("filter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/autoscalers")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 		"zone":    c.zone,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.autoscalers.list" call.
+// Exactly one of *AutoscalerListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *AutoscalerListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *AutoscalersListCall) Do(opts ...googleapi.CallOption) (*AutoscalerListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -725,7 +1138,12 @@ func (c *AutoscalersListCall) Do() (*AutoscalerListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AutoscalerListResponse
+	ret := &AutoscalerListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -780,6 +1198,27 @@ func (c *AutoscalersListCall) Do() (*AutoscalerListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *AutoscalersListCall) Pages(ctx context.Context, f func(*AutoscalerListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "autoscaler.autoscalers.patch":
 
 type AutoscalersPatchCall struct {
@@ -788,13 +1227,14 @@ type AutoscalersPatchCall struct {
 	zone        string
 	autoscaler  string
 	autoscaler2 *Autoscaler
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
 // Patch: Update the entire content of the Autoscaler resource. This
 // method supports patch semantics.
 func (r *AutoscalersService) Patch(project string, zone string, autoscaler string, autoscaler2 *Autoscaler) *AutoscalersPatchCall {
-	c := &AutoscalersPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AutoscalersPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.zone = zone
 	c.autoscaler = autoscaler
@@ -802,28 +1242,32 @@ func (r *AutoscalersService) Patch(project string, zone string, autoscaler strin
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AutoscalersPatchCall) Fields(s ...googleapi.Field) *AutoscalersPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AutoscalersPatchCall) Do() (*Operation, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AutoscalersPatchCall) Context(ctx context.Context) *AutoscalersPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AutoscalersPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.autoscaler2)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/autoscalers/{autoscaler}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project":    c.project,
@@ -831,8 +1275,32 @@ func (c *AutoscalersPatchCall) Do() (*Operation, error) {
 		"autoscaler": c.autoscaler,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.autoscalers.patch" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *AutoscalersPatchCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -840,7 +1308,12 @@ func (c *AutoscalersPatchCall) Do() (*Operation, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Operation
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -896,12 +1369,13 @@ type AutoscalersUpdateCall struct {
 	zone        string
 	autoscaler  string
 	autoscaler2 *Autoscaler
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
 // Update: Update the entire content of the Autoscaler resource.
 func (r *AutoscalersService) Update(project string, zone string, autoscaler string, autoscaler2 *Autoscaler) *AutoscalersUpdateCall {
-	c := &AutoscalersUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AutoscalersUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.zone = zone
 	c.autoscaler = autoscaler
@@ -909,28 +1383,32 @@ func (r *AutoscalersService) Update(project string, zone string, autoscaler stri
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AutoscalersUpdateCall) Fields(s ...googleapi.Field) *AutoscalersUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AutoscalersUpdateCall) Do() (*Operation, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AutoscalersUpdateCall) Context(ctx context.Context) *AutoscalersUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AutoscalersUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.autoscaler2)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/autoscalers/{autoscaler}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project":    c.project,
@@ -938,8 +1416,32 @@ func (c *AutoscalersUpdateCall) Do() (*Operation, error) {
 		"autoscaler": c.autoscaler,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.autoscalers.update" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *AutoscalersUpdateCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -947,7 +1449,12 @@ func (c *AutoscalersUpdateCall) Do() (*Operation, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Operation
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -998,47 +1505,61 @@ func (c *AutoscalersUpdateCall) Do() (*Operation, error) {
 // method id "autoscaler.zoneOperations.delete":
 
 type ZoneOperationsDeleteCall struct {
-	s         *Service
-	project   string
-	zone      string
-	operation string
-	opt_      map[string]interface{}
+	s          *Service
+	project    string
+	zone       string
+	operation  string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Deletes the specified zone-specific operation resource.
 func (r *ZoneOperationsService) Delete(project string, zone string, operation string) *ZoneOperationsDeleteCall {
-	c := &ZoneOperationsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ZoneOperationsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.zone = zone
 	c.operation = operation
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ZoneOperationsDeleteCall) Fields(s ...googleapi.Field) *ZoneOperationsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ZoneOperationsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ZoneOperationsDeleteCall) Context(ctx context.Context) *ZoneOperationsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ZoneOperationsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/zones/{zone}/operations/{operation}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project":   c.project,
 		"zone":      c.zone,
 		"operation": c.operation,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.zoneOperations.delete" call.
+func (c *ZoneOperationsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -1087,47 +1608,90 @@ func (c *ZoneOperationsDeleteCall) Do() error {
 // method id "autoscaler.zoneOperations.get":
 
 type ZoneOperationsGetCall struct {
-	s         *Service
-	project   string
-	zone      string
-	operation string
-	opt_      map[string]interface{}
+	s            *Service
+	project      string
+	zone         string
+	operation    string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Retrieves the specified zone-specific operation resource.
 func (r *ZoneOperationsService) Get(project string, zone string, operation string) *ZoneOperationsGetCall {
-	c := &ZoneOperationsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ZoneOperationsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.zone = zone
 	c.operation = operation
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ZoneOperationsGetCall) Fields(s ...googleapi.Field) *ZoneOperationsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ZoneOperationsGetCall) Do() (*Operation, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ZoneOperationsGetCall) IfNoneMatch(entityTag string) *ZoneOperationsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ZoneOperationsGetCall) Context(ctx context.Context) *ZoneOperationsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ZoneOperationsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/zones/{zone}/operations/{operation}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project":   c.project,
 		"zone":      c.zone,
 		"operation": c.operation,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.zoneOperations.get" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ZoneOperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1135,7 +1699,12 @@ func (c *ZoneOperationsGetCall) Do() (*Operation, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Operation
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1184,16 +1753,18 @@ func (c *ZoneOperationsGetCall) Do() (*Operation, error) {
 // method id "autoscaler.zoneOperations.list":
 
 type ZoneOperationsListCall struct {
-	s       *Service
-	project string
-	zone    string
-	opt_    map[string]interface{}
+	s            *Service
+	project      string
+	zone         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Retrieves the list of operation resources contained within the
 // specified zone.
 func (r *ZoneOperationsService) List(project string, zone string) *ZoneOperationsListCall {
-	c := &ZoneOperationsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ZoneOperationsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.zone = zone
 	return c
@@ -1201,55 +1772,87 @@ func (r *ZoneOperationsService) List(project string, zone string) *ZoneOperation
 
 // Filter sets the optional parameter "filter":
 func (c *ZoneOperationsListCall) Filter(filter string) *ZoneOperationsListCall {
-	c.opt_["filter"] = filter
+	c.urlParams_.Set("filter", filter)
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults":
 func (c *ZoneOperationsListCall) MaxResults(maxResults int64) *ZoneOperationsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken":
 func (c *ZoneOperationsListCall) PageToken(pageToken string) *ZoneOperationsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ZoneOperationsListCall) Fields(s ...googleapi.Field) *ZoneOperationsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ZoneOperationsListCall) Do() (*OperationList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ZoneOperationsListCall) IfNoneMatch(entityTag string) *ZoneOperationsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ZoneOperationsListCall) Context(ctx context.Context) *ZoneOperationsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ZoneOperationsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["filter"]; ok {
-		params.Set("filter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/zones/{zone}/operations")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 		"zone":    c.zone,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.zoneOperations.list" call.
+// Exactly one of *OperationList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *OperationList.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ZoneOperationsListCall) Do(opts ...googleapi.CallOption) (*OperationList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1257,7 +1860,12 @@ func (c *ZoneOperationsListCall) Do() (*OperationList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *OperationList
+	ret := &OperationList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1312,71 +1920,126 @@ func (c *ZoneOperationsListCall) Do() (*OperationList, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ZoneOperationsListCall) Pages(ctx context.Context, f func(*OperationList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "autoscaler.zones.list":
 
 type ZonesListCall struct {
-	s       *Service
-	project string
-	opt_    map[string]interface{}
+	s            *Service
+	project      string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List:
 func (r *ZonesService) List(project string) *ZonesListCall {
-	c := &ZonesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ZonesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	return c
 }
 
 // Filter sets the optional parameter "filter":
 func (c *ZonesListCall) Filter(filter string) *ZonesListCall {
-	c.opt_["filter"] = filter
+	c.urlParams_.Set("filter", filter)
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults":
 func (c *ZonesListCall) MaxResults(maxResults int64) *ZonesListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken":
 func (c *ZonesListCall) PageToken(pageToken string) *ZonesListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ZonesListCall) Fields(s ...googleapi.Field) *ZonesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ZonesListCall) Do() (*ZoneList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ZonesListCall) IfNoneMatch(entityTag string) *ZonesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ZonesListCall) Context(ctx context.Context) *ZonesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ZonesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["filter"]; ok {
-		params.Set("filter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/zones")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "autoscaler.zones.list" call.
+// Exactly one of *ZoneList or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *ZoneList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ZonesListCall) Do(opts ...googleapi.CallOption) (*ZoneList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1384,7 +2047,12 @@ func (c *ZonesListCall) Do() (*ZoneList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ZoneList
+	ret := &ZoneList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1430,4 +2098,25 @@ func (c *ZonesListCall) Do() (*ZoneList, error) {
 	//   ]
 	// }
 
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ZonesListCall) Pages(ctx context.Context, f func(*ZoneList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
 }

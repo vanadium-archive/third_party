@@ -1,21 +1,21 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/b2NIBPwXNKKhXGBuVSRLcFt--0c\"",
+ "etag": "\"bRFOOrZKfO9LweMbPqu0kcu6De8/A2G_NAa29vne9MPSojupRQ5bVuo\"",
  "discoveryVersion": "v1",
  "id": "cloudmonitoring:v2beta2",
  "name": "cloudmonitoring",
  "canonicalName": "Cloud Monitoring",
  "version": "v2beta2",
- "revision": "20141112",
+ "revision": "20160314",
  "title": "Cloud Monitoring API",
- "description": "API for accessing Google Cloud and API monitoring data.",
+ "description": "Accesses Google Cloud Monitoring data.",
  "ownerDomain": "google.com",
  "ownerName": "Google",
  "icons": {
   "x16": "http://www.google.com/images/icons/product/search-16.gif",
   "x32": "http://www.google.com/images/icons/product/search-32.gif"
  },
- "documentationLink": "https://developers.google.com/cloud/eap/cloud-monitoring/v2beta2/",
+ "documentationLink": "https://cloud.google.com/monitoring/v2beta2/",
  "protocol": "rest",
  "baseUrl": "https://www.googleapis.com/cloudmonitoring/v2beta2/projects/",
  "basePath": "/cloudmonitoring/v2beta2/projects/",
@@ -70,6 +70,9 @@
  "auth": {
   "oauth2": {
    "scopes": {
+    "https://www.googleapis.com/auth/cloud-platform": {
+     "description": "View and manage your data across Google Cloud Platform services"
+    },
     "https://www.googleapis.com/auth/monitoring": {
      "description": "View and write monitoring data for all of your Google and third-party Cloud and API projects"
     }
@@ -266,11 +269,11 @@
    "properties": {
     "metricType": {
      "type": "string",
-     "description": "The method of collecting data for the metric."
+     "description": "The method of collecting data for the metric. See Metric types."
     },
     "valueType": {
      "type": "string",
-     "description": "The type of data that is written to a timeseries point for this metric."
+     "description": "The data type of of individual points in the metric's time series. See Metric value types."
     }
    }
   },
@@ -522,6 +525,7 @@
       "$ref": "MetricDescriptor"
      },
      "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/monitoring"
      ]
     },
@@ -552,6 +556,7 @@
       "$ref": "DeleteMetricDescriptorResponse"
      },
      "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/monitoring"
      ]
     },
@@ -597,6 +602,7 @@
       "$ref": "ListMetricDescriptorsResponse"
      },
      "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/monitoring"
      ]
     }
@@ -612,7 +618,7 @@
      "parameters": {
       "aggregator": {
        "type": "string",
-       "description": "The aggregation function that will reduce the data points in each window to a single point. This parameter is only valid for non-cumulative metric types.",
+       "description": "The aggregation function that will reduce the data points in each window to a single point. This parameter is only valid for non-cumulative metrics with a value type of INT64 or DOUBLE.",
        "enum": [
         "max",
         "mean",
@@ -696,6 +702,7 @@
       "$ref": "ListTimeseriesResponse"
      },
      "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/monitoring"
      ]
     },
@@ -722,6 +729,7 @@
       "$ref": "WriteTimeseriesResponse"
      },
      "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/monitoring"
      ]
     }
@@ -737,7 +745,7 @@
      "parameters": {
       "aggregator": {
        "type": "string",
-       "description": "The aggregation function that will reduce the data points in each window to a single point. This parameter is only valid for non-cumulative metric types.",
+       "description": "The aggregation function that will reduce the data points in each window to a single point. This parameter is only valid for non-cumulative metrics with a value type of INT64 or DOUBLE.",
        "enum": [
         "max",
         "mean",
@@ -821,6 +829,7 @@
       "$ref": "ListTimeseriesDescriptorsResponse"
      },
      "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/monitoring"
      ]
     }

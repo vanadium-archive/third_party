@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/analytics/v3"
 //   ...
 //   analyticsService, err := analytics.New(oauthHttpClient)
-package analytics
+package analytics // import "google.golang.org/api/analytics/v3"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "analytics:v3"
 const apiName = "analytics"
@@ -76,8 +80,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Data *DataService
 
@@ -86,6 +91,13 @@ type Service struct {
 	Metadata *MetadataService
 
 	Provisioning *ProvisioningService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewDataService(s *Service) *DataService {
@@ -141,7 +153,6 @@ func NewManagementService(s *Service) *ManagementService {
 	rs.CustomDataSources = NewManagementCustomDataSourcesService(s)
 	rs.CustomDimensions = NewManagementCustomDimensionsService(s)
 	rs.CustomMetrics = NewManagementCustomMetricsService(s)
-	rs.DailyUploads = NewManagementDailyUploadsService(s)
 	rs.Experiments = NewManagementExperimentsService(s)
 	rs.Filters = NewManagementFiltersService(s)
 	rs.Goals = NewManagementGoalsService(s)
@@ -171,8 +182,6 @@ type ManagementService struct {
 	CustomDimensions *ManagementCustomDimensionsService
 
 	CustomMetrics *ManagementCustomMetricsService
-
-	DailyUploads *ManagementDailyUploadsService
 
 	Experiments *ManagementExperimentsService
 
@@ -250,15 +259,6 @@ func NewManagementCustomMetricsService(s *Service) *ManagementCustomMetricsServi
 }
 
 type ManagementCustomMetricsService struct {
-	s *Service
-}
-
-func NewManagementDailyUploadsService(s *Service) *ManagementDailyUploadsService {
-	rs := &ManagementDailyUploadsService{s: s}
-	return rs
-}
-
-type ManagementDailyUploadsService struct {
 	s *Service
 }
 
@@ -400,6 +400,7 @@ type ProvisioningService struct {
 	s *Service
 }
 
+// Account: JSON template for Analytics account entry.
 type Account struct {
 	// ChildLink: Child link for an account entry. Points to the list of web
 	// properties for this account.
@@ -423,24 +424,73 @@ type Account struct {
 	// SelfLink: Link for this account.
 	SelfLink string `json:"selfLink,omitempty"`
 
+	// Starred: Indicates whether this account is starred or not.
+	Starred bool `json:"starred,omitempty"`
+
 	// Updated: Time the account was last modified.
 	Updated string `json:"updated,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ChildLink") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Account) MarshalJSON() ([]byte, error) {
+	type noMethod Account
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AccountChildLink: Child link for an account entry. Points to the list
+// of web properties for this account.
 type AccountChildLink struct {
 	// Href: Link to the list of web properties for this account.
 	Href string `json:"href,omitempty"`
 
 	// Type: Type of the child link. Its value is "analytics#webproperties".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AccountChildLink) MarshalJSON() ([]byte, error) {
+	type noMethod AccountChildLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AccountPermissions: Permissions the user has for this account.
 type AccountPermissions struct {
 	// Effective: All the permissions that the user has for this account.
 	// These include any implied permissions (e.g., EDIT implies VIEW).
 	Effective []string `json:"effective,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Effective") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AccountPermissions) MarshalJSON() ([]byte, error) {
+	type noMethod AccountPermissions
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AccountRef: JSON template for a linked account.
 type AccountRef struct {
 	// Href: Link for this account.
 	Href string `json:"href,omitempty"`
@@ -453,8 +503,26 @@ type AccountRef struct {
 
 	// Name: Account name.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AccountRef) MarshalJSON() ([]byte, error) {
+	type noMethod AccountRef
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AccountSummaries: An AccountSummary collection lists a summary of
+// accounts, properties and views (profiles) to which the user has
+// access. Each resource in the collection corresponds to a single
+// AccountSummary.
 type AccountSummaries struct {
 	// Items: A list of AccountSummaries.
 	Items []*AccountSummary `json:"items,omitempty"`
@@ -485,8 +553,29 @@ type AccountSummaries struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AccountSummaries) MarshalJSON() ([]byte, error) {
+	type noMethod AccountSummaries
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AccountSummary: JSON template for an Analytics AccountSummary. An
+// AccountSummary is a lightweight tree comprised of
+// properties/profiles.
 type AccountSummary struct {
 	// Id: Account ID.
 	Id string `json:"id,omitempty"`
@@ -497,10 +586,30 @@ type AccountSummary struct {
 	// Name: Account name.
 	Name string `json:"name,omitempty"`
 
+	// Starred: Indicates whether this account is starred or not.
+	Starred bool `json:"starred,omitempty"`
+
 	// WebProperties: List of web properties under this account.
 	WebProperties []*WebPropertySummary `json:"webProperties,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AccountSummary) MarshalJSON() ([]byte, error) {
+	type noMethod AccountSummary
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AccountTicket: JSON template for an Analytics account ticket. The
+// account ticket consists of the ticket ID and the basic information
+// for the account, property and profile.
 type AccountTicket struct {
 	// Account: Account for this ticket.
 	Account *Account `json:"account,omitempty"`
@@ -521,8 +630,30 @@ type AccountTicket struct {
 
 	// Webproperty: Web property for the account.
 	Webproperty *Webproperty `json:"webproperty,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Account") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AccountTicket) MarshalJSON() ([]byte, error) {
+	type noMethod AccountTicket
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Accounts: An account collection provides a list of Analytics accounts
+// to which a user has access. The account collection is the entry point
+// to all management information. Each resource in the collection
+// corresponds to a single Analytics account.
 type Accounts struct {
 	// Items: A list of accounts.
 	Items []*Account `json:"items,omitempty"`
@@ -552,8 +683,27 @@ type Accounts struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Accounts) MarshalJSON() ([]byte, error) {
+	type noMethod Accounts
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AdWordsAccount: JSON template for an AdWords account.
 type AdWordsAccount struct {
 	// AutoTaggingEnabled: True if auto-tagging is enabled on the AdWords
 	// account. Read-only after the insert operation.
@@ -565,13 +715,45 @@ type AdWordsAccount struct {
 
 	// Kind: Resource type for AdWords account.
 	Kind string `json:"kind,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AutoTaggingEnabled")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AdWordsAccount) MarshalJSON() ([]byte, error) {
+	type noMethod AdWordsAccount
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AnalyticsDataimportDeleteUploadDataRequest: Request template for the
+// delete upload data request.
 type AnalyticsDataimportDeleteUploadDataRequest struct {
 	// CustomDataImportUids: A list of upload UIDs.
 	CustomDataImportUids []string `json:"customDataImportUids,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "CustomDataImportUids") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AnalyticsDataimportDeleteUploadDataRequest) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyticsDataimportDeleteUploadDataRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Column: JSON template for a metadata column.
 type Column struct {
 	// Attributes: Map of attribute name and value for this column.
 	Attributes map[string]string `json:"attributes,omitempty"`
@@ -581,8 +763,24 @@ type Column struct {
 
 	// Kind: Resource type for Analytics column.
 	Kind string `json:"kind,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Attributes") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Column) MarshalJSON() ([]byte, error) {
+	type noMethod Column
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Columns: Lists columns (dimensions and metrics) for a particular
+// report type.
 type Columns struct {
 	// AttributeNames: List of attributes names returned by columns.
 	AttributeNames []string `json:"attributeNames,omitempty"`
@@ -599,8 +797,27 @@ type Columns struct {
 
 	// TotalResults: Total number of columns returned in the response.
 	TotalResults int64 `json:"totalResults,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AttributeNames") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Columns) MarshalJSON() ([]byte, error) {
+	type noMethod Columns
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomDataSource: JSON template for an Analytics custom data source.
 type CustomDataSource struct {
 	// AccountId: Account ID to which this custom data source belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -646,6 +863,20 @@ type CustomDataSource struct {
 	// WebPropertyId: Web property ID of the form UA-XXXXX-YY to which this
 	// custom data source belongs.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *CustomDataSource) MarshalJSON() ([]byte, error) {
+	type noMethod CustomDataSource
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type CustomDataSourceChildLink struct {
@@ -656,8 +887,24 @@ type CustomDataSourceChildLink struct {
 	// Type: Value is "analytics#dailyUploads". Value is
 	// "analytics#uploads".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CustomDataSourceChildLink) MarshalJSON() ([]byte, error) {
+	type noMethod CustomDataSourceChildLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomDataSourceParentLink: Parent link for this custom data source.
+// Points to the web property to which this custom data source belongs.
 type CustomDataSourceParentLink struct {
 	// Href: Link to the web property to which this custom data source
 	// belongs.
@@ -665,8 +912,25 @@ type CustomDataSourceParentLink struct {
 
 	// Type: Value is "analytics#webproperty".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CustomDataSourceParentLink) MarshalJSON() ([]byte, error) {
+	type noMethod CustomDataSourceParentLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomDataSources: Lists Analytics custom data sources to which the
+// user has access. Each resource in the collection corresponds to a
+// single Analytics custom data source.
 type CustomDataSources struct {
 	// Items: Collection of custom data sources.
 	Items []*CustomDataSource `json:"items,omitempty"`
@@ -697,8 +961,27 @@ type CustomDataSources struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CustomDataSources) MarshalJSON() ([]byte, error) {
+	type noMethod CustomDataSources
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomDimension: JSON template for Analytics Custom Dimension.
 type CustomDimension struct {
 	// AccountId: Account ID.
 	AccountId string `json:"accountId,omitempty"`
@@ -737,16 +1020,53 @@ type CustomDimension struct {
 
 	// WebPropertyId: Property ID.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CustomDimension) MarshalJSON() ([]byte, error) {
+	type noMethod CustomDimension
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomDimensionParentLink: Parent link for the custom dimension.
+// Points to the property to which the custom dimension belongs.
 type CustomDimensionParentLink struct {
 	// Href: Link to the property to which the custom dimension belongs.
 	Href string `json:"href,omitempty"`
 
 	// Type: Type of the parent link. Set to "analytics#webproperty".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CustomDimensionParentLink) MarshalJSON() ([]byte, error) {
+	type noMethod CustomDimensionParentLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomDimensions: A custom dimension collection lists Analytics
+// custom dimensions to which the user has access. Each resource in the
+// collection corresponds to a single Analytics custom dimension.
 type CustomDimensions struct {
 	// Items: Collection of custom dimensions.
 	Items []*CustomDimension `json:"items,omitempty"`
@@ -777,8 +1097,27 @@ type CustomDimensions struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CustomDimensions) MarshalJSON() ([]byte, error) {
+	type noMethod CustomDimensions
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomMetric: JSON template for Analytics Custom Metric.
 type CustomMetric struct {
 	// AccountId: Account ID.
 	AccountId string `json:"accountId,omitempty"`
@@ -799,11 +1138,11 @@ type CustomMetric struct {
 	// "analytics#customMetric". It is a read-only field.
 	Kind string `json:"kind,omitempty"`
 
-	// Max_value: Max value of custom metric.
-	Max_value string `json:"max_value,omitempty"`
+	// MaxValue: Max value of custom metric.
+	MaxValue string `json:"max_value,omitempty"`
 
-	// Min_value: Min value of custom metric.
-	Min_value string `json:"min_value,omitempty"`
+	// MinValue: Min value of custom metric.
+	MinValue string `json:"min_value,omitempty"`
 
 	// Name: Name of the custom metric.
 	Name string `json:"name,omitempty"`
@@ -826,16 +1165,53 @@ type CustomMetric struct {
 
 	// WebPropertyId: Property ID.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CustomMetric) MarshalJSON() ([]byte, error) {
+	type noMethod CustomMetric
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomMetricParentLink: Parent link for the custom metric. Points to
+// the property to which the custom metric belongs.
 type CustomMetricParentLink struct {
 	// Href: Link to the property to which the custom metric belongs.
 	Href string `json:"href,omitempty"`
 
 	// Type: Type of the parent link. Set to "analytics#webproperty".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CustomMetricParentLink) MarshalJSON() ([]byte, error) {
+	type noMethod CustomMetricParentLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomMetrics: A custom metric collection lists Analytics custom
+// metrics to which the user has access. Each resource in the collection
+// corresponds to a single Analytics custom metric.
 type CustomMetrics struct {
 	// Items: Collection of custom metrics.
 	Items []*CustomMetric `json:"items,omitempty"`
@@ -866,118 +1242,27 @@ type CustomMetrics struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
-type DailyUpload struct {
-	// AccountId: Account ID to which this daily upload belongs.
-	AccountId string `json:"accountId,omitempty"`
-
-	// AppendCount: Number of appends for this date.
-	AppendCount int64 `json:"appendCount,omitempty"`
-
-	// CreatedTime: Time this daily upload was created.
-	CreatedTime string `json:"createdTime,omitempty"`
-
-	// CustomDataSourceId: Custom data source ID to which this daily upload
-	// belongs.
-	CustomDataSourceId string `json:"customDataSourceId,omitempty"`
-
-	// Date: Date associated with daily upload.
-	Date string `json:"date,omitempty"`
-
-	// Kind: Resource type for Analytics daily upload.
-	Kind string `json:"kind,omitempty"`
-
-	// ModifiedTime: Time this daily upload was last modified.
-	ModifiedTime string `json:"modifiedTime,omitempty"`
-
-	// ParentLink: Parent link for a daily upload. Points to the custom data
-	// source to which this daily upload belongs.
-	ParentLink *DailyUploadParentLink `json:"parentLink,omitempty"`
-
-	// RecentChanges: Change log for last 10 changes in chronological order.
-	RecentChanges []*DailyUploadRecentChanges `json:"recentChanges,omitempty"`
-
-	// SelfLink: Link for this daily upload.
-	SelfLink string `json:"selfLink,omitempty"`
-
-	// WebPropertyId: Web property ID of the form UA-XXXXX-YY to which this
-	// daily upload belongs.
-	WebPropertyId string `json:"webPropertyId,omitempty"`
+func (s *CustomMetrics) MarshalJSON() ([]byte, error) {
+	type noMethod CustomMetrics
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
-type DailyUploadParentLink struct {
-	// Href: Link to the custom data source to which this daily upload
-	// belongs.
-	Href string `json:"href,omitempty"`
-
-	// Type: Value is "analytics#customDataSource".
-	Type string `json:"type,omitempty"`
-}
-
-type DailyUploadRecentChanges struct {
-	// Change: The type of change: APPEND, RESET, or DELETE.
-	Change string `json:"change,omitempty"`
-
-	// Time: The time when the change occurred.
-	Time string `json:"time,omitempty"`
-}
-
-type DailyUploadAppend struct {
-	// AccountId: Account Id to which this daily upload append belongs.
-	AccountId string `json:"accountId,omitempty"`
-
-	// AppendNumber: Append number.
-	AppendNumber int64 `json:"appendNumber,omitempty"`
-
-	// CustomDataSourceId: Custom data source Id to which this daily upload
-	// append belongs.
-	CustomDataSourceId string `json:"customDataSourceId,omitempty"`
-
-	// Date: Date associated with daily upload append.
-	Date string `json:"date,omitempty"`
-
-	// Kind: Resource type for Analytics daily upload append.
-	Kind string `json:"kind,omitempty"`
-
-	NextAppendLink string `json:"nextAppendLink,omitempty"`
-
-	// WebPropertyId: Web property Id of the form UA-XXXXX-YY to which this
-	// daily upload append belongs.
-	WebPropertyId string `json:"webPropertyId,omitempty"`
-}
-
-type DailyUploads struct {
-	// Items: A collection of daily uploads.
-	Items []*DailyUpload `json:"items,omitempty"`
-
-	// ItemsPerPage: The maximum number of resources the response can
-	// contain, regardless of the actual number of resources returned. Its
-	// value ranges from 1 to 1000 with a value of 1000 by default, or
-	// otherwise specified by the max-results query parameter.
-	ItemsPerPage int64 `json:"itemsPerPage,omitempty"`
-
-	// Kind: Collection type. Value is analytics#dailyUploads.
-	Kind string `json:"kind,omitempty"`
-
-	// NextLink: Link to next page for this daily upload collection.
-	NextLink string `json:"nextLink,omitempty"`
-
-	// PreviousLink: Link to previous page for this daily upload collection.
-	PreviousLink string `json:"previousLink,omitempty"`
-
-	// StartIndex: The starting index of the resources, which is 1 by
-	// default or otherwise specified by the start-index query parameter.
-	StartIndex int64 `json:"startIndex,omitempty"`
-
-	// TotalResults: The total number of results for the query, regardless
-	// of the number of results in the response.
-	TotalResults int64 `json:"totalResults,omitempty"`
-
-	// Username: Email ID of the authenticated user
-	Username string `json:"username,omitempty"`
-}
-
+// EntityAdWordsLink: JSON template for Analytics Entity AdWords Link.
 type EntityAdWordsLink struct {
 	// AdWordsAccounts: A list of AdWords client accounts. These cannot be
 	// MCC accounts. This field is required when creating an AdWords link.
@@ -1002,12 +1287,48 @@ type EntityAdWordsLink struct {
 
 	// SelfLink: URL link for this Google Analytics - Google AdWords link.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AdWordsAccounts") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *EntityAdWordsLink) MarshalJSON() ([]byte, error) {
+	type noMethod EntityAdWordsLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// EntityAdWordsLinkEntity: Web property being linked.
 type EntityAdWordsLinkEntity struct {
 	WebPropertyRef *WebPropertyRef `json:"webPropertyRef,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "WebPropertyRef") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *EntityAdWordsLinkEntity) MarshalJSON() ([]byte, error) {
+	type noMethod EntityAdWordsLinkEntity
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// EntityAdWordsLinks: An entity AdWords link collection provides a list
+// of GA-AdWords links Each resource in this collection corresponds to a
+// single link.
 type EntityAdWordsLinks struct {
 	// Items: A list of entity AdWords links.
 	Items []*EntityAdWordsLink `json:"items,omitempty"`
@@ -1034,8 +1355,28 @@ type EntityAdWordsLinks struct {
 	// TotalResults: The total number of results for the query, regardless
 	// of the number of results in the response.
 	TotalResults int64 `json:"totalResults,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *EntityAdWordsLinks) MarshalJSON() ([]byte, error) {
+	type noMethod EntityAdWordsLinks
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// EntityUserLink: JSON template for an Analytics Entity-User Link.
+// Returns permissions that a user has for an entity.
 type EntityUserLink struct {
 	// Entity: Entity for this link. It can be an account, a web property,
 	// or a view (profile).
@@ -1055,8 +1396,28 @@ type EntityUserLink struct {
 
 	// UserRef: User reference.
 	UserRef *UserRef `json:"userRef,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Entity") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *EntityUserLink) MarshalJSON() ([]byte, error) {
+	type noMethod EntityUserLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// EntityUserLinkEntity: Entity for this link. It can be an account, a
+// web property, or a view (profile).
 type EntityUserLinkEntity struct {
 	// AccountRef: Account for this link.
 	AccountRef *AccountRef `json:"accountRef,omitempty"`
@@ -1066,8 +1427,23 @@ type EntityUserLinkEntity struct {
 
 	// WebPropertyRef: Web property for this link.
 	WebPropertyRef *WebPropertyRef `json:"webPropertyRef,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountRef") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *EntityUserLinkEntity) MarshalJSON() ([]byte, error) {
+	type noMethod EntityUserLinkEntity
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// EntityUserLinkPermissions: Permissions the user has for this entity.
 type EntityUserLinkPermissions struct {
 	// Effective: Effective permissions represent all the permissions that a
 	// user has for this entity. These include any implied permissions
@@ -1079,8 +1455,25 @@ type EntityUserLinkPermissions struct {
 	// Does not include any implied or inherited permissions. Local
 	// permissions are modifiable.
 	Local []string `json:"local,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Effective") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *EntityUserLinkPermissions) MarshalJSON() ([]byte, error) {
+	type noMethod EntityUserLinkPermissions
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// EntityUserLinks: An entity user link collection provides a list of
+// Analytics ACL links Each resource in this collection corresponds to a
+// single link.
 type EntityUserLinks struct {
 	// Items: A list of entity user links.
 	Items []*EntityUserLink `json:"items,omitempty"`
@@ -1107,8 +1500,27 @@ type EntityUserLinks struct {
 	// TotalResults: The total number of results for the query, regardless
 	// of the number of results in the response.
 	TotalResults int64 `json:"totalResults,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *EntityUserLinks) MarshalJSON() ([]byte, error) {
+	type noMethod EntityUserLinks
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Experiment: JSON template for Analytics experiment resource.
 type Experiment struct {
 	// AccountId: Account ID to which this experiment belongs. This field is
 	// read-only.
@@ -1201,14 +1613,12 @@ type Experiment struct {
 
 	// ServingFramework: The framework used to serve the experiment
 	// variations and evaluate the results. One of:
-	// - REDIRECT: Google
-	// Analytics redirects traffic to different variation pages, reports the
-	// chosen variation and evaluates the results.
-	// - API: Google Analytics
-	// chooses and reports the variation to serve and evaluates the results;
-	// the caller is responsible for serving the selected variation.
-	// -
-	// EXTERNAL: The variations will be served externally and the chosen
+	// - REDIRECT: Google Analytics redirects traffic to different variation
+	// pages, reports the chosen variation and evaluates the results.
+	// - API: Google Analytics chooses and reports the variation to serve
+	// and evaluates the results; the caller is responsible for serving the
+	// selected variation.
+	// - EXTERNAL: The variations will be served externally and the chosen
 	// variation reported to Google Analytics. The caller is responsible for
 	// serving the selected variation and evaluating the results.
 	ServingFramework string `json:"servingFramework,omitempty"`
@@ -1228,10 +1638,10 @@ type Experiment struct {
 	// creating an experiment.
 	Status string `json:"status,omitempty"`
 
-	// TrafficCoverage: A floating-point number between 0 and 1. Specifies
-	// the fraction of the traffic that participates in the experiment. Can
-	// be changed for a running experiment. This field may not be changed
-	// for an experiments whose status is ENDED.
+	// TrafficCoverage: A floating-point number in (0, 1]. Specifies the
+	// fraction of the traffic that participates in the experiment. Can be
+	// changed for a running experiment. This field may not be changed for
+	// an experiments whose status is ENDED.
 	TrafficCoverage float64 `json:"trafficCoverage,omitempty"`
 
 	// Updated: Time the experiment was last modified. This field is
@@ -1248,16 +1658,36 @@ type Experiment struct {
 	// web property ID is of the form UA-XXXXX-YY. This field is read-only.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
 
-	// WinnerConfidenceLevel: A floating-point number between 0 and 1.
-	// Specifies the necessary confidence level to choose a winner. This
-	// field may not be changed for an experiments whose status is ENDED.
+	// WinnerConfidenceLevel: A floating-point number in (0, 1). Specifies
+	// the necessary confidence level to choose a winner. This field may not
+	// be changed for an experiments whose status is ENDED.
 	WinnerConfidenceLevel float64 `json:"winnerConfidenceLevel,omitempty"`
 
 	// WinnerFound: Boolean specifying whether a winner has been found for
 	// this experiment. This field is read-only.
 	WinnerFound bool `json:"winnerFound,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Experiment) MarshalJSON() ([]byte, error) {
+	type noMethod Experiment
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ExperimentParentLink: Parent link for an experiment. Points to the
+// view (profile) to which this experiment belongs.
 type ExperimentParentLink struct {
 	// Href: Link to the view (profile) to which this experiment belongs.
 	// This field is read-only.
@@ -1265,6 +1695,20 @@ type ExperimentParentLink struct {
 
 	// Type: Value is "analytics#profile". This field is read-only.
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ExperimentParentLink) MarshalJSON() ([]byte, error) {
+	type noMethod ExperimentParentLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ExperimentVariations struct {
@@ -1290,8 +1734,26 @@ type ExperimentVariations struct {
 	// (statistically) significantly better than the original. This field is
 	// read-only.
 	Won bool `json:"won,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ExperimentVariations) MarshalJSON() ([]byte, error) {
+	type noMethod ExperimentVariations
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Experiments: An experiment collection lists Analytics experiments to
+// which the user has access. Each view (profile) can have a set of
+// experiments. Each resource in the Experiment collection corresponds
+// to a single Analytics experiment.
 type Experiments struct {
 	// Items: A list of experiments.
 	Items []*Experiment `json:"items,omitempty"`
@@ -1321,8 +1783,27 @@ type Experiments struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Experiments) MarshalJSON() ([]byte, error) {
+	type noMethod Experiments
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Filter: JSON template for an Analytics account filter.
 type Filter struct {
 	// AccountId: Account ID to which this filter belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -1371,8 +1852,27 @@ type Filter struct {
 
 	// UppercaseDetails: Details for the filter of the type UPPER.
 	UppercaseDetails *FilterUppercaseDetails `json:"uppercaseDetails,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Filter) MarshalJSON() ([]byte, error) {
+	type noMethod Filter
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FilterAdvancedDetails: Details for the filter of the type ADVANCED.
 type FilterAdvancedDetails struct {
 	// CaseSensitive: Indicates if the filter expressions are case
 	// sensitive.
@@ -1387,11 +1887,19 @@ type FilterAdvancedDetails struct {
 	// FieldA: Field A.
 	FieldA string `json:"fieldA,omitempty"`
 
+	// FieldAIndex: The Index of the custom dimension. Required if field is
+	// a CUSTOM_DIMENSION.
+	FieldAIndex int64 `json:"fieldAIndex,omitempty"`
+
 	// FieldARequired: Indicates if field A is required to match.
 	FieldARequired bool `json:"fieldARequired,omitempty"`
 
 	// FieldB: Field B.
 	FieldB string `json:"fieldB,omitempty"`
+
+	// FieldBIndex: The Index of the custom dimension. Required if field is
+	// a CUSTOM_DIMENSION.
+	FieldBIndex int64 `json:"fieldBIndex,omitempty"`
 
 	// FieldBRequired: Indicates if field B is required to match.
 	FieldBRequired bool `json:"fieldBRequired,omitempty"`
@@ -1402,24 +1910,79 @@ type FilterAdvancedDetails struct {
 	// OutputToField: Output field.
 	OutputToField string `json:"outputToField,omitempty"`
 
+	// OutputToFieldIndex: The Index of the custom dimension. Required if
+	// field is a CUSTOM_DIMENSION.
+	OutputToFieldIndex int64 `json:"outputToFieldIndex,omitempty"`
+
 	// OverrideOutputField: Indicates if the existing value of the output
 	// field, if any, should be overridden by the output expression.
 	OverrideOutputField bool `json:"overrideOutputField,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CaseSensitive") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FilterAdvancedDetails) MarshalJSON() ([]byte, error) {
+	type noMethod FilterAdvancedDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FilterLowercaseDetails: Details for the filter of the type LOWER.
 type FilterLowercaseDetails struct {
 	// Field: Field to use in the filter.
 	Field string `json:"field,omitempty"`
+
+	// FieldIndex: The Index of the custom dimension. Required if field is a
+	// CUSTOM_DIMENSION.
+	FieldIndex int64 `json:"fieldIndex,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Field") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FilterLowercaseDetails) MarshalJSON() ([]byte, error) {
+	type noMethod FilterLowercaseDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FilterParentLink: Parent link for this filter. Points to the account
+// to which this filter belongs.
 type FilterParentLink struct {
 	// Href: Link to the account to which this filter belongs.
 	Href string `json:"href,omitempty"`
 
 	// Type: Value is "analytics#account".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FilterParentLink) MarshalJSON() ([]byte, error) {
+	type noMethod FilterParentLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FilterSearchAndReplaceDetails: Details for the filter of the type
+// SEARCH_AND_REPLACE.
 type FilterSearchAndReplaceDetails struct {
 	// CaseSensitive: Determines if the filter is case sensitive.
 	CaseSensitive bool `json:"caseSensitive,omitempty"`
@@ -1427,18 +1990,56 @@ type FilterSearchAndReplaceDetails struct {
 	// Field: Field to use in the filter.
 	Field string `json:"field,omitempty"`
 
+	// FieldIndex: The Index of the custom dimension. Required if field is a
+	// CUSTOM_DIMENSION.
+	FieldIndex int64 `json:"fieldIndex,omitempty"`
+
 	// ReplaceString: Term to replace the search term with.
 	ReplaceString string `json:"replaceString,omitempty"`
 
 	// SearchString: Term to search.
 	SearchString string `json:"searchString,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CaseSensitive") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FilterSearchAndReplaceDetails) MarshalJSON() ([]byte, error) {
+	type noMethod FilterSearchAndReplaceDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FilterUppercaseDetails: Details for the filter of the type UPPER.
 type FilterUppercaseDetails struct {
 	// Field: Field to use in the filter.
 	Field string `json:"field,omitempty"`
+
+	// FieldIndex: The Index of the custom dimension. Required if field is a
+	// CUSTOM_DIMENSION.
+	FieldIndex int64 `json:"fieldIndex,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Field") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FilterUppercaseDetails) MarshalJSON() ([]byte, error) {
+	type noMethod FilterUppercaseDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FilterExpression: JSON template for an Analytics filter expression.
 type FilterExpression struct {
 	// CaseSensitive: Determines if the filter is case sensitive.
 	CaseSensitive bool `json:"caseSensitive,omitempty"`
@@ -1448,135 +2049,124 @@ type FilterExpression struct {
 
 	// Field: Field to filter. Possible values:
 	// - Content and Traffic
-	// -
-	// PAGE_REQUEST_URI,
+	// - PAGE_REQUEST_URI,
 	// - PAGE_HOSTNAME,
 	// - PAGE_TITLE,
 	// - REFERRAL,
-	// -
-	// COST_DATA_URI (Campaign target URL),
+	// - COST_DATA_URI (Campaign target URL),
 	// - HIT_TYPE,
-	// -
-	// INTERNAL_SEARCH_TERM,
+	// - INTERNAL_SEARCH_TERM,
 	// - INTERNAL_SEARCH_TYPE,
-	// -
-	// SOURCE_PROPERTY_TRACKING_ID,
+	// - SOURCE_PROPERTY_TRACKING_ID,
 	// - Campaign or AdGroup
-	// -
-	// CAMPAIGN_SOURCE,
+	// - CAMPAIGN_SOURCE,
 	// - CAMPAIGN_MEDIUM,
 	// - CAMPAIGN_NAME,
-	// -
-	// CAMPAIGN_AD_GROUP,
+	// - CAMPAIGN_AD_GROUP,
 	// - CAMPAIGN_TERM,
 	// - CAMPAIGN_CONTENT,
-	// -
-	// CAMPAIGN_CODE,
+	// - CAMPAIGN_CODE,
 	// - CAMPAIGN_REFERRAL_PATH,
 	// - E-Commerce
-	// -
-	// TRANSACTION_COUNTRY,
+	// - TRANSACTION_COUNTRY,
 	// - TRANSACTION_REGION,
 	// - TRANSACTION_CITY,
-	// -
-	// TRANSACTION_AFFILIATION (Store or order location),
+	// - TRANSACTION_AFFILIATION (Store or order location),
 	// - ITEM_NAME,
-	// -
-	// ITEM_CODE,
+	// - ITEM_CODE,
 	// - ITEM_VARIATION,
 	// - TRANSACTION_ID,
-	// -
-	// TRANSACTION_CURRENCY_CODE,
+	// - TRANSACTION_CURRENCY_CODE,
 	// - PRODUCT_ACTION_TYPE,
-	// -
-	// Audience/Users
+	// - Audience/Users
 	// - BROWSER,
 	// - BROWSER_VERSION,
 	// - BROWSER_SIZE,
-	// -
-	// PLATFORM,
+	// - PLATFORM,
 	// - PLATFORM_VERSION,
 	// - LANGUAGE,
 	// - SCREEN_RESOLUTION,
-	// -
-	// SCREEN_COLORS,
+	// - SCREEN_COLORS,
 	// - JAVA_ENABLED (Boolean Field),
 	// - FLASH_VERSION,
-	// -
-	// GEO_SPEED (Connection speed),
+	// - GEO_SPEED (Connection speed),
 	// - VISITOR_TYPE,
-	// - GEO_ORGANIZATION
-	// (ISP organization),
+	// - GEO_ORGANIZATION (ISP organization),
 	// - GEO_DOMAIN,
 	// - GEO_IP_ADDRESS,
-	// -
-	// GEO_IP_VERSION,
+	// - GEO_IP_VERSION,
 	// - Location
 	// - GEO_COUNTRY,
 	// - GEO_REGION,
-	// -
-	// GEO_CITY,
+	// - GEO_CITY,
 	// - Event
 	// - EVENT_CATEGORY,
 	// - EVENT_ACTION,
-	// -
-	// EVENT_LABEL,
+	// - EVENT_LABEL,
 	// - Other
 	// - CUSTOM_FIELD_1,
 	// - CUSTOM_FIELD_2,
-	// -
-	// USER_DEFINED_VALUE,
+	// - USER_DEFINED_VALUE,
 	// - Application
 	// - APP_ID,
 	// - APP_INSTALLER_ID,
-	//
 	// - APP_NAME,
 	// - APP_VERSION,
 	// - SCREEN,
 	// - IS_APP (Boolean Field),
-	// -
-	// IS_FATAL_EXCEPTION (Boolean Field),
+	// - IS_FATAL_EXCEPTION (Boolean Field),
 	// - EXCEPTION_DESCRIPTION,
-	// -
-	// Mobile device
-	// - IS_MOBILE (Boolean Field, Deprecated. Use
-	// DEVICE_CATEGORY=mobile),
-	// - IS_TABLET (Boolean Field, Deprecated. Use
-	// DEVICE_CATEGORY=tablet),
+	// - Mobile device
+	// - IS_MOBILE (Boolean Field, Deprecated. Use DEVICE_CATEGORY=mobile),
+	//
+	// - IS_TABLET (Boolean Field, Deprecated. Use DEVICE_CATEGORY=tablet),
+	//
 	// - DEVICE_CATEGORY,
-	// -
-	// MOBILE_HAS_QWERTY_KEYBOARD (Boolean Field),
-	// - MOBILE_HAS_NFC_SUPPORT
-	// (Boolean Field),
+	// - MOBILE_HAS_QWERTY_KEYBOARD (Boolean Field),
+	// - MOBILE_HAS_NFC_SUPPORT (Boolean Field),
 	// - MOBILE_HAS_CELLULAR_RADIO (Boolean Field),
-	// -
-	// MOBILE_HAS_WIFI_SUPPORT (Boolean Field),
+	// - MOBILE_HAS_WIFI_SUPPORT (Boolean Field),
 	// - MOBILE_BRAND_NAME,
-	// -
-	// MOBILE_MODEL_NAME,
+	// - MOBILE_MODEL_NAME,
 	// - MOBILE_MARKETING_NAME,
-	// -
-	// MOBILE_POINTING_METHOD,
+	// - MOBILE_POINTING_METHOD,
 	// - Social
 	// - SOCIAL_NETWORK,
-	// -
-	// SOCIAL_ACTION,
+	// - SOCIAL_ACTION,
 	// - SOCIAL_ACTION_TARGET,
+	// - Custom dimension
+	// - CUSTOM_DIMENSION (See accompanying field index),
 	Field string `json:"field,omitempty"`
+
+	// FieldIndex: The Index of the custom dimension. Set only if the field
+	// is a is CUSTOM_DIMENSION.
+	FieldIndex int64 `json:"fieldIndex,omitempty"`
 
 	// Kind: Kind value for filter expression
 	Kind string `json:"kind,omitempty"`
 
 	// MatchType: Match type for this filter. Possible values are
-	// BEGINS_WITH, EQUAL, ENDS_WITH, CONTAINS, MATCHES. Include and Exclude
-	// filters can use any match type. Match type is not applicable to Upper
-	// case and Lower case filters. Search and Replace expressions in the
-	// Search and Replace filter and all filter expressions in the Advanced
-	// filter default to MATCHES. User should not set match type for those
-	// filters.
+	// BEGINS_WITH, EQUAL, ENDS_WITH, CONTAINS, or MATCHES. GEO_DOMAIN,
+	// GEO_IP_ADDRESS, PAGE_REQUEST_URI, or PAGE_HOSTNAME filters can use
+	// any match type; all other filters must use MATCHES.
 	MatchType string `json:"matchType,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CaseSensitive") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FilterExpression) MarshalJSON() ([]byte, error) {
+	type noMethod FilterExpression
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FilterRef: JSON template for a profile filter link.
 type FilterRef struct {
 	// AccountId: Account ID to which this filter belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -1592,8 +2182,25 @@ type FilterRef struct {
 
 	// Name: Name of this filter.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FilterRef) MarshalJSON() ([]byte, error) {
+	type noMethod FilterRef
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Filters: A filter collection lists filters created by users in an
+// Analytics account. Each resource in the collection corresponds to a
+// filter.
 type Filters struct {
 	// Items: A list of filters.
 	Items []*Filter `json:"items,omitempty"`
@@ -1623,8 +2230,27 @@ type Filters struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Filters) MarshalJSON() ([]byte, error) {
+	type noMethod Filters
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GaData: Analytics data for a given view (profile).
 type GaData struct {
 	// ColumnHeaders: Column headers that list dimension names followed by
 	// the metric names. The order of dimensions and metrics is same as
@@ -1685,6 +2311,24 @@ type GaData struct {
 	// order of the metric totals is same as the metric order specified in
 	// the request.
 	TotalsForAllResults map[string]string `json:"totalsForAllResults,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ColumnHeaders") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GaData) MarshalJSON() ([]byte, error) {
+	type noMethod GaData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GaDataColumnHeaders struct {
@@ -1698,12 +2342,40 @@ type GaDataColumnHeaders struct {
 
 	// Name: Column name.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ColumnType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GaDataColumnHeaders) MarshalJSON() ([]byte, error) {
+	type noMethod GaDataColumnHeaders
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GaDataDataTable struct {
 	Cols []*GaDataDataTableCols `json:"cols,omitempty"`
 
 	Rows []*GaDataDataTableRows `json:"rows,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Cols") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GaDataDataTable) MarshalJSON() ([]byte, error) {
+	type noMethod GaDataDataTable
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GaDataDataTableCols struct {
@@ -1712,16 +2384,60 @@ type GaDataDataTableCols struct {
 	Label string `json:"label,omitempty"`
 
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GaDataDataTableCols) MarshalJSON() ([]byte, error) {
+	type noMethod GaDataDataTableCols
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GaDataDataTableRows struct {
 	C []*GaDataDataTableRowsC `json:"c,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "C") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GaDataDataTableRows) MarshalJSON() ([]byte, error) {
+	type noMethod GaDataDataTableRows
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GaDataDataTableRowsC struct {
 	V string `json:"v,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "V") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *GaDataDataTableRowsC) MarshalJSON() ([]byte, error) {
+	type noMethod GaDataDataTableRowsC
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GaDataProfileInfo: Information for the view (profile), for which the
+// Analytics data was requested.
 type GaDataProfileInfo struct {
 	// AccountId: Account ID to which this view (profile) belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -1741,8 +2457,23 @@ type GaDataProfileInfo struct {
 
 	// WebPropertyId: Web Property ID to which this view (profile) belongs.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *GaDataProfileInfo) MarshalJSON() ([]byte, error) {
+	type noMethod GaDataProfileInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GaDataQuery: Analytics data request query parameters.
 type GaDataQuery struct {
 	// Dimensions: List of analytics dimensions.
 	Dimensions string `json:"dimensions,omitempty"`
@@ -1777,8 +2508,23 @@ type GaDataQuery struct {
 
 	// StartIndex: Start index.
 	StartIndex int64 `json:"start-index,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Dimensions") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *GaDataQuery) MarshalJSON() ([]byte, error) {
+	type noMethod GaDataQuery
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Goal: JSON template for Analytics goal resource.
 type Goal struct {
 	// AccountId: Account ID to which this goal belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -1840,8 +2586,27 @@ type Goal struct {
 	// WebPropertyId: Web property ID to which this goal belongs. The web
 	// property ID is of the form UA-XXXXX-YY.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Goal) MarshalJSON() ([]byte, error) {
+	type noMethod Goal
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GoalEventDetails: Details for the goal of the type EVENT.
 type GoalEventDetails struct {
 	// EventConditions: List of event conditions.
 	EventConditions []*GoalEventDetailsEventConditions `json:"eventConditions,omitempty"`
@@ -1849,6 +2614,20 @@ type GoalEventDetails struct {
 	// UseEventValue: Determines if the event value should be used as the
 	// value for this goal.
 	UseEventValue bool `json:"useEventValue,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "EventConditions") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GoalEventDetails) MarshalJSON() ([]byte, error) {
+	type noMethod GoalEventDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GoalEventDetailsEventConditions struct {
@@ -1869,16 +2648,48 @@ type GoalEventDetailsEventConditions struct {
 	// Type: Type of this event condition. Possible values are CATEGORY,
 	// ACTION, LABEL, or VALUE.
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ComparisonType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *GoalEventDetailsEventConditions) MarshalJSON() ([]byte, error) {
+	type noMethod GoalEventDetailsEventConditions
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GoalParentLink: Parent link for a goal. Points to the view (profile)
+// to which this goal belongs.
 type GoalParentLink struct {
 	// Href: Link to the view (profile) to which this goal belongs.
 	Href string `json:"href,omitempty"`
 
 	// Type: Value is "analytics#profile".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *GoalParentLink) MarshalJSON() ([]byte, error) {
+	type noMethod GoalParentLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GoalUrlDestinationDetails: Details for the goal of the type
+// URL_DESTINATION.
 type GoalUrlDestinationDetails struct {
 	// CaseSensitive: Determines if the goal URL must exactly match the
 	// capitalization of visited URLs.
@@ -1897,6 +2708,20 @@ type GoalUrlDestinationDetails struct {
 
 	// Url: URL for this goal.
 	Url string `json:"url,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CaseSensitive") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GoalUrlDestinationDetails) MarshalJSON() ([]byte, error) {
+	type noMethod GoalUrlDestinationDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GoalUrlDestinationDetailsSteps struct {
@@ -1908,8 +2733,24 @@ type GoalUrlDestinationDetailsSteps struct {
 
 	// Url: URL for this step.
 	Url string `json:"url,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *GoalUrlDestinationDetailsSteps) MarshalJSON() ([]byte, error) {
+	type noMethod GoalUrlDestinationDetailsSteps
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GoalVisitNumPagesDetails: Details for the goal of the type
+// VISIT_NUM_PAGES.
 type GoalVisitNumPagesDetails struct {
 	// ComparisonType: Type of comparison. Possible values are LESS_THAN,
 	// GREATER_THAN, or EQUAL.
@@ -1917,8 +2758,24 @@ type GoalVisitNumPagesDetails struct {
 
 	// ComparisonValue: Value used for this comparison.
 	ComparisonValue int64 `json:"comparisonValue,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "ComparisonType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *GoalVisitNumPagesDetails) MarshalJSON() ([]byte, error) {
+	type noMethod GoalVisitNumPagesDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GoalVisitTimeOnSiteDetails: Details for the goal of the type
+// VISIT_TIME_ON_SITE.
 type GoalVisitTimeOnSiteDetails struct {
 	// ComparisonType: Type of comparison. Possible values are LESS_THAN or
 	// GREATER_THAN.
@@ -1926,8 +2783,25 @@ type GoalVisitTimeOnSiteDetails struct {
 
 	// ComparisonValue: Value used for this comparison.
 	ComparisonValue int64 `json:"comparisonValue,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "ComparisonType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *GoalVisitTimeOnSiteDetails) MarshalJSON() ([]byte, error) {
+	type noMethod GoalVisitTimeOnSiteDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Goals: A goal collection lists Analytics goals to which the user has
+// access. Each view (profile) can have a set of goals. Each resource in
+// the Goal collection corresponds to a single Analytics goal.
 type Goals struct {
 	// Items: A list of goals.
 	Items []*Goal `json:"items,omitempty"`
@@ -1957,8 +2831,27 @@ type Goals struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Goals) MarshalJSON() ([]byte, error) {
+	type noMethod Goals
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// McfData: Multi-Channel Funnels data for a given view (profile).
 type McfData struct {
 	// ColumnHeaders: Column headers that list dimension names followed by
 	// the metric names. The order of dimensions and metrics is same as
@@ -2018,6 +2911,24 @@ type McfData struct {
 	// order of the metric totals is same as the metric order specified in
 	// the request.
 	TotalsForAllResults map[string]string `json:"totalsForAllResults,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ColumnHeaders") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *McfData) MarshalJSON() ([]byte, error) {
+	type noMethod McfData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type McfDataColumnHeaders struct {
@@ -2030,8 +2941,24 @@ type McfDataColumnHeaders struct {
 
 	// Name: Column name.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ColumnType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *McfDataColumnHeaders) MarshalJSON() ([]byte, error) {
+	type noMethod McfDataColumnHeaders
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// McfDataProfileInfo: Information for the view (profile), for which the
+// Analytics data was requested.
 type McfDataProfileInfo struct {
 	// AccountId: Account ID to which this view (profile) belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -2051,8 +2978,23 @@ type McfDataProfileInfo struct {
 
 	// WebPropertyId: Web Property ID to which this view (profile) belongs.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *McfDataProfileInfo) MarshalJSON() ([]byte, error) {
+	type noMethod McfDataProfileInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// McfDataQuery: Analytics data request query parameters.
 type McfDataQuery struct {
 	// Dimensions: List of analytics dimensions.
 	Dimensions string `json:"dimensions,omitempty"`
@@ -2087,8 +3029,25 @@ type McfDataQuery struct {
 
 	// StartIndex: Start index.
 	StartIndex int64 `json:"start-index,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Dimensions") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *McfDataQuery) MarshalJSON() ([]byte, error) {
+	type noMethod McfDataQuery
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// McfDataRowsItem: A union object representing a dimension or metric
+// value. Only one of "primitiveValue" or "conversionPathValue"
+// attribute will be populated.
 type McfDataRowsItem struct {
 	// ConversionPathValue: A conversion path dimension value, containing a
 	// list of interactions with their attributes.
@@ -2097,6 +3056,20 @@ type McfDataRowsItem struct {
 	// PrimitiveValue: A primitive dimension value. A primitive metric
 	// value.
 	PrimitiveValue string `json:"primitiveValue,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ConversionPathValue")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *McfDataRowsItem) MarshalJSON() ([]byte, error) {
+	type noMethod McfDataRowsItem
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type McfDataRowsItemConversionPathValue struct {
@@ -2107,11 +3080,30 @@ type McfDataRowsItemConversionPathValue struct {
 	// NodeValue: Node value of an interaction on conversion path. Such as
 	// source, medium etc.
 	NodeValue string `json:"nodeValue,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "InteractionType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *McfDataRowsItemConversionPathValue) MarshalJSON() ([]byte, error) {
+	type noMethod McfDataRowsItemConversionPathValue
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Profile: JSON template for an Analytics view (profile).
 type Profile struct {
 	// AccountId: Account ID to which this view (profile) belongs.
 	AccountId string `json:"accountId,omitempty"`
+
+	// BotFilteringEnabled: Indicates whether bot filtering is enabled for
+	// this view (profile).
+	BotFilteringEnabled bool `json:"botFilteringEnabled,omitempty"`
 
 	// ChildLink: Child link for this view (profile). Points to the list of
 	// goals for this view (profile).
@@ -2120,11 +3112,11 @@ type Profile struct {
 	// Created: Time this view (profile) was created.
 	Created string `json:"created,omitempty"`
 
-	// Currency: The currency type associated with this view (profile). The
-	// supported values are:
-	// ARS, AUD, BGN, BRL, CAD, CHF, CNY, CZK, DKK,
-	// EUR, GBP, HKD, HUF, IDR, INR, JPY, KRW, LTL, MXN, NOK, NZD, PHP, PLN,
-	// RUB, SEK, THB, TRY, TWD, USD, VND, ZAR
+	// Currency: The currency type associated with this view (profile),
+	// defaults to USD. The supported values are:
+	// ARS, AUD, BGN, BRL, CAD, CHF, CNY, CZK, DKK, EUR, GBP, HKD, HUF, IDR,
+	// INR, JPY, KRW, LTL, MXN, NOK, NZD, PHP, PLN, RUB, SEK, THB, TRY, TWD,
+	// USD, VND, ZAR
 	Currency string `json:"currency,omitempty"`
 
 	// DefaultPage: Default page for this view (profile).
@@ -2174,6 +3166,9 @@ type Profile struct {
 	// view (profile).
 	SiteSearchQueryParameters string `json:"siteSearchQueryParameters,omitempty"`
 
+	// Starred: Indicates whether this view (profile) is starred or not.
+	Starred bool `json:"starred,omitempty"`
+
 	// StripSiteSearchCategoryParameters: Whether or not Analytics will
 	// strip search category parameters from the URLs in your reports.
 	StripSiteSearchCategoryParameters bool `json:"stripSiteSearchCategoryParameters,omitempty"`
@@ -2199,31 +3194,98 @@ type Profile struct {
 
 	// WebsiteUrl: Website URL for this view (profile).
 	WebsiteUrl string `json:"websiteUrl,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Profile) MarshalJSON() ([]byte, error) {
+	type noMethod Profile
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProfileChildLink: Child link for this view (profile). Points to the
+// list of goals for this view (profile).
 type ProfileChildLink struct {
 	// Href: Link to the list of goals for this view (profile).
 	Href string `json:"href,omitempty"`
 
 	// Type: Value is "analytics#goals".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ProfileChildLink) MarshalJSON() ([]byte, error) {
+	type noMethod ProfileChildLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProfileParentLink: Parent link for this view (profile). Points to the
+// web property to which this view (profile) belongs.
 type ProfileParentLink struct {
 	// Href: Link to the web property to which this view (profile) belongs.
 	Href string `json:"href,omitempty"`
 
 	// Type: Value is "analytics#webproperty".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ProfileParentLink) MarshalJSON() ([]byte, error) {
+	type noMethod ProfileParentLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProfilePermissions: Permissions the user has for this view (profile).
 type ProfilePermissions struct {
 	// Effective: All the permissions that the user has for this view
 	// (profile). These include any implied permissions (e.g., EDIT implies
 	// VIEW) or inherited permissions from the parent web property.
 	Effective []string `json:"effective,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Effective") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ProfilePermissions) MarshalJSON() ([]byte, error) {
+	type noMethod ProfilePermissions
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProfileFilterLink: JSON template for an Analytics profile filter
+// link.
 type ProfileFilterLink struct {
 	// FilterRef: Filter for this link.
 	FilterRef *FilterRef `json:"filterRef,omitempty"`
@@ -2239,24 +3301,44 @@ type ProfileFilterLink struct {
 
 	// Rank: The rank of this profile filter link relative to the other
 	// filters linked to the same profile.
-	// For readonly (i.e., list and get)
-	// operations, the rank always starts at 1.
-	// For write (i.e., create,
-	// update, or delete) operations, you may specify a value between 0 and
-	// 255 inclusively, [0, 255]. In order to insert a link at the end of
-	// the list, either don't specify a rank or set a rank to a number
-	// greater than the largest rank in the list. In order to insert a link
-	// to the beginning of the list specify a rank that is less than or
-	// equal to 1. The new link will move all existing filters with the same
-	// or lower rank down the list. After the link is
+	// For readonly (i.e., list and get) operations, the rank always starts
+	// at 1.
+	// For write (i.e., create, update, or delete) operations, you may
+	// specify a value between 0 and 255 inclusively, [0, 255]. In order to
+	// insert a link at the end of the list, either don't specify a rank or
+	// set a rank to a number greater than the largest rank in the list. In
+	// order to insert a link to the beginning of the list specify a rank
+	// that is less than or equal to 1. The new link will move all existing
+	// filters with the same or lower rank down the list. After the link is
 	// inserted/updated/deleted all profile filter links will be renumbered
 	// starting at 1.
 	Rank int64 `json:"rank,omitempty"`
 
 	// SelfLink: Link for this profile filter link.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "FilterRef") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ProfileFilterLink) MarshalJSON() ([]byte, error) {
+	type noMethod ProfileFilterLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProfileFilterLinks: A profile filter link collection lists profile
+// filter links between profiles and filters. Each resource in the
+// collection corresponds to a profile filter link.
 type ProfileFilterLinks struct {
 	// Items: A list of profile filter links.
 	Items []*ProfileFilterLink `json:"items,omitempty"`
@@ -2287,8 +3369,27 @@ type ProfileFilterLinks struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ProfileFilterLinks) MarshalJSON() ([]byte, error) {
+	type noMethod ProfileFilterLinks
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProfileRef: JSON template for a linked view (profile).
 type ProfileRef struct {
 	// AccountId: Account ID to which this view (profile) belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -2312,8 +3413,25 @@ type ProfileRef struct {
 	// WebPropertyId: Web property ID of the form UA-XXXXX-YY to which this
 	// view (profile) belongs.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ProfileRef) MarshalJSON() ([]byte, error) {
+	type noMethod ProfileRef
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProfileSummary: JSON template for an Analytics ProfileSummary.
+// ProfileSummary returns basic information (i.e., summary) for a
+// profile.
 type ProfileSummary struct {
 	// Id: View (profile) ID.
 	Id string `json:"id,omitempty"`
@@ -2324,10 +3442,30 @@ type ProfileSummary struct {
 	// Name: View (profile) name.
 	Name string `json:"name,omitempty"`
 
+	// Starred: Indicates whether this view (profile) is starred or not.
+	Starred bool `json:"starred,omitempty"`
+
 	// Type: View (Profile) type. Supported types: WEB or APP.
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ProfileSummary) MarshalJSON() ([]byte, error) {
+	type noMethod ProfileSummary
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Profiles: A view (profile) collection lists Analytics views
+// (profiles) to which the user has access. Each resource in the
+// collection corresponds to a single Analytics view (profile).
 type Profiles struct {
 	// Items: A list of views (profiles).
 	Items []*Profile `json:"items,omitempty"`
@@ -2358,8 +3496,27 @@ type Profiles struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Profiles) MarshalJSON() ([]byte, error) {
+	type noMethod Profiles
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RealtimeData: Real time data for a given view (profile).
 type RealtimeData struct {
 	// ColumnHeaders: Column headers that list dimension names followed by
 	// the metric names. The order of dimensions and metrics is same as
@@ -2396,6 +3553,24 @@ type RealtimeData struct {
 	// order of the metric totals is same as the metric order specified in
 	// the request.
 	TotalsForAllResults map[string]string `json:"totalsForAllResults,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ColumnHeaders") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *RealtimeData) MarshalJSON() ([]byte, error) {
+	type noMethod RealtimeData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type RealtimeDataColumnHeaders struct {
@@ -2409,8 +3584,24 @@ type RealtimeDataColumnHeaders struct {
 
 	// Name: Column name.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ColumnType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RealtimeDataColumnHeaders) MarshalJSON() ([]byte, error) {
+	type noMethod RealtimeDataColumnHeaders
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RealtimeDataProfileInfo: Information for the view (profile), for
+// which the real time data was requested.
 type RealtimeDataProfileInfo struct {
 	// AccountId: Account ID to which this view (profile) belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -2430,8 +3621,23 @@ type RealtimeDataProfileInfo struct {
 
 	// WebPropertyId: Web Property ID to which this view (profile) belongs.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RealtimeDataProfileInfo) MarshalJSON() ([]byte, error) {
+	type noMethod RealtimeDataProfileInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RealtimeDataQuery: Real time data request query parameters.
 type RealtimeDataQuery struct {
 	// Dimensions: List of real time dimensions.
 	Dimensions string `json:"dimensions,omitempty"`
@@ -2451,8 +3657,23 @@ type RealtimeDataQuery struct {
 	// Sort: List of dimensions or metrics based on which real time data is
 	// sorted.
 	Sort []string `json:"sort,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Dimensions") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RealtimeDataQuery) MarshalJSON() ([]byte, error) {
+	type noMethod RealtimeDataQuery
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Segment: JSON template for an Analytics segment.
 type Segment struct {
 	// Created: Time the segment was created.
 	Created string `json:"created,omitempty"`
@@ -2481,8 +3702,25 @@ type Segment struct {
 
 	// Updated: Time the segment was last modified.
 	Updated string `json:"updated,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Created") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Segment) MarshalJSON() ([]byte, error) {
+	type noMethod Segment
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Segments: An segment collection lists Analytics segments that the
+// user has access to. Each resource in the collection corresponds to a
+// single Analytics segment.
 type Segments struct {
 	// Items: A list of segments.
 	Items []*Segment `json:"items,omitempty"`
@@ -2512,8 +3750,28 @@ type Segments struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Segments) MarshalJSON() ([]byte, error) {
+	type noMethod Segments
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// UnsampledReport: JSON template for Analytics unsampled report
+// resource.
 type UnsampledReport struct {
 	// AccountId: Account ID to which this unsampled report belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -2576,21 +3834,75 @@ type UnsampledReport struct {
 	// WebPropertyId: Web property ID to which this unsampled report
 	// belongs. The web property ID is of the form UA-XXXXX-YY.
 	WebPropertyId string `json:"webPropertyId,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *UnsampledReport) MarshalJSON() ([]byte, error) {
+	type noMethod UnsampledReport
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// UnsampledReportCloudStorageDownloadDetails: Download details for a
+// file stored in Google Cloud Storage.
 type UnsampledReportCloudStorageDownloadDetails struct {
 	// BucketId: Id of the bucket the file object is stored in.
 	BucketId string `json:"bucketId,omitempty"`
 
 	// ObjectId: Id of the file object containing the report data.
 	ObjectId string `json:"objectId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BucketId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *UnsampledReportCloudStorageDownloadDetails) MarshalJSON() ([]byte, error) {
+	type noMethod UnsampledReportCloudStorageDownloadDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// UnsampledReportDriveDownloadDetails: Download details for a file
+// stored in Google Drive.
 type UnsampledReportDriveDownloadDetails struct {
 	// DocumentId: Id of the document/file containing the report data.
 	DocumentId string `json:"documentId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DocumentId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *UnsampledReportDriveDownloadDetails) MarshalJSON() ([]byte, error) {
+	type noMethod UnsampledReportDriveDownloadDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// UnsampledReports: An unsampled report collection lists Analytics
+// unsampled reports to which the user has access. Each view (profile)
+// can have a set of unsampled reports. Each resource in the unsampled
+// report collection corresponds to a single Analytics unsampled report.
 type UnsampledReports struct {
 	// Items: A list of unsampled reports.
 	Items []*UnsampledReport `json:"items,omitempty"`
@@ -2621,8 +3933,27 @@ type UnsampledReports struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *UnsampledReports) MarshalJSON() ([]byte, error) {
+	type noMethod UnsampledReports
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Upload: Metadata returned for an upload operation.
 type Upload struct {
 	// AccountId: Account Id to which this upload belongs.
 	AccountId int64 `json:"accountId,omitempty,string"`
@@ -2643,8 +3974,30 @@ type Upload struct {
 	// Status: Upload status. Possible values: PENDING, COMPLETED, FAILED,
 	// DELETING, DELETED.
 	Status string `json:"status,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Upload) MarshalJSON() ([]byte, error) {
+	type noMethod Upload
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Uploads: Upload collection lists Analytics uploads to which the user
+// has access. Each custom data source can have a set of uploads. Each
+// resource in the upload collection corresponds to a single Analytics
+// data upload.
 type Uploads struct {
 	// Items: A list of uploads.
 	Items []*Upload `json:"items,omitempty"`
@@ -2671,8 +4024,27 @@ type Uploads struct {
 	// TotalResults: The total number of results for the query, regardless
 	// of the number of resources in the result.
 	TotalResults int64 `json:"totalResults,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Uploads) MarshalJSON() ([]byte, error) {
+	type noMethod Uploads
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// UserRef: JSON template for a user reference.
 type UserRef struct {
 	// Email: Email ID of this user.
 	Email string `json:"email,omitempty"`
@@ -2681,8 +4053,23 @@ type UserRef struct {
 	Id string `json:"id,omitempty"`
 
 	Kind string `json:"kind,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Email") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *UserRef) MarshalJSON() ([]byte, error) {
+	type noMethod UserRef
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// WebPropertyRef: JSON template for a web property reference.
 type WebPropertyRef struct {
 	// AccountId: Account ID to which this web property belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -2701,8 +4088,25 @@ type WebPropertyRef struct {
 
 	// Name: Name of this web property.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *WebPropertyRef) MarshalJSON() ([]byte, error) {
+	type noMethod WebPropertyRef
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// WebPropertySummary: JSON template for an Analytics
+// WebPropertySummary. WebPropertySummary returns basic information
+// (i.e., summary) for a web property.
 type WebPropertySummary struct {
 	// Id: Web property ID of the form UA-XXXXX-YY.
 	Id string `json:"id,omitempty"`
@@ -2723,10 +4127,30 @@ type WebPropertySummary struct {
 	// Profiles: List of profiles under this web property.
 	Profiles []*ProfileSummary `json:"profiles,omitempty"`
 
+	// Starred: Indicates whether this web property is starred or not.
+	Starred bool `json:"starred,omitempty"`
+
 	// WebsiteUrl: Website url for this web property.
 	WebsiteUrl string `json:"websiteUrl,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *WebPropertySummary) MarshalJSON() ([]byte, error) {
+	type noMethod WebPropertySummary
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Webproperties: A web property collection lists Analytics web
+// properties to which the user has access. Each resource in the
+// collection corresponds to a single Analytics web property.
 type Webproperties struct {
 	// Items: A list of web properties.
 	Items []*Webproperty `json:"items,omitempty"`
@@ -2756,8 +4180,27 @@ type Webproperties struct {
 
 	// Username: Email ID of the authenticated user
 	Username string `json:"username,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Webproperties) MarshalJSON() ([]byte, error) {
+	type noMethod Webproperties
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Webproperty: JSON template for an Analytics web property.
 type Webproperty struct {
 	// AccountId: Account ID to which this web property belongs.
 	AccountId string `json:"accountId,omitempty"`
@@ -2805,54 +4248,121 @@ type Webproperty struct {
 	// SelfLink: Link for this web property.
 	SelfLink string `json:"selfLink,omitempty"`
 
+	// Starred: Indicates whether this web property is starred or not.
+	Starred bool `json:"starred,omitempty"`
+
 	// Updated: Time this web property was last modified.
 	Updated string `json:"updated,omitempty"`
 
 	// WebsiteUrl: Website url for this web property.
 	WebsiteUrl string `json:"websiteUrl,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Webproperty) MarshalJSON() ([]byte, error) {
+	type noMethod Webproperty
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// WebpropertyChildLink: Child link for this web property. Points to the
+// list of views (profiles) for this web property.
 type WebpropertyChildLink struct {
 	// Href: Link to the list of views (profiles) for this web property.
 	Href string `json:"href,omitempty"`
 
 	// Type: Type of the parent link. Its value is "analytics#profiles".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *WebpropertyChildLink) MarshalJSON() ([]byte, error) {
+	type noMethod WebpropertyChildLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// WebpropertyParentLink: Parent link for this web property. Points to
+// the account to which this web property belongs.
 type WebpropertyParentLink struct {
 	// Href: Link to the account for this web property.
 	Href string `json:"href,omitempty"`
 
 	// Type: Type of the parent link. Its value is "analytics#account".
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Href") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *WebpropertyParentLink) MarshalJSON() ([]byte, error) {
+	type noMethod WebpropertyParentLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// WebpropertyPermissions: Permissions the user has for this web
+// property.
 type WebpropertyPermissions struct {
 	// Effective: All the permissions that the user has for this web
 	// property. These include any implied permissions (e.g., EDIT implies
 	// VIEW) or inherited permissions from the parent account.
 	Effective []string `json:"effective,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Effective") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *WebpropertyPermissions) MarshalJSON() ([]byte, error) {
+	type noMethod WebpropertyPermissions
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "analytics.data.ga.get":
 
 type DataGaGetCall struct {
-	s         *Service
-	ids       string
-	startDate string
-	endDate   string
-	metrics   string
-	opt_      map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Returns Analytics data for a view (profile).
 func (r *DataGaService) Get(ids string, startDate string, endDate string, metrics string) *DataGaGetCall {
-	c := &DataGaGetCall{s: r.s, opt_: make(map[string]interface{})}
-	c.ids = ids
-	c.startDate = startDate
-	c.endDate = endDate
-	c.metrics = metrics
+	c := &DataGaGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.urlParams_.Set("ids", ids)
+	c.urlParams_.Set("start-date", startDate)
+	c.urlParams_.Set("end-date", endDate)
+	c.urlParams_.Set("metrics", metrics)
 	return c
 }
 
@@ -2860,42 +4370,62 @@ func (r *DataGaService) Get(ids string, startDate string, endDate string, metric
 // comma-separated list of Analytics dimensions. E.g.,
 // 'ga:browser,ga:city'.
 func (c *DataGaGetCall) Dimensions(dimensions string) *DataGaGetCall {
-	c.opt_["dimensions"] = dimensions
+	c.urlParams_.Set("dimensions", dimensions)
 	return c
 }
 
 // Filters sets the optional parameter "filters": A comma-separated list
 // of dimension or metric filters to be applied to Analytics data.
 func (c *DataGaGetCall) Filters(filters string) *DataGaGetCall {
-	c.opt_["filters"] = filters
+	c.urlParams_.Set("filters", filters)
+	return c
+}
+
+// IncludeEmptyRows sets the optional parameter "include-empty-rows":
+// The response will include empty rows if this parameter is set to
+// true, the default is true
+func (c *DataGaGetCall) IncludeEmptyRows(includeEmptyRows bool) *DataGaGetCall {
+	c.urlParams_.Set("include-empty-rows", fmt.Sprint(includeEmptyRows))
 	return c
 }
 
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of entries to include in this feed.
 func (c *DataGaGetCall) MaxResults(maxResults int64) *DataGaGetCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
 // Output sets the optional parameter "output": The selected format for
 // the response. Default format is JSON.
+//
+// Possible values:
+//   "dataTable" - Returns the response in Google Charts Data Table
+// format. This is useful in creating visualization using Google Charts.
+//   "json" - Returns the response in standard JSON format.
 func (c *DataGaGetCall) Output(output string) *DataGaGetCall {
-	c.opt_["output"] = output
+	c.urlParams_.Set("output", output)
 	return c
 }
 
 // SamplingLevel sets the optional parameter "samplingLevel": The
 // desired sampling level.
+//
+// Possible values:
+//   "DEFAULT" - Returns response with a sample size that balances speed
+// and accuracy.
+//   "FASTER" - Returns a fast response with a smaller sample size.
+//   "HIGHER_PRECISION" - Returns a more accurate response using a large
+// sample size, but this may result in the response being slower.
 func (c *DataGaGetCall) SamplingLevel(samplingLevel string) *DataGaGetCall {
-	c.opt_["samplingLevel"] = samplingLevel
+	c.urlParams_.Set("samplingLevel", samplingLevel)
 	return c
 }
 
 // Segment sets the optional parameter "segment": An Analytics segment
 // to be applied to data.
 func (c *DataGaGetCall) Segment(segment string) *DataGaGetCall {
-	c.opt_["segment"] = segment
+	c.urlParams_.Set("segment", segment)
 	return c
 }
 
@@ -2903,7 +4433,7 @@ func (c *DataGaGetCall) Segment(segment string) *DataGaGetCall {
 // dimensions or metrics that determine the sort order for Analytics
 // data.
 func (c *DataGaGetCall) Sort(sort string) *DataGaGetCall {
-	c.opt_["sort"] = sort
+	c.urlParams_.Set("sort", sort)
 	return c
 }
 
@@ -2911,59 +4441,72 @@ func (c *DataGaGetCall) Sort(sort string) *DataGaGetCall {
 // first entity to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *DataGaGetCall) StartIndex(startIndex int64) *DataGaGetCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *DataGaGetCall) Fields(s ...googleapi.Field) *DataGaGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *DataGaGetCall) Do() (*GaData, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *DataGaGetCall) IfNoneMatch(entityTag string) *DataGaGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DataGaGetCall) Context(ctx context.Context) *DataGaGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *DataGaGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("end-date", fmt.Sprintf("%v", c.endDate))
-	params.Set("ids", fmt.Sprintf("%v", c.ids))
-	params.Set("metrics", fmt.Sprintf("%v", c.metrics))
-	params.Set("start-date", fmt.Sprintf("%v", c.startDate))
-	if v, ok := c.opt_["dimensions"]; ok {
-		params.Set("dimensions", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["filters"]; ok {
-		params.Set("filters", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["output"]; ok {
-		params.Set("output", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["samplingLevel"]; ok {
-		params.Set("samplingLevel", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["segment"]; ok {
-		params.Set("segment", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sort"]; ok {
-		params.Set("sort", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "data/ga")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.data.ga.get" call.
+// Exactly one of *GaData or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *GaData.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *DataGaGetCall) Do(opts ...googleapi.CallOption) (*GaData, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2971,7 +4514,12 @@ func (c *DataGaGetCall) Do() (*GaData, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *GaData
+	ret := &GaData{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3012,6 +4560,11 @@ func (c *DataGaGetCall) Do() (*GaData, error) {
 	//       "pattern": "ga:[0-9]+",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "include-empty-rows": {
+	//       "description": "The response will include empty rows if this parameter is set to true, the default is true",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     },
 	//     "max-results": {
 	//       "description": "The maximum number of entries to include in this feed.",
@@ -3095,22 +4648,20 @@ func (c *DataGaGetCall) Do() (*GaData, error) {
 // method id "analytics.data.mcf.get":
 
 type DataMcfGetCall struct {
-	s         *Service
-	ids       string
-	startDate string
-	endDate   string
-	metrics   string
-	opt_      map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Returns Analytics Multi-Channel Funnels data for a view
 // (profile).
 func (r *DataMcfService) Get(ids string, startDate string, endDate string, metrics string) *DataMcfGetCall {
-	c := &DataMcfGetCall{s: r.s, opt_: make(map[string]interface{})}
-	c.ids = ids
-	c.startDate = startDate
-	c.endDate = endDate
-	c.metrics = metrics
+	c := &DataMcfGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.urlParams_.Set("ids", ids)
+	c.urlParams_.Set("start-date", startDate)
+	c.urlParams_.Set("end-date", endDate)
+	c.urlParams_.Set("metrics", metrics)
 	return c
 }
 
@@ -3118,28 +4669,35 @@ func (r *DataMcfService) Get(ids string, startDate string, endDate string, metri
 // comma-separated list of Multi-Channel Funnels dimensions. E.g.,
 // 'mcf:source,mcf:medium'.
 func (c *DataMcfGetCall) Dimensions(dimensions string) *DataMcfGetCall {
-	c.opt_["dimensions"] = dimensions
+	c.urlParams_.Set("dimensions", dimensions)
 	return c
 }
 
 // Filters sets the optional parameter "filters": A comma-separated list
 // of dimension or metric filters to be applied to the Analytics data.
 func (c *DataMcfGetCall) Filters(filters string) *DataMcfGetCall {
-	c.opt_["filters"] = filters
+	c.urlParams_.Set("filters", filters)
 	return c
 }
 
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of entries to include in this feed.
 func (c *DataMcfGetCall) MaxResults(maxResults int64) *DataMcfGetCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
 // SamplingLevel sets the optional parameter "samplingLevel": The
 // desired sampling level.
+//
+// Possible values:
+//   "DEFAULT" - Returns response with a sample size that balances speed
+// and accuracy.
+//   "FASTER" - Returns a fast response with a smaller sample size.
+//   "HIGHER_PRECISION" - Returns a more accurate response using a large
+// sample size, but this may result in the response being slower.
 func (c *DataMcfGetCall) SamplingLevel(samplingLevel string) *DataMcfGetCall {
-	c.opt_["samplingLevel"] = samplingLevel
+	c.urlParams_.Set("samplingLevel", samplingLevel)
 	return c
 }
 
@@ -3147,7 +4705,7 @@ func (c *DataMcfGetCall) SamplingLevel(samplingLevel string) *DataMcfGetCall {
 // dimensions or metrics that determine the sort order for the Analytics
 // data.
 func (c *DataMcfGetCall) Sort(sort string) *DataMcfGetCall {
-	c.opt_["sort"] = sort
+	c.urlParams_.Set("sort", sort)
 	return c
 }
 
@@ -3155,53 +4713,72 @@ func (c *DataMcfGetCall) Sort(sort string) *DataMcfGetCall {
 // first entity to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *DataMcfGetCall) StartIndex(startIndex int64) *DataMcfGetCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *DataMcfGetCall) Fields(s ...googleapi.Field) *DataMcfGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *DataMcfGetCall) Do() (*McfData, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *DataMcfGetCall) IfNoneMatch(entityTag string) *DataMcfGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DataMcfGetCall) Context(ctx context.Context) *DataMcfGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *DataMcfGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("end-date", fmt.Sprintf("%v", c.endDate))
-	params.Set("ids", fmt.Sprintf("%v", c.ids))
-	params.Set("metrics", fmt.Sprintf("%v", c.metrics))
-	params.Set("start-date", fmt.Sprintf("%v", c.startDate))
-	if v, ok := c.opt_["dimensions"]; ok {
-		params.Set("dimensions", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["filters"]; ok {
-		params.Set("filters", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["samplingLevel"]; ok {
-		params.Set("samplingLevel", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sort"]; ok {
-		params.Set("sort", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "data/mcf")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.data.mcf.get" call.
+// Exactly one of *McfData or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *McfData.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *DataMcfGetCall) Do(opts ...googleapi.CallOption) (*McfData, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3209,7 +4786,12 @@ func (c *DataMcfGetCall) Do() (*McfData, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *McfData
+	ret := &McfData{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3315,17 +4897,17 @@ func (c *DataMcfGetCall) Do() (*McfData, error) {
 // method id "analytics.data.realtime.get":
 
 type DataRealtimeGetCall struct {
-	s       *Service
-	ids     string
-	metrics string
-	opt_    map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Returns real time data for a view (profile).
 func (r *DataRealtimeService) Get(ids string, metrics string) *DataRealtimeGetCall {
-	c := &DataRealtimeGetCall{s: r.s, opt_: make(map[string]interface{})}
-	c.ids = ids
-	c.metrics = metrics
+	c := &DataRealtimeGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.urlParams_.Set("ids", ids)
+	c.urlParams_.Set("metrics", metrics)
 	return c
 }
 
@@ -3333,21 +4915,21 @@ func (r *DataRealtimeService) Get(ids string, metrics string) *DataRealtimeGetCa
 // comma-separated list of real time dimensions. E.g.,
 // 'rt:medium,rt:city'.
 func (c *DataRealtimeGetCall) Dimensions(dimensions string) *DataRealtimeGetCall {
-	c.opt_["dimensions"] = dimensions
+	c.urlParams_.Set("dimensions", dimensions)
 	return c
 }
 
 // Filters sets the optional parameter "filters": A comma-separated list
 // of dimension or metric filters to be applied to real time data.
 func (c *DataRealtimeGetCall) Filters(filters string) *DataRealtimeGetCall {
-	c.opt_["filters"] = filters
+	c.urlParams_.Set("filters", filters)
 	return c
 }
 
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of entries to include in this feed.
 func (c *DataRealtimeGetCall) MaxResults(maxResults int64) *DataRealtimeGetCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -3355,45 +4937,72 @@ func (c *DataRealtimeGetCall) MaxResults(maxResults int64) *DataRealtimeGetCall 
 // dimensions or metrics that determine the sort order for real time
 // data.
 func (c *DataRealtimeGetCall) Sort(sort string) *DataRealtimeGetCall {
-	c.opt_["sort"] = sort
+	c.urlParams_.Set("sort", sort)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *DataRealtimeGetCall) Fields(s ...googleapi.Field) *DataRealtimeGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *DataRealtimeGetCall) Do() (*RealtimeData, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *DataRealtimeGetCall) IfNoneMatch(entityTag string) *DataRealtimeGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DataRealtimeGetCall) Context(ctx context.Context) *DataRealtimeGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *DataRealtimeGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("ids", fmt.Sprintf("%v", c.ids))
-	params.Set("metrics", fmt.Sprintf("%v", c.metrics))
-	if v, ok := c.opt_["dimensions"]; ok {
-		params.Set("dimensions", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["filters"]; ok {
-		params.Set("filters", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sort"]; ok {
-		params.Set("sort", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "data/realtime")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.data.realtime.get" call.
+// Exactly one of *RealtimeData or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *RealtimeData.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *DataRealtimeGetCall) Do(opts ...googleapi.CallOption) (*RealtimeData, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3401,7 +5010,12 @@ func (c *DataRealtimeGetCall) Do() (*RealtimeData, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *RealtimeData
+	ret := &RealtimeData{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3469,14 +5083,16 @@ func (c *DataRealtimeGetCall) Do() (*RealtimeData, error) {
 // method id "analytics.management.accountSummaries.list":
 
 type ManagementAccountSummariesListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists account summaries (lightweight tree comprised of
 // accounts/properties/profiles) to which the user has access.
 func (r *ManagementAccountSummariesService) List() *ManagementAccountSummariesListCall {
-	c := &ManagementAccountSummariesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementAccountSummariesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -3484,7 +5100,7 @@ func (r *ManagementAccountSummariesService) List() *ManagementAccountSummariesLi
 // number of account summaries to include in this response, where the
 // largest acceptable value is 1000.
 func (c *ManagementAccountSummariesListCall) MaxResults(maxResults int64) *ManagementAccountSummariesListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -3492,37 +5108,72 @@ func (c *ManagementAccountSummariesListCall) MaxResults(maxResults int64) *Manag
 // first entity to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementAccountSummariesListCall) StartIndex(startIndex int64) *ManagementAccountSummariesListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementAccountSummariesListCall) Fields(s ...googleapi.Field) *ManagementAccountSummariesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementAccountSummariesListCall) Do() (*AccountSummaries, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementAccountSummariesListCall) IfNoneMatch(entityTag string) *ManagementAccountSummariesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementAccountSummariesListCall) Context(ctx context.Context) *ManagementAccountSummariesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementAccountSummariesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accountSummaries")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.accountSummaries.list" call.
+// Exactly one of *AccountSummaries or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *AccountSummaries.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementAccountSummariesListCall) Do(opts ...googleapi.CallOption) (*AccountSummaries, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3530,7 +5181,12 @@ func (c *ManagementAccountSummariesListCall) Do() (*AccountSummaries, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AccountSummaries
+	ret := &AccountSummaries{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3569,44 +5225,58 @@ func (c *ManagementAccountSummariesListCall) Do() (*AccountSummaries, error) {
 // method id "analytics.management.accountUserLinks.delete":
 
 type ManagementAccountUserLinksDeleteCall struct {
-	s         *Service
-	accountId string
-	linkId    string
-	opt_      map[string]interface{}
+	s          *Service
+	accountId  string
+	linkId     string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Removes a user from the given account.
 func (r *ManagementAccountUserLinksService) Delete(accountId string, linkId string) *ManagementAccountUserLinksDeleteCall {
-	c := &ManagementAccountUserLinksDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementAccountUserLinksDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.linkId = linkId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementAccountUserLinksDeleteCall) Fields(s ...googleapi.Field) *ManagementAccountUserLinksDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementAccountUserLinksDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementAccountUserLinksDeleteCall) Context(ctx context.Context) *ManagementAccountUserLinksDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementAccountUserLinksDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/entityUserLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 		"linkId":    c.linkId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.accountUserLinks.delete" call.
+func (c *ManagementAccountUserLinksDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -3651,46 +5321,75 @@ type ManagementAccountUserLinksInsertCall struct {
 	s              *Service
 	accountId      string
 	entityuserlink *EntityUserLink
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Insert: Adds a new user to the given account.
 func (r *ManagementAccountUserLinksService) Insert(accountId string, entityuserlink *EntityUserLink) *ManagementAccountUserLinksInsertCall {
-	c := &ManagementAccountUserLinksInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementAccountUserLinksInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.entityuserlink = entityuserlink
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementAccountUserLinksInsertCall) Fields(s ...googleapi.Field) *ManagementAccountUserLinksInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementAccountUserLinksInsertCall) Do() (*EntityUserLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementAccountUserLinksInsertCall) Context(ctx context.Context) *ManagementAccountUserLinksInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementAccountUserLinksInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entityuserlink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/entityUserLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.accountUserLinks.insert" call.
+// Exactly one of *EntityUserLink or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *EntityUserLink.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementAccountUserLinksInsertCall) Do(opts ...googleapi.CallOption) (*EntityUserLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3698,7 +5397,12 @@ func (c *ManagementAccountUserLinksInsertCall) Do() (*EntityUserLink, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityUserLink
+	ret := &EntityUserLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3735,14 +5439,16 @@ func (c *ManagementAccountUserLinksInsertCall) Do() (*EntityUserLink, error) {
 // method id "analytics.management.accountUserLinks.list":
 
 type ManagementAccountUserLinksListCall struct {
-	s         *Service
-	accountId string
-	opt_      map[string]interface{}
+	s            *Service
+	accountId    string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists account-user links for a given account.
 func (r *ManagementAccountUserLinksService) List(accountId string) *ManagementAccountUserLinksListCall {
-	c := &ManagementAccountUserLinksListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementAccountUserLinksListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	return c
 }
@@ -3750,7 +5456,7 @@ func (r *ManagementAccountUserLinksService) List(accountId string) *ManagementAc
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of account-user links to include in this response.
 func (c *ManagementAccountUserLinksListCall) MaxResults(maxResults int64) *ManagementAccountUserLinksListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -3758,39 +5464,74 @@ func (c *ManagementAccountUserLinksListCall) MaxResults(maxResults int64) *Manag
 // first account-user link to retrieve. Use this parameter as a
 // pagination mechanism along with the max-results parameter.
 func (c *ManagementAccountUserLinksListCall) StartIndex(startIndex int64) *ManagementAccountUserLinksListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementAccountUserLinksListCall) Fields(s ...googleapi.Field) *ManagementAccountUserLinksListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementAccountUserLinksListCall) Do() (*EntityUserLinks, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementAccountUserLinksListCall) IfNoneMatch(entityTag string) *ManagementAccountUserLinksListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementAccountUserLinksListCall) Context(ctx context.Context) *ManagementAccountUserLinksListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementAccountUserLinksListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/entityUserLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.accountUserLinks.list" call.
+// Exactly one of *EntityUserLinks or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *EntityUserLinks.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementAccountUserLinksListCall) Do(opts ...googleapi.CallOption) (*EntityUserLinks, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3798,7 +5539,12 @@ func (c *ManagementAccountUserLinksListCall) Do() (*EntityUserLinks, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityUserLinks
+	ret := &EntityUserLinks{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3850,49 +5596,78 @@ type ManagementAccountUserLinksUpdateCall struct {
 	accountId      string
 	linkId         string
 	entityuserlink *EntityUserLink
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Update: Updates permissions for an existing user on the given
 // account.
 func (r *ManagementAccountUserLinksService) Update(accountId string, linkId string, entityuserlink *EntityUserLink) *ManagementAccountUserLinksUpdateCall {
-	c := &ManagementAccountUserLinksUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementAccountUserLinksUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.linkId = linkId
 	c.entityuserlink = entityuserlink
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementAccountUserLinksUpdateCall) Fields(s ...googleapi.Field) *ManagementAccountUserLinksUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementAccountUserLinksUpdateCall) Do() (*EntityUserLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementAccountUserLinksUpdateCall) Context(ctx context.Context) *ManagementAccountUserLinksUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementAccountUserLinksUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entityuserlink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/entityUserLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 		"linkId":    c.linkId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.accountUserLinks.update" call.
+// Exactly one of *EntityUserLink or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *EntityUserLink.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementAccountUserLinksUpdateCall) Do(opts ...googleapi.CallOption) (*EntityUserLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3900,7 +5675,12 @@ func (c *ManagementAccountUserLinksUpdateCall) Do() (*EntityUserLink, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityUserLink
+	ret := &EntityUserLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3944,20 +5724,22 @@ func (c *ManagementAccountUserLinksUpdateCall) Do() (*EntityUserLink, error) {
 // method id "analytics.management.accounts.list":
 
 type ManagementAccountsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists all accounts to which the user has access.
 func (r *ManagementAccountsService) List() *ManagementAccountsListCall {
-	c := &ManagementAccountsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementAccountsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of accounts to include in this response.
 func (c *ManagementAccountsListCall) MaxResults(maxResults int64) *ManagementAccountsListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -3965,37 +5747,72 @@ func (c *ManagementAccountsListCall) MaxResults(maxResults int64) *ManagementAcc
 // first account to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementAccountsListCall) StartIndex(startIndex int64) *ManagementAccountsListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementAccountsListCall) Fields(s ...googleapi.Field) *ManagementAccountsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementAccountsListCall) Do() (*Accounts, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementAccountsListCall) IfNoneMatch(entityTag string) *ManagementAccountsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementAccountsListCall) Context(ctx context.Context) *ManagementAccountsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementAccountsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.accounts.list" call.
+// Exactly one of *Accounts or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Accounts.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementAccountsListCall) Do(opts ...googleapi.CallOption) (*Accounts, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4003,7 +5820,12 @@ func (c *ManagementAccountsListCall) Do() (*Accounts, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Accounts
+	ret := &Accounts{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4046,12 +5868,14 @@ type ManagementCustomDataSourcesListCall struct {
 	s             *Service
 	accountId     string
 	webPropertyId string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: List custom data sources to which the user has access.
 func (r *ManagementCustomDataSourcesService) List(accountId string, webPropertyId string) *ManagementCustomDataSourcesListCall {
-	c := &ManagementCustomDataSourcesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomDataSourcesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	return c
@@ -4060,7 +5884,7 @@ func (r *ManagementCustomDataSourcesService) List(accountId string, webPropertyI
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of custom data sources to include in this response.
 func (c *ManagementCustomDataSourcesListCall) MaxResults(maxResults int64) *ManagementCustomDataSourcesListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -4068,40 +5892,75 @@ func (c *ManagementCustomDataSourcesListCall) MaxResults(maxResults int64) *Mana
 // of the first custom data source to retrieve. Use this parameter as a
 // pagination mechanism along with the max-results parameter.
 func (c *ManagementCustomDataSourcesListCall) StartIndex(startIndex int64) *ManagementCustomDataSourcesListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomDataSourcesListCall) Fields(s ...googleapi.Field) *ManagementCustomDataSourcesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomDataSourcesListCall) Do() (*CustomDataSources, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementCustomDataSourcesListCall) IfNoneMatch(entityTag string) *ManagementCustomDataSourcesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomDataSourcesListCall) Context(ctx context.Context) *ManagementCustomDataSourcesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomDataSourcesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customDataSources.list" call.
+// Exactly one of *CustomDataSources or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *CustomDataSources.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementCustomDataSourcesListCall) Do(opts ...googleapi.CallOption) (*CustomDataSources, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4109,7 +5968,12 @@ func (c *ManagementCustomDataSourcesListCall) Do() (*CustomDataSources, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomDataSources
+	ret := &CustomDataSources{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4172,43 +6036,86 @@ type ManagementCustomDimensionsGetCall struct {
 	accountId         string
 	webPropertyId     string
 	customDimensionId string
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ifNoneMatch_      string
+	ctx_              context.Context
 }
 
 // Get: Get a custom dimension to which the user has access.
 func (r *ManagementCustomDimensionsService) Get(accountId string, webPropertyId string, customDimensionId string) *ManagementCustomDimensionsGetCall {
-	c := &ManagementCustomDimensionsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomDimensionsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customDimensionId = customDimensionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomDimensionsGetCall) Fields(s ...googleapi.Field) *ManagementCustomDimensionsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomDimensionsGetCall) Do() (*CustomDimension, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementCustomDimensionsGetCall) IfNoneMatch(entityTag string) *ManagementCustomDimensionsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomDimensionsGetCall) Context(ctx context.Context) *ManagementCustomDimensionsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomDimensionsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDimensions/{customDimensionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":         c.accountId,
 		"webPropertyId":     c.webPropertyId,
 		"customDimensionId": c.customDimensionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customDimensions.get" call.
+// Exactly one of *CustomDimension or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CustomDimension.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementCustomDimensionsGetCall) Do(opts ...googleapi.CallOption) (*CustomDimension, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4216,7 +6123,12 @@ func (c *ManagementCustomDimensionsGetCall) Do() (*CustomDimension, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomDimension
+	ret := &CustomDimension{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4269,48 +6181,77 @@ type ManagementCustomDimensionsInsertCall struct {
 	accountId       string
 	webPropertyId   string
 	customdimension *CustomDimension
-	opt_            map[string]interface{}
+	urlParams_      gensupport.URLParams
+	ctx_            context.Context
 }
 
 // Insert: Create a new custom dimension.
 func (r *ManagementCustomDimensionsService) Insert(accountId string, webPropertyId string, customdimension *CustomDimension) *ManagementCustomDimensionsInsertCall {
-	c := &ManagementCustomDimensionsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomDimensionsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customdimension = customdimension
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomDimensionsInsertCall) Fields(s ...googleapi.Field) *ManagementCustomDimensionsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomDimensionsInsertCall) Do() (*CustomDimension, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomDimensionsInsertCall) Context(ctx context.Context) *ManagementCustomDimensionsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomDimensionsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.customdimension)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDimensions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customDimensions.insert" call.
+// Exactly one of *CustomDimension or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CustomDimension.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementCustomDimensionsInsertCall) Do(opts ...googleapi.CallOption) (*CustomDimension, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4318,7 +6259,12 @@ func (c *ManagementCustomDimensionsInsertCall) Do() (*CustomDimension, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomDimension
+	ret := &CustomDimension{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4365,12 +6311,14 @@ type ManagementCustomDimensionsListCall struct {
 	s             *Service
 	accountId     string
 	webPropertyId string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists custom dimensions to which the user has access.
 func (r *ManagementCustomDimensionsService) List(accountId string, webPropertyId string) *ManagementCustomDimensionsListCall {
-	c := &ManagementCustomDimensionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomDimensionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	return c
@@ -4379,7 +6327,7 @@ func (r *ManagementCustomDimensionsService) List(accountId string, webPropertyId
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of custom dimensions to include in this response.
 func (c *ManagementCustomDimensionsListCall) MaxResults(maxResults int64) *ManagementCustomDimensionsListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -4387,40 +6335,75 @@ func (c *ManagementCustomDimensionsListCall) MaxResults(maxResults int64) *Manag
 // first entity to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementCustomDimensionsListCall) StartIndex(startIndex int64) *ManagementCustomDimensionsListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomDimensionsListCall) Fields(s ...googleapi.Field) *ManagementCustomDimensionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomDimensionsListCall) Do() (*CustomDimensions, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementCustomDimensionsListCall) IfNoneMatch(entityTag string) *ManagementCustomDimensionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomDimensionsListCall) Context(ctx context.Context) *ManagementCustomDimensionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomDimensionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDimensions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customDimensions.list" call.
+// Exactly one of *CustomDimensions or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *CustomDimensions.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementCustomDimensionsListCall) Do(opts ...googleapi.CallOption) (*CustomDimensions, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4428,7 +6411,12 @@ func (c *ManagementCustomDimensionsListCall) Do() (*CustomDimensions, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomDimensions
+	ret := &CustomDimensions{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4488,13 +6476,14 @@ type ManagementCustomDimensionsPatchCall struct {
 	webPropertyId     string
 	customDimensionId string
 	customdimension   *CustomDimension
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
 }
 
 // Patch: Updates an existing custom dimension. This method supports
 // patch semantics.
 func (r *ManagementCustomDimensionsService) Patch(accountId string, webPropertyId string, customDimensionId string, customdimension *CustomDimension) *ManagementCustomDimensionsPatchCall {
-	c := &ManagementCustomDimensionsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomDimensionsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customDimensionId = customDimensionId
@@ -4507,35 +6496,36 @@ func (r *ManagementCustomDimensionsService) Patch(accountId string, webPropertyI
 // warnings related to the custom dimension being linked to a custom
 // data source / data set.
 func (c *ManagementCustomDimensionsPatchCall) IgnoreCustomDataSourceLinks(ignoreCustomDataSourceLinks bool) *ManagementCustomDimensionsPatchCall {
-	c.opt_["ignoreCustomDataSourceLinks"] = ignoreCustomDataSourceLinks
+	c.urlParams_.Set("ignoreCustomDataSourceLinks", fmt.Sprint(ignoreCustomDataSourceLinks))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomDimensionsPatchCall) Fields(s ...googleapi.Field) *ManagementCustomDimensionsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomDimensionsPatchCall) Do() (*CustomDimension, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomDimensionsPatchCall) Context(ctx context.Context) *ManagementCustomDimensionsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomDimensionsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.customdimension)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["ignoreCustomDataSourceLinks"]; ok {
-		params.Set("ignoreCustomDataSourceLinks", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDimensions/{customDimensionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":         c.accountId,
@@ -4543,8 +6533,32 @@ func (c *ManagementCustomDimensionsPatchCall) Do() (*CustomDimension, error) {
 		"customDimensionId": c.customDimensionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customDimensions.patch" call.
+// Exactly one of *CustomDimension or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CustomDimension.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementCustomDimensionsPatchCall) Do(opts ...googleapi.CallOption) (*CustomDimension, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4552,7 +6566,12 @@ func (c *ManagementCustomDimensionsPatchCall) Do() (*CustomDimension, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomDimension
+	ret := &CustomDimension{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4614,12 +6633,13 @@ type ManagementCustomDimensionsUpdateCall struct {
 	webPropertyId     string
 	customDimensionId string
 	customdimension   *CustomDimension
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
 }
 
 // Update: Updates an existing custom dimension.
 func (r *ManagementCustomDimensionsService) Update(accountId string, webPropertyId string, customDimensionId string, customdimension *CustomDimension) *ManagementCustomDimensionsUpdateCall {
-	c := &ManagementCustomDimensionsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomDimensionsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customDimensionId = customDimensionId
@@ -4632,35 +6652,36 @@ func (r *ManagementCustomDimensionsService) Update(accountId string, webProperty
 // warnings related to the custom dimension being linked to a custom
 // data source / data set.
 func (c *ManagementCustomDimensionsUpdateCall) IgnoreCustomDataSourceLinks(ignoreCustomDataSourceLinks bool) *ManagementCustomDimensionsUpdateCall {
-	c.opt_["ignoreCustomDataSourceLinks"] = ignoreCustomDataSourceLinks
+	c.urlParams_.Set("ignoreCustomDataSourceLinks", fmt.Sprint(ignoreCustomDataSourceLinks))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomDimensionsUpdateCall) Fields(s ...googleapi.Field) *ManagementCustomDimensionsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomDimensionsUpdateCall) Do() (*CustomDimension, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomDimensionsUpdateCall) Context(ctx context.Context) *ManagementCustomDimensionsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomDimensionsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.customdimension)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["ignoreCustomDataSourceLinks"]; ok {
-		params.Set("ignoreCustomDataSourceLinks", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDimensions/{customDimensionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":         c.accountId,
@@ -4668,8 +6689,32 @@ func (c *ManagementCustomDimensionsUpdateCall) Do() (*CustomDimension, error) {
 		"customDimensionId": c.customDimensionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customDimensions.update" call.
+// Exactly one of *CustomDimension or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CustomDimension.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementCustomDimensionsUpdateCall) Do(opts ...googleapi.CallOption) (*CustomDimension, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4677,7 +6722,12 @@ func (c *ManagementCustomDimensionsUpdateCall) Do() (*CustomDimension, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomDimension
+	ret := &CustomDimension{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4738,43 +6788,86 @@ type ManagementCustomMetricsGetCall struct {
 	accountId      string
 	webPropertyId  string
 	customMetricId string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ifNoneMatch_   string
+	ctx_           context.Context
 }
 
 // Get: Get a custom metric to which the user has access.
 func (r *ManagementCustomMetricsService) Get(accountId string, webPropertyId string, customMetricId string) *ManagementCustomMetricsGetCall {
-	c := &ManagementCustomMetricsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomMetricsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customMetricId = customMetricId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomMetricsGetCall) Fields(s ...googleapi.Field) *ManagementCustomMetricsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomMetricsGetCall) Do() (*CustomMetric, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementCustomMetricsGetCall) IfNoneMatch(entityTag string) *ManagementCustomMetricsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomMetricsGetCall) Context(ctx context.Context) *ManagementCustomMetricsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomMetricsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customMetrics/{customMetricId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":      c.accountId,
 		"webPropertyId":  c.webPropertyId,
 		"customMetricId": c.customMetricId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customMetrics.get" call.
+// Exactly one of *CustomMetric or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CustomMetric.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementCustomMetricsGetCall) Do(opts ...googleapi.CallOption) (*CustomMetric, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4782,7 +6875,12 @@ func (c *ManagementCustomMetricsGetCall) Do() (*CustomMetric, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomMetric
+	ret := &CustomMetric{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4835,48 +6933,77 @@ type ManagementCustomMetricsInsertCall struct {
 	accountId     string
 	webPropertyId string
 	custommetric  *CustomMetric
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Insert: Create a new custom metric.
 func (r *ManagementCustomMetricsService) Insert(accountId string, webPropertyId string, custommetric *CustomMetric) *ManagementCustomMetricsInsertCall {
-	c := &ManagementCustomMetricsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomMetricsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.custommetric = custommetric
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomMetricsInsertCall) Fields(s ...googleapi.Field) *ManagementCustomMetricsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomMetricsInsertCall) Do() (*CustomMetric, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomMetricsInsertCall) Context(ctx context.Context) *ManagementCustomMetricsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomMetricsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.custommetric)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customMetrics")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customMetrics.insert" call.
+// Exactly one of *CustomMetric or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CustomMetric.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementCustomMetricsInsertCall) Do(opts ...googleapi.CallOption) (*CustomMetric, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4884,7 +7011,12 @@ func (c *ManagementCustomMetricsInsertCall) Do() (*CustomMetric, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomMetric
+	ret := &CustomMetric{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4931,12 +7063,14 @@ type ManagementCustomMetricsListCall struct {
 	s             *Service
 	accountId     string
 	webPropertyId string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists custom metrics to which the user has access.
 func (r *ManagementCustomMetricsService) List(accountId string, webPropertyId string) *ManagementCustomMetricsListCall {
-	c := &ManagementCustomMetricsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomMetricsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	return c
@@ -4945,7 +7079,7 @@ func (r *ManagementCustomMetricsService) List(accountId string, webPropertyId st
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of custom metrics to include in this response.
 func (c *ManagementCustomMetricsListCall) MaxResults(maxResults int64) *ManagementCustomMetricsListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -4953,40 +7087,75 @@ func (c *ManagementCustomMetricsListCall) MaxResults(maxResults int64) *Manageme
 // first entity to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementCustomMetricsListCall) StartIndex(startIndex int64) *ManagementCustomMetricsListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomMetricsListCall) Fields(s ...googleapi.Field) *ManagementCustomMetricsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomMetricsListCall) Do() (*CustomMetrics, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementCustomMetricsListCall) IfNoneMatch(entityTag string) *ManagementCustomMetricsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomMetricsListCall) Context(ctx context.Context) *ManagementCustomMetricsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomMetricsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customMetrics")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customMetrics.list" call.
+// Exactly one of *CustomMetrics or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CustomMetrics.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementCustomMetricsListCall) Do(opts ...googleapi.CallOption) (*CustomMetrics, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4994,7 +7163,12 @@ func (c *ManagementCustomMetricsListCall) Do() (*CustomMetrics, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomMetrics
+	ret := &CustomMetrics{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5054,13 +7228,14 @@ type ManagementCustomMetricsPatchCall struct {
 	webPropertyId  string
 	customMetricId string
 	custommetric   *CustomMetric
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Patch: Updates an existing custom metric. This method supports patch
 // semantics.
 func (r *ManagementCustomMetricsService) Patch(accountId string, webPropertyId string, customMetricId string, custommetric *CustomMetric) *ManagementCustomMetricsPatchCall {
-	c := &ManagementCustomMetricsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomMetricsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customMetricId = customMetricId
@@ -5073,35 +7248,36 @@ func (r *ManagementCustomMetricsService) Patch(accountId string, webPropertyId s
 // warnings related to the custom metric being linked to a custom data
 // source / data set.
 func (c *ManagementCustomMetricsPatchCall) IgnoreCustomDataSourceLinks(ignoreCustomDataSourceLinks bool) *ManagementCustomMetricsPatchCall {
-	c.opt_["ignoreCustomDataSourceLinks"] = ignoreCustomDataSourceLinks
+	c.urlParams_.Set("ignoreCustomDataSourceLinks", fmt.Sprint(ignoreCustomDataSourceLinks))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomMetricsPatchCall) Fields(s ...googleapi.Field) *ManagementCustomMetricsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomMetricsPatchCall) Do() (*CustomMetric, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomMetricsPatchCall) Context(ctx context.Context) *ManagementCustomMetricsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomMetricsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.custommetric)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["ignoreCustomDataSourceLinks"]; ok {
-		params.Set("ignoreCustomDataSourceLinks", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customMetrics/{customMetricId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":      c.accountId,
@@ -5109,8 +7285,32 @@ func (c *ManagementCustomMetricsPatchCall) Do() (*CustomMetric, error) {
 		"customMetricId": c.customMetricId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customMetrics.patch" call.
+// Exactly one of *CustomMetric or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CustomMetric.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementCustomMetricsPatchCall) Do(opts ...googleapi.CallOption) (*CustomMetric, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5118,7 +7318,12 @@ func (c *ManagementCustomMetricsPatchCall) Do() (*CustomMetric, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomMetric
+	ret := &CustomMetric{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5180,12 +7385,13 @@ type ManagementCustomMetricsUpdateCall struct {
 	webPropertyId  string
 	customMetricId string
 	custommetric   *CustomMetric
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Update: Updates an existing custom metric.
 func (r *ManagementCustomMetricsService) Update(accountId string, webPropertyId string, customMetricId string, custommetric *CustomMetric) *ManagementCustomMetricsUpdateCall {
-	c := &ManagementCustomMetricsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementCustomMetricsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customMetricId = customMetricId
@@ -5198,35 +7404,36 @@ func (r *ManagementCustomMetricsService) Update(accountId string, webPropertyId 
 // warnings related to the custom metric being linked to a custom data
 // source / data set.
 func (c *ManagementCustomMetricsUpdateCall) IgnoreCustomDataSourceLinks(ignoreCustomDataSourceLinks bool) *ManagementCustomMetricsUpdateCall {
-	c.opt_["ignoreCustomDataSourceLinks"] = ignoreCustomDataSourceLinks
+	c.urlParams_.Set("ignoreCustomDataSourceLinks", fmt.Sprint(ignoreCustomDataSourceLinks))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementCustomMetricsUpdateCall) Fields(s ...googleapi.Field) *ManagementCustomMetricsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementCustomMetricsUpdateCall) Do() (*CustomMetric, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementCustomMetricsUpdateCall) Context(ctx context.Context) *ManagementCustomMetricsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementCustomMetricsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.custommetric)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["ignoreCustomDataSourceLinks"]; ok {
-		params.Set("ignoreCustomDataSourceLinks", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customMetrics/{customMetricId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":      c.accountId,
@@ -5234,8 +7441,32 @@ func (c *ManagementCustomMetricsUpdateCall) Do() (*CustomMetric, error) {
 		"customMetricId": c.customMetricId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.customMetrics.update" call.
+// Exactly one of *CustomMetric or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CustomMetric.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementCustomMetricsUpdateCall) Do(opts ...googleapi.CallOption) (*CustomMetric, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5243,7 +7474,12 @@ func (c *ManagementCustomMetricsUpdateCall) Do() (*CustomMetric, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CustomMetric
+	ret := &CustomMetric{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5297,533 +7533,6 @@ func (c *ManagementCustomMetricsUpdateCall) Do() (*CustomMetric, error) {
 
 }
 
-// method id "analytics.management.dailyUploads.delete":
-
-type ManagementDailyUploadsDeleteCall struct {
-	s                  *Service
-	accountId          string
-	webPropertyId      string
-	customDataSourceId string
-	date               string
-	type_              string
-	opt_               map[string]interface{}
-}
-
-// Delete: Delete uploaded data for the given date.
-func (r *ManagementDailyUploadsService) Delete(accountId string, webPropertyId string, customDataSourceId string, date string, type_ string) *ManagementDailyUploadsDeleteCall {
-	c := &ManagementDailyUploadsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
-	c.accountId = accountId
-	c.webPropertyId = webPropertyId
-	c.customDataSourceId = customDataSourceId
-	c.date = date
-	c.type_ = type_
-	return c
-}
-
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *ManagementDailyUploadsDeleteCall) Fields(s ...googleapi.Field) *ManagementDailyUploadsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
-	return c
-}
-
-func (c *ManagementDailyUploadsDeleteCall) Do() error {
-	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("type", fmt.Sprintf("%v", c.type_))
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
-	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}")
-	urls += "?" + params.Encode()
-	req, _ := http.NewRequest("DELETE", urls, body)
-	googleapi.Expand(req.URL, map[string]string{
-		"accountId":          c.accountId,
-		"webPropertyId":      c.webPropertyId,
-		"customDataSourceId": c.customDataSourceId,
-		"date":               c.date,
-	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return err
-	}
-	return nil
-	// {
-	//   "description": "Delete uploaded data for the given date.",
-	//   "httpMethod": "DELETE",
-	//   "id": "analytics.management.dailyUploads.delete",
-	//   "parameterOrder": [
-	//     "accountId",
-	//     "webPropertyId",
-	//     "customDataSourceId",
-	//     "date",
-	//     "type"
-	//   ],
-	//   "parameters": {
-	//     "accountId": {
-	//       "description": "Account Id associated with daily upload delete.",
-	//       "location": "path",
-	//       "pattern": "[0-9]+",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "customDataSourceId": {
-	//       "description": "Custom data source Id associated with daily upload delete.",
-	//       "location": "path",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "date": {
-	//       "description": "Date for which data is to be deleted. Date should be formatted as YYYY-MM-DD.",
-	//       "location": "path",
-	//       "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "type": {
-	//       "description": "Type of data for this delete.",
-	//       "enum": [
-	//         "cost"
-	//       ],
-	//       "enumDescriptions": [
-	//         "Value for specifying cost data upload."
-	//       ],
-	//       "location": "query",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "webPropertyId": {
-	//       "description": "Web property Id associated with daily upload delete.",
-	//       "location": "path",
-	//       "pattern": "UA-[0-9]+-[0-9]+",
-	//       "required": true,
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}",
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/analytics",
-	//     "https://www.googleapis.com/auth/analytics.edit"
-	//   ]
-	// }
-
-}
-
-// method id "analytics.management.dailyUploads.list":
-
-type ManagementDailyUploadsListCall struct {
-	s                  *Service
-	accountId          string
-	webPropertyId      string
-	customDataSourceId string
-	startDate          string
-	endDate            string
-	opt_               map[string]interface{}
-}
-
-// List: List daily uploads to which the user has access.
-func (r *ManagementDailyUploadsService) List(accountId string, webPropertyId string, customDataSourceId string, startDate string, endDate string) *ManagementDailyUploadsListCall {
-	c := &ManagementDailyUploadsListCall{s: r.s, opt_: make(map[string]interface{})}
-	c.accountId = accountId
-	c.webPropertyId = webPropertyId
-	c.customDataSourceId = customDataSourceId
-	c.startDate = startDate
-	c.endDate = endDate
-	return c
-}
-
-// MaxResults sets the optional parameter "max-results": The maximum
-// number of custom data sources to include in this response.
-func (c *ManagementDailyUploadsListCall) MaxResults(maxResults int64) *ManagementDailyUploadsListCall {
-	c.opt_["max-results"] = maxResults
-	return c
-}
-
-// StartIndex sets the optional parameter "start-index": A 1-based index
-// of the first daily upload to retrieve. Use this parameter as a
-// pagination mechanism along with the max-results parameter.
-func (c *ManagementDailyUploadsListCall) StartIndex(startIndex int64) *ManagementDailyUploadsListCall {
-	c.opt_["start-index"] = startIndex
-	return c
-}
-
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *ManagementDailyUploadsListCall) Fields(s ...googleapi.Field) *ManagementDailyUploadsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
-	return c
-}
-
-func (c *ManagementDailyUploadsListCall) Do() (*DailyUploads, error) {
-	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("end-date", fmt.Sprintf("%v", c.endDate))
-	params.Set("start-date", fmt.Sprintf("%v", c.startDate))
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
-	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads")
-	urls += "?" + params.Encode()
-	req, _ := http.NewRequest("GET", urls, body)
-	googleapi.Expand(req.URL, map[string]string{
-		"accountId":          c.accountId,
-		"webPropertyId":      c.webPropertyId,
-		"customDataSourceId": c.customDataSourceId,
-	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	var ret *DailyUploads
-	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
-		return nil, err
-	}
-	return ret, nil
-	// {
-	//   "description": "List daily uploads to which the user has access.",
-	//   "httpMethod": "GET",
-	//   "id": "analytics.management.dailyUploads.list",
-	//   "parameterOrder": [
-	//     "accountId",
-	//     "webPropertyId",
-	//     "customDataSourceId",
-	//     "start-date",
-	//     "end-date"
-	//   ],
-	//   "parameters": {
-	//     "accountId": {
-	//       "description": "Account Id for the daily uploads to retrieve.",
-	//       "location": "path",
-	//       "pattern": "\\d+",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "customDataSourceId": {
-	//       "description": "Custom data source Id for daily uploads to retrieve.",
-	//       "location": "path",
-	//       "pattern": ".{22}",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "end-date": {
-	//       "description": "End date of the form YYYY-MM-DD.",
-	//       "location": "query",
-	//       "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "max-results": {
-	//       "description": "The maximum number of custom data sources to include in this response.",
-	//       "format": "int32",
-	//       "location": "query",
-	//       "minimum": "1",
-	//       "type": "integer"
-	//     },
-	//     "start-date": {
-	//       "description": "Start date of the form YYYY-MM-DD.",
-	//       "location": "query",
-	//       "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "start-index": {
-	//       "description": "A 1-based index of the first daily upload to retrieve. Use this parameter as a pagination mechanism along with the max-results parameter.",
-	//       "format": "int32",
-	//       "location": "query",
-	//       "minimum": "1",
-	//       "type": "integer"
-	//     },
-	//     "webPropertyId": {
-	//       "description": "Web property Id for the daily uploads to retrieve.",
-	//       "location": "path",
-	//       "pattern": "UA-(\\d+)-(\\d+)",
-	//       "required": true,
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads",
-	//   "response": {
-	//     "$ref": "DailyUploads"
-	//   },
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/analytics",
-	//     "https://www.googleapis.com/auth/analytics.readonly"
-	//   ]
-	// }
-
-}
-
-// method id "analytics.management.dailyUploads.upload":
-
-type ManagementDailyUploadsUploadCall struct {
-	s                  *Service
-	accountId          string
-	webPropertyId      string
-	customDataSourceId string
-	date               string
-	appendNumber       int64
-	type_              string
-	opt_               map[string]interface{}
-	media_             io.Reader
-	resumable_         googleapi.SizeReaderAt
-	mediaType_         string
-	ctx_               context.Context
-	protocol_          string
-}
-
-// Upload: Update/Overwrite data for a custom data source.
-func (r *ManagementDailyUploadsService) Upload(accountId string, webPropertyId string, customDataSourceId string, date string, appendNumber int64, type_ string) *ManagementDailyUploadsUploadCall {
-	c := &ManagementDailyUploadsUploadCall{s: r.s, opt_: make(map[string]interface{})}
-	c.accountId = accountId
-	c.webPropertyId = webPropertyId
-	c.customDataSourceId = customDataSourceId
-	c.date = date
-	c.appendNumber = appendNumber
-	c.type_ = type_
-	return c
-}
-
-// Reset sets the optional parameter "reset": Reset/Overwrite all
-// previous appends for this date and start over with this file as the
-// first upload.
-func (c *ManagementDailyUploadsUploadCall) Reset(reset bool) *ManagementDailyUploadsUploadCall {
-	c.opt_["reset"] = reset
-	return c
-}
-
-// Media specifies the media to upload in a single chunk.
-// At most one of Media and ResumableMedia may be set.
-func (c *ManagementDailyUploadsUploadCall) Media(r io.Reader) *ManagementDailyUploadsUploadCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
-	return c
-}
-
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
-func (c *ManagementDailyUploadsUploadCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *ManagementDailyUploadsUploadCall {
-	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
-	return c
-}
-
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
-func (c *ManagementDailyUploadsUploadCall) ProgressUpdater(pu googleapi.ProgressUpdater) *ManagementDailyUploadsUploadCall {
-	c.opt_["progressUpdater"] = pu
-	return c
-}
-
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *ManagementDailyUploadsUploadCall) Fields(s ...googleapi.Field) *ManagementDailyUploadsUploadCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
-	return c
-}
-
-func (c *ManagementDailyUploadsUploadCall) Do() (*DailyUploadAppend, error) {
-	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("appendNumber", fmt.Sprintf("%v", c.appendNumber))
-	params.Set("type", fmt.Sprintf("%v", c.type_))
-	if v, ok := c.opt_["reset"]; ok {
-		params.Set("reset", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
-	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}/uploads")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
-		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
-	}
-	urls += "?" + params.Encode()
-	body = new(bytes.Buffer)
-	ctype := "application/json"
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
-		}
-	}
-	req, _ := http.NewRequest("POST", urls, body)
-	googleapi.Expand(req.URL, map[string]string{
-		"accountId":          c.accountId,
-		"webPropertyId":      c.webPropertyId,
-		"customDataSourceId": c.customDataSourceId,
-		"date":               c.date,
-	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
-		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
-	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	if c.protocol_ == "resumable" {
-		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
-		}
-		res, err = rx.Upload(c.ctx_)
-		if err != nil {
-			return nil, err
-		}
-		defer res.Body.Close()
-	}
-	var ret *DailyUploadAppend
-	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
-		return nil, err
-	}
-	return ret, nil
-	// {
-	//   "description": "Update/Overwrite data for a custom data source.",
-	//   "httpMethod": "POST",
-	//   "id": "analytics.management.dailyUploads.upload",
-	//   "mediaUpload": {
-	//     "accept": [
-	//       "application/octet-stream"
-	//     ],
-	//     "maxSize": "5MB",
-	//     "protocols": {
-	//       "resumable": {
-	//         "multipart": true,
-	//         "path": "/resumable/upload/analytics/v3/management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}/uploads"
-	//       },
-	//       "simple": {
-	//         "multipart": true,
-	//         "path": "/upload/analytics/v3/management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}/uploads"
-	//       }
-	//     }
-	//   },
-	//   "parameterOrder": [
-	//     "accountId",
-	//     "webPropertyId",
-	//     "customDataSourceId",
-	//     "date",
-	//     "appendNumber",
-	//     "type"
-	//   ],
-	//   "parameters": {
-	//     "accountId": {
-	//       "description": "Account Id associated with daily upload.",
-	//       "location": "path",
-	//       "pattern": "\\d+",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "appendNumber": {
-	//       "description": "Append number for this upload indexed from 1.",
-	//       "format": "int32",
-	//       "location": "query",
-	//       "maximum": "20",
-	//       "minimum": "1",
-	//       "required": true,
-	//       "type": "integer"
-	//     },
-	//     "customDataSourceId": {
-	//       "description": "Custom data source Id to which the data being uploaded belongs.",
-	//       "location": "path",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "date": {
-	//       "description": "Date for which data is uploaded. Date should be formatted as YYYY-MM-DD.",
-	//       "location": "path",
-	//       "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "reset": {
-	//       "default": "false",
-	//       "description": "Reset/Overwrite all previous appends for this date and start over with this file as the first upload.",
-	//       "location": "query",
-	//       "type": "boolean"
-	//     },
-	//     "type": {
-	//       "description": "Type of data for this upload.",
-	//       "enum": [
-	//         "cost"
-	//       ],
-	//       "enumDescriptions": [
-	//         "Value for specifying cost data upload."
-	//       ],
-	//       "location": "query",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "webPropertyId": {
-	//       "description": "Web property Id associated with daily upload.",
-	//       "location": "path",
-	//       "pattern": "UA-\\d+-\\d+",
-	//       "required": true,
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}/uploads",
-	//   "response": {
-	//     "$ref": "DailyUploadAppend"
-	//   },
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/analytics",
-	//     "https://www.googleapis.com/auth/analytics.edit"
-	//   ],
-	//   "supportsMediaUpload": true
-	// }
-
-}
-
 // method id "analytics.management.experiments.delete":
 
 type ManagementExperimentsDeleteCall struct {
@@ -5832,12 +7541,13 @@ type ManagementExperimentsDeleteCall struct {
 	webPropertyId string
 	profileId     string
 	experimentId  string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Delete: Delete an experiment.
 func (r *ManagementExperimentsService) Delete(accountId string, webPropertyId string, profileId string, experimentId string) *ManagementExperimentsDeleteCall {
-	c := &ManagementExperimentsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementExperimentsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -5845,23 +7555,27 @@ func (r *ManagementExperimentsService) Delete(accountId string, webPropertyId st
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementExperimentsDeleteCall) Fields(s ...googleapi.Field) *ManagementExperimentsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementExperimentsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementExperimentsDeleteCall) Context(ctx context.Context) *ManagementExperimentsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementExperimentsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/experiments/{experimentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -5869,8 +7583,17 @@ func (c *ManagementExperimentsDeleteCall) Do() error {
 		"profileId":     c.profileId,
 		"experimentId":  c.experimentId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.experiments.delete" call.
+func (c *ManagementExperimentsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -5932,12 +7655,14 @@ type ManagementExperimentsGetCall struct {
 	webPropertyId string
 	profileId     string
 	experimentId  string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get: Returns an experiment to which the user has access.
 func (r *ManagementExperimentsService) Get(accountId string, webPropertyId string, profileId string, experimentId string) *ManagementExperimentsGetCall {
-	c := &ManagementExperimentsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementExperimentsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -5945,23 +7670,37 @@ func (r *ManagementExperimentsService) Get(accountId string, webPropertyId strin
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementExperimentsGetCall) Fields(s ...googleapi.Field) *ManagementExperimentsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementExperimentsGetCall) Do() (*Experiment, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementExperimentsGetCall) IfNoneMatch(entityTag string) *ManagementExperimentsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementExperimentsGetCall) Context(ctx context.Context) *ManagementExperimentsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementExperimentsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/experiments/{experimentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -5969,8 +7708,35 @@ func (c *ManagementExperimentsGetCall) Do() (*Experiment, error) {
 		"profileId":     c.profileId,
 		"experimentId":  c.experimentId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.experiments.get" call.
+// Exactly one of *Experiment or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Experiment.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementExperimentsGetCall) Do(opts ...googleapi.CallOption) (*Experiment, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5978,7 +7744,12 @@ func (c *ManagementExperimentsGetCall) Do() (*Experiment, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Experiment
+	ret := &Experiment{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6040,12 +7811,13 @@ type ManagementExperimentsInsertCall struct {
 	webPropertyId string
 	profileId     string
 	experiment    *Experiment
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Insert: Create a new experiment.
 func (r *ManagementExperimentsService) Insert(accountId string, webPropertyId string, profileId string, experiment *Experiment) *ManagementExperimentsInsertCall {
-	c := &ManagementExperimentsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementExperimentsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -6053,28 +7825,32 @@ func (r *ManagementExperimentsService) Insert(accountId string, webPropertyId st
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementExperimentsInsertCall) Fields(s ...googleapi.Field) *ManagementExperimentsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementExperimentsInsertCall) Do() (*Experiment, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementExperimentsInsertCall) Context(ctx context.Context) *ManagementExperimentsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementExperimentsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.experiment)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/experiments")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -6082,8 +7858,32 @@ func (c *ManagementExperimentsInsertCall) Do() (*Experiment, error) {
 		"profileId":     c.profileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.experiments.insert" call.
+// Exactly one of *Experiment or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Experiment.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementExperimentsInsertCall) Do(opts ...googleapi.CallOption) (*Experiment, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6091,7 +7891,12 @@ func (c *ManagementExperimentsInsertCall) Do() (*Experiment, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Experiment
+	ret := &Experiment{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6147,12 +7952,14 @@ type ManagementExperimentsListCall struct {
 	accountId     string
 	webPropertyId string
 	profileId     string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists experiments to which the user has access.
 func (r *ManagementExperimentsService) List(accountId string, webPropertyId string, profileId string) *ManagementExperimentsListCall {
-	c := &ManagementExperimentsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementExperimentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -6162,7 +7969,7 @@ func (r *ManagementExperimentsService) List(accountId string, webPropertyId stri
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of experiments to include in this response.
 func (c *ManagementExperimentsListCall) MaxResults(maxResults int64) *ManagementExperimentsListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -6170,41 +7977,76 @@ func (c *ManagementExperimentsListCall) MaxResults(maxResults int64) *Management
 // first experiment to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementExperimentsListCall) StartIndex(startIndex int64) *ManagementExperimentsListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementExperimentsListCall) Fields(s ...googleapi.Field) *ManagementExperimentsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementExperimentsListCall) Do() (*Experiments, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementExperimentsListCall) IfNoneMatch(entityTag string) *ManagementExperimentsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementExperimentsListCall) Context(ctx context.Context) *ManagementExperimentsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementExperimentsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/experiments")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 		"profileId":     c.profileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.experiments.list" call.
+// Exactly one of *Experiments or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Experiments.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementExperimentsListCall) Do(opts ...googleapi.CallOption) (*Experiments, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6212,7 +8054,12 @@ func (c *ManagementExperimentsListCall) Do() (*Experiments, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Experiments
+	ret := &Experiments{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6284,13 +8131,14 @@ type ManagementExperimentsPatchCall struct {
 	profileId     string
 	experimentId  string
 	experiment    *Experiment
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Patch: Update an existing experiment. This method supports patch
 // semantics.
 func (r *ManagementExperimentsService) Patch(accountId string, webPropertyId string, profileId string, experimentId string, experiment *Experiment) *ManagementExperimentsPatchCall {
-	c := &ManagementExperimentsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementExperimentsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -6299,28 +8147,32 @@ func (r *ManagementExperimentsService) Patch(accountId string, webPropertyId str
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementExperimentsPatchCall) Fields(s ...googleapi.Field) *ManagementExperimentsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementExperimentsPatchCall) Do() (*Experiment, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementExperimentsPatchCall) Context(ctx context.Context) *ManagementExperimentsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementExperimentsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.experiment)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/experiments/{experimentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -6329,8 +8181,32 @@ func (c *ManagementExperimentsPatchCall) Do() (*Experiment, error) {
 		"experimentId":  c.experimentId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.experiments.patch" call.
+// Exactly one of *Experiment or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Experiment.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementExperimentsPatchCall) Do(opts ...googleapi.CallOption) (*Experiment, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6338,7 +8214,12 @@ func (c *ManagementExperimentsPatchCall) Do() (*Experiment, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Experiment
+	ret := &Experiment{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6403,12 +8284,13 @@ type ManagementExperimentsUpdateCall struct {
 	profileId     string
 	experimentId  string
 	experiment    *Experiment
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Update: Update an existing experiment.
 func (r *ManagementExperimentsService) Update(accountId string, webPropertyId string, profileId string, experimentId string, experiment *Experiment) *ManagementExperimentsUpdateCall {
-	c := &ManagementExperimentsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementExperimentsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -6417,28 +8299,32 @@ func (r *ManagementExperimentsService) Update(accountId string, webPropertyId st
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementExperimentsUpdateCall) Fields(s ...googleapi.Field) *ManagementExperimentsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementExperimentsUpdateCall) Do() (*Experiment, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementExperimentsUpdateCall) Context(ctx context.Context) *ManagementExperimentsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementExperimentsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.experiment)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/experiments/{experimentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -6447,8 +8333,32 @@ func (c *ManagementExperimentsUpdateCall) Do() (*Experiment, error) {
 		"experimentId":  c.experimentId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.experiments.update" call.
+// Exactly one of *Experiment or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Experiment.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementExperimentsUpdateCall) Do(opts ...googleapi.CallOption) (*Experiment, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6456,7 +8366,12 @@ func (c *ManagementExperimentsUpdateCall) Do() (*Experiment, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Experiment
+	ret := &Experiment{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6515,44 +8430,73 @@ func (c *ManagementExperimentsUpdateCall) Do() (*Experiment, error) {
 // method id "analytics.management.filters.delete":
 
 type ManagementFiltersDeleteCall struct {
-	s         *Service
-	accountId string
-	filterId  string
-	opt_      map[string]interface{}
+	s          *Service
+	accountId  string
+	filterId   string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Delete a filter.
 func (r *ManagementFiltersService) Delete(accountId string, filterId string) *ManagementFiltersDeleteCall {
-	c := &ManagementFiltersDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementFiltersDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.filterId = filterId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementFiltersDeleteCall) Fields(s ...googleapi.Field) *ManagementFiltersDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementFiltersDeleteCall) Do() (*Filter, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementFiltersDeleteCall) Context(ctx context.Context) *ManagementFiltersDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementFiltersDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/filters/{filterId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 		"filterId":  c.filterId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.filters.delete" call.
+// Exactly one of *Filter or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Filter.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementFiltersDeleteCall) Do(opts ...googleapi.CallOption) (*Filter, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6560,7 +8504,12 @@ func (c *ManagementFiltersDeleteCall) Do() (*Filter, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Filter
+	ret := &Filter{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6601,44 +8550,87 @@ func (c *ManagementFiltersDeleteCall) Do() (*Filter, error) {
 // method id "analytics.management.filters.get":
 
 type ManagementFiltersGetCall struct {
-	s         *Service
-	accountId string
-	filterId  string
-	opt_      map[string]interface{}
+	s            *Service
+	accountId    string
+	filterId     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Returns a filters to which the user has access.
 func (r *ManagementFiltersService) Get(accountId string, filterId string) *ManagementFiltersGetCall {
-	c := &ManagementFiltersGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementFiltersGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.filterId = filterId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementFiltersGetCall) Fields(s ...googleapi.Field) *ManagementFiltersGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementFiltersGetCall) Do() (*Filter, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementFiltersGetCall) IfNoneMatch(entityTag string) *ManagementFiltersGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementFiltersGetCall) Context(ctx context.Context) *ManagementFiltersGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementFiltersGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/filters/{filterId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 		"filterId":  c.filterId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.filters.get" call.
+// Exactly one of *Filter or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Filter.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementFiltersGetCall) Do(opts ...googleapi.CallOption) (*Filter, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6646,7 +8638,12 @@ func (c *ManagementFiltersGetCall) Do() (*Filter, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Filter
+	ret := &Filter{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6688,49 +8685,78 @@ func (c *ManagementFiltersGetCall) Do() (*Filter, error) {
 // method id "analytics.management.filters.insert":
 
 type ManagementFiltersInsertCall struct {
-	s         *Service
-	accountId string
-	filter    *Filter
-	opt_      map[string]interface{}
+	s          *Service
+	accountId  string
+	filter     *Filter
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Insert: Create a new filter.
 func (r *ManagementFiltersService) Insert(accountId string, filter *Filter) *ManagementFiltersInsertCall {
-	c := &ManagementFiltersInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementFiltersInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.filter = filter
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementFiltersInsertCall) Fields(s ...googleapi.Field) *ManagementFiltersInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementFiltersInsertCall) Do() (*Filter, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementFiltersInsertCall) Context(ctx context.Context) *ManagementFiltersInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementFiltersInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.filter)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/filters")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.filters.insert" call.
+// Exactly one of *Filter or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Filter.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementFiltersInsertCall) Do(opts ...googleapi.CallOption) (*Filter, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6738,7 +8764,12 @@ func (c *ManagementFiltersInsertCall) Do() (*Filter, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Filter
+	ret := &Filter{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6775,14 +8806,16 @@ func (c *ManagementFiltersInsertCall) Do() (*Filter, error) {
 // method id "analytics.management.filters.list":
 
 type ManagementFiltersListCall struct {
-	s         *Service
-	accountId string
-	opt_      map[string]interface{}
+	s            *Service
+	accountId    string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists all filters for an account
 func (r *ManagementFiltersService) List(accountId string) *ManagementFiltersListCall {
-	c := &ManagementFiltersListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementFiltersListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	return c
 }
@@ -6790,7 +8823,7 @@ func (r *ManagementFiltersService) List(accountId string) *ManagementFiltersList
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of filters to include in this response.
 func (c *ManagementFiltersListCall) MaxResults(maxResults int64) *ManagementFiltersListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -6798,39 +8831,74 @@ func (c *ManagementFiltersListCall) MaxResults(maxResults int64) *ManagementFilt
 // first entity to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementFiltersListCall) StartIndex(startIndex int64) *ManagementFiltersListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementFiltersListCall) Fields(s ...googleapi.Field) *ManagementFiltersListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementFiltersListCall) Do() (*Filters, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementFiltersListCall) IfNoneMatch(entityTag string) *ManagementFiltersListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementFiltersListCall) Context(ctx context.Context) *ManagementFiltersListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementFiltersListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/filters")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.filters.list" call.
+// Exactly one of *Filters or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Filters.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementFiltersListCall) Do(opts ...googleapi.CallOption) (*Filters, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6838,7 +8906,12 @@ func (c *ManagementFiltersListCall) Do() (*Filters, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Filters
+	ret := &Filters{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6887,53 +8960,82 @@ func (c *ManagementFiltersListCall) Do() (*Filters, error) {
 // method id "analytics.management.filters.patch":
 
 type ManagementFiltersPatchCall struct {
-	s         *Service
-	accountId string
-	filterId  string
-	filter    *Filter
-	opt_      map[string]interface{}
+	s          *Service
+	accountId  string
+	filterId   string
+	filter     *Filter
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Updates an existing filter. This method supports patch
 // semantics.
 func (r *ManagementFiltersService) Patch(accountId string, filterId string, filter *Filter) *ManagementFiltersPatchCall {
-	c := &ManagementFiltersPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementFiltersPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.filterId = filterId
 	c.filter = filter
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementFiltersPatchCall) Fields(s ...googleapi.Field) *ManagementFiltersPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementFiltersPatchCall) Do() (*Filter, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementFiltersPatchCall) Context(ctx context.Context) *ManagementFiltersPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementFiltersPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.filter)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/filters/{filterId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 		"filterId":  c.filterId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.filters.patch" call.
+// Exactly one of *Filter or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Filter.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementFiltersPatchCall) Do(opts ...googleapi.CallOption) (*Filter, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6941,7 +9043,12 @@ func (c *ManagementFiltersPatchCall) Do() (*Filter, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Filter
+	ret := &Filter{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6985,52 +9092,81 @@ func (c *ManagementFiltersPatchCall) Do() (*Filter, error) {
 // method id "analytics.management.filters.update":
 
 type ManagementFiltersUpdateCall struct {
-	s         *Service
-	accountId string
-	filterId  string
-	filter    *Filter
-	opt_      map[string]interface{}
+	s          *Service
+	accountId  string
+	filterId   string
+	filter     *Filter
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Update: Updates an existing filter.
 func (r *ManagementFiltersService) Update(accountId string, filterId string, filter *Filter) *ManagementFiltersUpdateCall {
-	c := &ManagementFiltersUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementFiltersUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.filterId = filterId
 	c.filter = filter
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementFiltersUpdateCall) Fields(s ...googleapi.Field) *ManagementFiltersUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementFiltersUpdateCall) Do() (*Filter, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementFiltersUpdateCall) Context(ctx context.Context) *ManagementFiltersUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementFiltersUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.filter)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/filters/{filterId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 		"filterId":  c.filterId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.filters.update" call.
+// Exactly one of *Filter or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Filter.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementFiltersUpdateCall) Do(opts ...googleapi.CallOption) (*Filter, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7038,7 +9174,12 @@ func (c *ManagementFiltersUpdateCall) Do() (*Filter, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Filter
+	ret := &Filter{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7087,12 +9228,14 @@ type ManagementGoalsGetCall struct {
 	webPropertyId string
 	profileId     string
 	goalId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get: Gets a goal to which the user has access.
 func (r *ManagementGoalsService) Get(accountId string, webPropertyId string, profileId string, goalId string) *ManagementGoalsGetCall {
-	c := &ManagementGoalsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementGoalsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -7100,23 +9243,37 @@ func (r *ManagementGoalsService) Get(accountId string, webPropertyId string, pro
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementGoalsGetCall) Fields(s ...googleapi.Field) *ManagementGoalsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementGoalsGetCall) Do() (*Goal, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementGoalsGetCall) IfNoneMatch(entityTag string) *ManagementGoalsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementGoalsGetCall) Context(ctx context.Context) *ManagementGoalsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementGoalsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/goals/{goalId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -7124,8 +9281,35 @@ func (c *ManagementGoalsGetCall) Do() (*Goal, error) {
 		"profileId":     c.profileId,
 		"goalId":        c.goalId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.goals.get" call.
+// Exactly one of *Goal or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Goal.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ManagementGoalsGetCall) Do(opts ...googleapi.CallOption) (*Goal, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7133,7 +9317,12 @@ func (c *ManagementGoalsGetCall) Do() (*Goal, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Goal
+	ret := &Goal{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7194,12 +9383,13 @@ type ManagementGoalsInsertCall struct {
 	webPropertyId string
 	profileId     string
 	goal          *Goal
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Insert: Create a new goal.
 func (r *ManagementGoalsService) Insert(accountId string, webPropertyId string, profileId string, goal *Goal) *ManagementGoalsInsertCall {
-	c := &ManagementGoalsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementGoalsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -7207,28 +9397,32 @@ func (r *ManagementGoalsService) Insert(accountId string, webPropertyId string, 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementGoalsInsertCall) Fields(s ...googleapi.Field) *ManagementGoalsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementGoalsInsertCall) Do() (*Goal, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementGoalsInsertCall) Context(ctx context.Context) *ManagementGoalsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementGoalsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.goal)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/goals")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -7236,8 +9430,32 @@ func (c *ManagementGoalsInsertCall) Do() (*Goal, error) {
 		"profileId":     c.profileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.goals.insert" call.
+// Exactly one of *Goal or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Goal.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ManagementGoalsInsertCall) Do(opts ...googleapi.CallOption) (*Goal, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7245,7 +9463,12 @@ func (c *ManagementGoalsInsertCall) Do() (*Goal, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Goal
+	ret := &Goal{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7300,12 +9523,14 @@ type ManagementGoalsListCall struct {
 	accountId     string
 	webPropertyId string
 	profileId     string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists goals to which the user has access.
 func (r *ManagementGoalsService) List(accountId string, webPropertyId string, profileId string) *ManagementGoalsListCall {
-	c := &ManagementGoalsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementGoalsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -7315,7 +9540,7 @@ func (r *ManagementGoalsService) List(accountId string, webPropertyId string, pr
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of goals to include in this response.
 func (c *ManagementGoalsListCall) MaxResults(maxResults int64) *ManagementGoalsListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -7323,41 +9548,76 @@ func (c *ManagementGoalsListCall) MaxResults(maxResults int64) *ManagementGoalsL
 // first goal to retrieve. Use this parameter as a pagination mechanism
 // along with the max-results parameter.
 func (c *ManagementGoalsListCall) StartIndex(startIndex int64) *ManagementGoalsListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementGoalsListCall) Fields(s ...googleapi.Field) *ManagementGoalsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementGoalsListCall) Do() (*Goals, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementGoalsListCall) IfNoneMatch(entityTag string) *ManagementGoalsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementGoalsListCall) Context(ctx context.Context) *ManagementGoalsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementGoalsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/goals")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 		"profileId":     c.profileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.goals.list" call.
+// Exactly one of *Goals or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Goals.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementGoalsListCall) Do(opts ...googleapi.CallOption) (*Goals, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7365,7 +9625,12 @@ func (c *ManagementGoalsListCall) Do() (*Goals, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Goals
+	ret := &Goals{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7434,13 +9699,14 @@ type ManagementGoalsPatchCall struct {
 	profileId     string
 	goalId        string
 	goal          *Goal
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
-// Patch: Updates an existing view (profile). This method supports patch
+// Patch: Updates an existing goal. This method supports patch
 // semantics.
 func (r *ManagementGoalsService) Patch(accountId string, webPropertyId string, profileId string, goalId string, goal *Goal) *ManagementGoalsPatchCall {
-	c := &ManagementGoalsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementGoalsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -7449,28 +9715,32 @@ func (r *ManagementGoalsService) Patch(accountId string, webPropertyId string, p
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementGoalsPatchCall) Fields(s ...googleapi.Field) *ManagementGoalsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementGoalsPatchCall) Do() (*Goal, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementGoalsPatchCall) Context(ctx context.Context) *ManagementGoalsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementGoalsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.goal)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/goals/{goalId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -7479,8 +9749,32 @@ func (c *ManagementGoalsPatchCall) Do() (*Goal, error) {
 		"goalId":        c.goalId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.goals.patch" call.
+// Exactly one of *Goal or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Goal.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ManagementGoalsPatchCall) Do(opts ...googleapi.CallOption) (*Goal, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7488,13 +9782,18 @@ func (c *ManagementGoalsPatchCall) Do() (*Goal, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Goal
+	ret := &Goal{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates an existing view (profile). This method supports patch semantics.",
+	//   "description": "Updates an existing goal. This method supports patch semantics.",
 	//   "httpMethod": "PATCH",
 	//   "id": "analytics.management.goals.patch",
 	//   "parameterOrder": [
@@ -7552,12 +9851,13 @@ type ManagementGoalsUpdateCall struct {
 	profileId     string
 	goalId        string
 	goal          *Goal
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
-// Update: Updates an existing view (profile).
+// Update: Updates an existing goal.
 func (r *ManagementGoalsService) Update(accountId string, webPropertyId string, profileId string, goalId string, goal *Goal) *ManagementGoalsUpdateCall {
-	c := &ManagementGoalsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementGoalsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -7566,28 +9866,32 @@ func (r *ManagementGoalsService) Update(accountId string, webPropertyId string, 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementGoalsUpdateCall) Fields(s ...googleapi.Field) *ManagementGoalsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementGoalsUpdateCall) Do() (*Goal, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementGoalsUpdateCall) Context(ctx context.Context) *ManagementGoalsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementGoalsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.goal)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/goals/{goalId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -7596,8 +9900,32 @@ func (c *ManagementGoalsUpdateCall) Do() (*Goal, error) {
 		"goalId":        c.goalId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.goals.update" call.
+// Exactly one of *Goal or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Goal.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ManagementGoalsUpdateCall) Do(opts ...googleapi.CallOption) (*Goal, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7605,13 +9933,18 @@ func (c *ManagementGoalsUpdateCall) Do() (*Goal, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Goal
+	ret := &Goal{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates an existing view (profile).",
+	//   "description": "Updates an existing goal.",
 	//   "httpMethod": "PUT",
 	//   "id": "analytics.management.goals.update",
 	//   "parameterOrder": [
@@ -7668,12 +10001,13 @@ type ManagementProfileFilterLinksDeleteCall struct {
 	webPropertyId string
 	profileId     string
 	linkId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Delete: Delete a profile filter link.
 func (r *ManagementProfileFilterLinksService) Delete(accountId string, webPropertyId string, profileId string, linkId string) *ManagementProfileFilterLinksDeleteCall {
-	c := &ManagementProfileFilterLinksDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileFilterLinksDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -7681,23 +10015,27 @@ func (r *ManagementProfileFilterLinksService) Delete(accountId string, webProper
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileFilterLinksDeleteCall) Fields(s ...googleapi.Field) *ManagementProfileFilterLinksDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileFilterLinksDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileFilterLinksDeleteCall) Context(ctx context.Context) *ManagementProfileFilterLinksDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileFilterLinksDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/profileFilterLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -7705,8 +10043,17 @@ func (c *ManagementProfileFilterLinksDeleteCall) Do() error {
 		"profileId":     c.profileId,
 		"linkId":        c.linkId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileFilterLinks.delete" call.
+func (c *ManagementProfileFilterLinksDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -7771,12 +10118,14 @@ type ManagementProfileFilterLinksGetCall struct {
 	webPropertyId string
 	profileId     string
 	linkId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get: Returns a single profile filter link.
 func (r *ManagementProfileFilterLinksService) Get(accountId string, webPropertyId string, profileId string, linkId string) *ManagementProfileFilterLinksGetCall {
-	c := &ManagementProfileFilterLinksGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileFilterLinksGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -7784,23 +10133,37 @@ func (r *ManagementProfileFilterLinksService) Get(accountId string, webPropertyI
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileFilterLinksGetCall) Fields(s ...googleapi.Field) *ManagementProfileFilterLinksGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileFilterLinksGetCall) Do() (*ProfileFilterLink, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementProfileFilterLinksGetCall) IfNoneMatch(entityTag string) *ManagementProfileFilterLinksGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileFilterLinksGetCall) Context(ctx context.Context) *ManagementProfileFilterLinksGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileFilterLinksGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/profileFilterLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -7808,8 +10171,35 @@ func (c *ManagementProfileFilterLinksGetCall) Do() (*ProfileFilterLink, error) {
 		"profileId":     c.profileId,
 		"linkId":        c.linkId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileFilterLinks.get" call.
+// Exactly one of *ProfileFilterLink or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ProfileFilterLink.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementProfileFilterLinksGetCall) Do(opts ...googleapi.CallOption) (*ProfileFilterLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7817,7 +10207,12 @@ func (c *ManagementProfileFilterLinksGetCall) Do() (*ProfileFilterLink, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProfileFilterLink
+	ret := &ProfileFilterLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7882,12 +10277,13 @@ type ManagementProfileFilterLinksInsertCall struct {
 	webPropertyId     string
 	profileId         string
 	profilefilterlink *ProfileFilterLink
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
 }
 
 // Insert: Create a new profile filter link.
 func (r *ManagementProfileFilterLinksService) Insert(accountId string, webPropertyId string, profileId string, profilefilterlink *ProfileFilterLink) *ManagementProfileFilterLinksInsertCall {
-	c := &ManagementProfileFilterLinksInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileFilterLinksInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -7895,28 +10291,32 @@ func (r *ManagementProfileFilterLinksService) Insert(accountId string, webProper
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileFilterLinksInsertCall) Fields(s ...googleapi.Field) *ManagementProfileFilterLinksInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileFilterLinksInsertCall) Do() (*ProfileFilterLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileFilterLinksInsertCall) Context(ctx context.Context) *ManagementProfileFilterLinksInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileFilterLinksInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.profilefilterlink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/profileFilterLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -7924,8 +10324,32 @@ func (c *ManagementProfileFilterLinksInsertCall) Do() (*ProfileFilterLink, error
 		"profileId":     c.profileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileFilterLinks.insert" call.
+// Exactly one of *ProfileFilterLink or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ProfileFilterLink.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementProfileFilterLinksInsertCall) Do(opts ...googleapi.CallOption) (*ProfileFilterLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7933,7 +10357,12 @@ func (c *ManagementProfileFilterLinksInsertCall) Do() (*ProfileFilterLink, error
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProfileFilterLink
+	ret := &ProfileFilterLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7991,12 +10420,14 @@ type ManagementProfileFilterLinksListCall struct {
 	accountId     string
 	webPropertyId string
 	profileId     string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists all profile filter links for a profile.
 func (r *ManagementProfileFilterLinksService) List(accountId string, webPropertyId string, profileId string) *ManagementProfileFilterLinksListCall {
-	c := &ManagementProfileFilterLinksListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileFilterLinksListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -8006,7 +10437,7 @@ func (r *ManagementProfileFilterLinksService) List(accountId string, webProperty
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of profile filter links to include in this response.
 func (c *ManagementProfileFilterLinksListCall) MaxResults(maxResults int64) *ManagementProfileFilterLinksListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -8014,41 +10445,76 @@ func (c *ManagementProfileFilterLinksListCall) MaxResults(maxResults int64) *Man
 // first entity to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementProfileFilterLinksListCall) StartIndex(startIndex int64) *ManagementProfileFilterLinksListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileFilterLinksListCall) Fields(s ...googleapi.Field) *ManagementProfileFilterLinksListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileFilterLinksListCall) Do() (*ProfileFilterLinks, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementProfileFilterLinksListCall) IfNoneMatch(entityTag string) *ManagementProfileFilterLinksListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileFilterLinksListCall) Context(ctx context.Context) *ManagementProfileFilterLinksListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileFilterLinksListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/profileFilterLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 		"profileId":     c.profileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileFilterLinks.list" call.
+// Exactly one of *ProfileFilterLinks or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ProfileFilterLinks.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementProfileFilterLinksListCall) Do(opts ...googleapi.CallOption) (*ProfileFilterLinks, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8056,7 +10522,12 @@ func (c *ManagementProfileFilterLinksListCall) Do() (*ProfileFilterLinks, error)
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProfileFilterLinks
+	ret := &ProfileFilterLinks{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8125,13 +10596,14 @@ type ManagementProfileFilterLinksPatchCall struct {
 	profileId         string
 	linkId            string
 	profilefilterlink *ProfileFilterLink
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
 }
 
 // Patch: Update an existing profile filter link. This method supports
 // patch semantics.
 func (r *ManagementProfileFilterLinksService) Patch(accountId string, webPropertyId string, profileId string, linkId string, profilefilterlink *ProfileFilterLink) *ManagementProfileFilterLinksPatchCall {
-	c := &ManagementProfileFilterLinksPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileFilterLinksPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -8140,28 +10612,32 @@ func (r *ManagementProfileFilterLinksService) Patch(accountId string, webPropert
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileFilterLinksPatchCall) Fields(s ...googleapi.Field) *ManagementProfileFilterLinksPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileFilterLinksPatchCall) Do() (*ProfileFilterLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileFilterLinksPatchCall) Context(ctx context.Context) *ManagementProfileFilterLinksPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileFilterLinksPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.profilefilterlink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/profileFilterLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -8170,8 +10646,32 @@ func (c *ManagementProfileFilterLinksPatchCall) Do() (*ProfileFilterLink, error)
 		"linkId":        c.linkId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileFilterLinks.patch" call.
+// Exactly one of *ProfileFilterLink or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ProfileFilterLink.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementProfileFilterLinksPatchCall) Do(opts ...googleapi.CallOption) (*ProfileFilterLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8179,7 +10679,12 @@ func (c *ManagementProfileFilterLinksPatchCall) Do() (*ProfileFilterLink, error)
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProfileFilterLink
+	ret := &ProfileFilterLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8247,12 +10752,13 @@ type ManagementProfileFilterLinksUpdateCall struct {
 	profileId         string
 	linkId            string
 	profilefilterlink *ProfileFilterLink
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
 }
 
 // Update: Update an existing profile filter link.
 func (r *ManagementProfileFilterLinksService) Update(accountId string, webPropertyId string, profileId string, linkId string, profilefilterlink *ProfileFilterLink) *ManagementProfileFilterLinksUpdateCall {
-	c := &ManagementProfileFilterLinksUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileFilterLinksUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -8261,28 +10767,32 @@ func (r *ManagementProfileFilterLinksService) Update(accountId string, webProper
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileFilterLinksUpdateCall) Fields(s ...googleapi.Field) *ManagementProfileFilterLinksUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileFilterLinksUpdateCall) Do() (*ProfileFilterLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileFilterLinksUpdateCall) Context(ctx context.Context) *ManagementProfileFilterLinksUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileFilterLinksUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.profilefilterlink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/profileFilterLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -8291,8 +10801,32 @@ func (c *ManagementProfileFilterLinksUpdateCall) Do() (*ProfileFilterLink, error
 		"linkId":        c.linkId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileFilterLinks.update" call.
+// Exactly one of *ProfileFilterLink or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ProfileFilterLink.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementProfileFilterLinksUpdateCall) Do(opts ...googleapi.CallOption) (*ProfileFilterLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8300,7 +10834,12 @@ func (c *ManagementProfileFilterLinksUpdateCall) Do() (*ProfileFilterLink, error
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProfileFilterLink
+	ret := &ProfileFilterLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8367,12 +10906,13 @@ type ManagementProfileUserLinksDeleteCall struct {
 	webPropertyId string
 	profileId     string
 	linkId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Delete: Removes a user from the given view (profile).
 func (r *ManagementProfileUserLinksService) Delete(accountId string, webPropertyId string, profileId string, linkId string) *ManagementProfileUserLinksDeleteCall {
-	c := &ManagementProfileUserLinksDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileUserLinksDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -8380,23 +10920,27 @@ func (r *ManagementProfileUserLinksService) Delete(accountId string, webProperty
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileUserLinksDeleteCall) Fields(s ...googleapi.Field) *ManagementProfileUserLinksDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileUserLinksDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileUserLinksDeleteCall) Context(ctx context.Context) *ManagementProfileUserLinksDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileUserLinksDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/entityUserLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -8404,8 +10948,17 @@ func (c *ManagementProfileUserLinksDeleteCall) Do() error {
 		"profileId":     c.profileId,
 		"linkId":        c.linkId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileUserLinks.delete" call.
+func (c *ManagementProfileUserLinksDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -8466,12 +11019,13 @@ type ManagementProfileUserLinksInsertCall struct {
 	webPropertyId  string
 	profileId      string
 	entityuserlink *EntityUserLink
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Insert: Adds a new user to the given view (profile).
 func (r *ManagementProfileUserLinksService) Insert(accountId string, webPropertyId string, profileId string, entityuserlink *EntityUserLink) *ManagementProfileUserLinksInsertCall {
-	c := &ManagementProfileUserLinksInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileUserLinksInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -8479,28 +11033,32 @@ func (r *ManagementProfileUserLinksService) Insert(accountId string, webProperty
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileUserLinksInsertCall) Fields(s ...googleapi.Field) *ManagementProfileUserLinksInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileUserLinksInsertCall) Do() (*EntityUserLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileUserLinksInsertCall) Context(ctx context.Context) *ManagementProfileUserLinksInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileUserLinksInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entityuserlink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/entityUserLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -8508,8 +11066,32 @@ func (c *ManagementProfileUserLinksInsertCall) Do() (*EntityUserLink, error) {
 		"profileId":     c.profileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileUserLinks.insert" call.
+// Exactly one of *EntityUserLink or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *EntityUserLink.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementProfileUserLinksInsertCall) Do(opts ...googleapi.CallOption) (*EntityUserLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8517,7 +11099,12 @@ func (c *ManagementProfileUserLinksInsertCall) Do() (*EntityUserLink, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityUserLink
+	ret := &EntityUserLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8572,12 +11159,14 @@ type ManagementProfileUserLinksListCall struct {
 	accountId     string
 	webPropertyId string
 	profileId     string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists profile-user links for a given view (profile).
 func (r *ManagementProfileUserLinksService) List(accountId string, webPropertyId string, profileId string) *ManagementProfileUserLinksListCall {
-	c := &ManagementProfileUserLinksListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileUserLinksListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -8587,7 +11176,7 @@ func (r *ManagementProfileUserLinksService) List(accountId string, webPropertyId
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of profile-user links to include in this response.
 func (c *ManagementProfileUserLinksListCall) MaxResults(maxResults int64) *ManagementProfileUserLinksListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -8595,41 +11184,76 @@ func (c *ManagementProfileUserLinksListCall) MaxResults(maxResults int64) *Manag
 // first profile-user link to retrieve. Use this parameter as a
 // pagination mechanism along with the max-results parameter.
 func (c *ManagementProfileUserLinksListCall) StartIndex(startIndex int64) *ManagementProfileUserLinksListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileUserLinksListCall) Fields(s ...googleapi.Field) *ManagementProfileUserLinksListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileUserLinksListCall) Do() (*EntityUserLinks, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementProfileUserLinksListCall) IfNoneMatch(entityTag string) *ManagementProfileUserLinksListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileUserLinksListCall) Context(ctx context.Context) *ManagementProfileUserLinksListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileUserLinksListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/entityUserLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 		"profileId":     c.profileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileUserLinks.list" call.
+// Exactly one of *EntityUserLinks or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *EntityUserLinks.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementProfileUserLinksListCall) Do(opts ...googleapi.CallOption) (*EntityUserLinks, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8637,7 +11261,12 @@ func (c *ManagementProfileUserLinksListCall) Do() (*EntityUserLinks, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityUserLinks
+	ret := &EntityUserLinks{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8705,13 +11334,14 @@ type ManagementProfileUserLinksUpdateCall struct {
 	profileId      string
 	linkId         string
 	entityuserlink *EntityUserLink
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Update: Updates permissions for an existing user on the given view
 // (profile).
 func (r *ManagementProfileUserLinksService) Update(accountId string, webPropertyId string, profileId string, linkId string, entityuserlink *EntityUserLink) *ManagementProfileUserLinksUpdateCall {
-	c := &ManagementProfileUserLinksUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfileUserLinksUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -8720,28 +11350,32 @@ func (r *ManagementProfileUserLinksService) Update(accountId string, webProperty
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfileUserLinksUpdateCall) Fields(s ...googleapi.Field) *ManagementProfileUserLinksUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfileUserLinksUpdateCall) Do() (*EntityUserLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfileUserLinksUpdateCall) Context(ctx context.Context) *ManagementProfileUserLinksUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfileUserLinksUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entityuserlink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/entityUserLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -8750,8 +11384,32 @@ func (c *ManagementProfileUserLinksUpdateCall) Do() (*EntityUserLink, error) {
 		"linkId":        c.linkId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profileUserLinks.update" call.
+// Exactly one of *EntityUserLink or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *EntityUserLink.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementProfileUserLinksUpdateCall) Do(opts ...googleapi.CallOption) (*EntityUserLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8759,7 +11417,12 @@ func (c *ManagementProfileUserLinksUpdateCall) Do() (*EntityUserLink, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityUserLink
+	ret := &EntityUserLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8821,43 +11484,57 @@ type ManagementProfilesDeleteCall struct {
 	accountId     string
 	webPropertyId string
 	profileId     string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Delete: Deletes a view (profile).
 func (r *ManagementProfilesService) Delete(accountId string, webPropertyId string, profileId string) *ManagementProfilesDeleteCall {
-	c := &ManagementProfilesDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfilesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfilesDeleteCall) Fields(s ...googleapi.Field) *ManagementProfilesDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfilesDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfilesDeleteCall) Context(ctx context.Context) *ManagementProfilesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfilesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 		"profileId":     c.profileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profiles.delete" call.
+func (c *ManagementProfilesDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -8910,43 +11587,86 @@ type ManagementProfilesGetCall struct {
 	accountId     string
 	webPropertyId string
 	profileId     string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get: Gets a view (profile) to which the user has access.
 func (r *ManagementProfilesService) Get(accountId string, webPropertyId string, profileId string) *ManagementProfilesGetCall {
-	c := &ManagementProfilesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfilesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfilesGetCall) Fields(s ...googleapi.Field) *ManagementProfilesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfilesGetCall) Do() (*Profile, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementProfilesGetCall) IfNoneMatch(entityTag string) *ManagementProfilesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfilesGetCall) Context(ctx context.Context) *ManagementProfilesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfilesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 		"profileId":     c.profileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profiles.get" call.
+// Exactly one of *Profile or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Profile.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementProfilesGetCall) Do(opts ...googleapi.CallOption) (*Profile, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8954,7 +11674,12 @@ func (c *ManagementProfilesGetCall) Do() (*Profile, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Profile
+	ret := &Profile{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8970,21 +11695,21 @@ func (c *ManagementProfilesGetCall) Do() (*Profile, error) {
 	//   ],
 	//   "parameters": {
 	//     "accountId": {
-	//       "description": "Account ID to retrieve the goal for.",
+	//       "description": "Account ID to retrieve the view (profile) for.",
 	//       "location": "path",
 	//       "pattern": "[0-9]+",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "profileId": {
-	//       "description": "View (Profile) ID to retrieve the goal for.",
+	//       "description": "View (Profile) ID to retrieve the view (profile) for.",
 	//       "location": "path",
 	//       "pattern": "[0-9]+",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "webPropertyId": {
-	//       "description": "Web property ID to retrieve the goal for.",
+	//       "description": "Web property ID to retrieve the view (profile) for.",
 	//       "location": "path",
 	//       "pattern": "UA-[0-9]+-[0-9]+",
 	//       "required": true,
@@ -9010,48 +11735,77 @@ type ManagementProfilesInsertCall struct {
 	accountId     string
 	webPropertyId string
 	profile       *Profile
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Insert: Create a new view (profile).
 func (r *ManagementProfilesService) Insert(accountId string, webPropertyId string, profile *Profile) *ManagementProfilesInsertCall {
-	c := &ManagementProfilesInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfilesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profile = profile
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfilesInsertCall) Fields(s ...googleapi.Field) *ManagementProfilesInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfilesInsertCall) Do() (*Profile, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfilesInsertCall) Context(ctx context.Context) *ManagementProfilesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfilesInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.profile)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profiles.insert" call.
+// Exactly one of *Profile or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Profile.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementProfilesInsertCall) Do(opts ...googleapi.CallOption) (*Profile, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9059,7 +11813,12 @@ func (c *ManagementProfilesInsertCall) Do() (*Profile, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Profile
+	ret := &Profile{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9106,12 +11865,14 @@ type ManagementProfilesListCall struct {
 	s             *Service
 	accountId     string
 	webPropertyId string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists views (profiles) to which the user has access.
 func (r *ManagementProfilesService) List(accountId string, webPropertyId string) *ManagementProfilesListCall {
-	c := &ManagementProfilesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfilesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	return c
@@ -9120,7 +11881,7 @@ func (r *ManagementProfilesService) List(accountId string, webPropertyId string)
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of views (profiles) to include in this response.
 func (c *ManagementProfilesListCall) MaxResults(maxResults int64) *ManagementProfilesListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -9128,40 +11889,75 @@ func (c *ManagementProfilesListCall) MaxResults(maxResults int64) *ManagementPro
 // first entity to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementProfilesListCall) StartIndex(startIndex int64) *ManagementProfilesListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfilesListCall) Fields(s ...googleapi.Field) *ManagementProfilesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfilesListCall) Do() (*Profiles, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementProfilesListCall) IfNoneMatch(entityTag string) *ManagementProfilesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfilesListCall) Context(ctx context.Context) *ManagementProfilesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfilesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profiles.list" call.
+// Exactly one of *Profiles or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Profiles.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementProfilesListCall) Do(opts ...googleapi.CallOption) (*Profiles, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9169,7 +11965,12 @@ func (c *ManagementProfilesListCall) Do() (*Profiles, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Profiles
+	ret := &Profiles{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9230,13 +12031,14 @@ type ManagementProfilesPatchCall struct {
 	webPropertyId string
 	profileId     string
 	profile       *Profile
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Patch: Updates an existing view (profile). This method supports patch
 // semantics.
 func (r *ManagementProfilesService) Patch(accountId string, webPropertyId string, profileId string, profile *Profile) *ManagementProfilesPatchCall {
-	c := &ManagementProfilesPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfilesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -9244,28 +12046,32 @@ func (r *ManagementProfilesService) Patch(accountId string, webPropertyId string
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfilesPatchCall) Fields(s ...googleapi.Field) *ManagementProfilesPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfilesPatchCall) Do() (*Profile, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfilesPatchCall) Context(ctx context.Context) *ManagementProfilesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfilesPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.profile)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -9273,8 +12079,32 @@ func (c *ManagementProfilesPatchCall) Do() (*Profile, error) {
 		"profileId":     c.profileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profiles.patch" call.
+// Exactly one of *Profile or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Profile.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementProfilesPatchCall) Do(opts ...googleapi.CallOption) (*Profile, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9282,7 +12112,12 @@ func (c *ManagementProfilesPatchCall) Do() (*Profile, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Profile
+	ret := &Profile{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9338,12 +12173,13 @@ type ManagementProfilesUpdateCall struct {
 	webPropertyId string
 	profileId     string
 	profile       *Profile
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Update: Updates an existing view (profile).
 func (r *ManagementProfilesService) Update(accountId string, webPropertyId string, profileId string, profile *Profile) *ManagementProfilesUpdateCall {
-	c := &ManagementProfilesUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementProfilesUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -9351,28 +12187,32 @@ func (r *ManagementProfilesService) Update(accountId string, webPropertyId strin
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementProfilesUpdateCall) Fields(s ...googleapi.Field) *ManagementProfilesUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementProfilesUpdateCall) Do() (*Profile, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementProfilesUpdateCall) Context(ctx context.Context) *ManagementProfilesUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementProfilesUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.profile)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -9380,8 +12220,32 @@ func (c *ManagementProfilesUpdateCall) Do() (*Profile, error) {
 		"profileId":     c.profileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.profiles.update" call.
+// Exactly one of *Profile or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Profile.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementProfilesUpdateCall) Do(opts ...googleapi.CallOption) (*Profile, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9389,7 +12253,12 @@ func (c *ManagementProfilesUpdateCall) Do() (*Profile, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Profile
+	ret := &Profile{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9440,20 +12309,22 @@ func (c *ManagementProfilesUpdateCall) Do() (*Profile, error) {
 // method id "analytics.management.segments.list":
 
 type ManagementSegmentsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists segments to which the user has access.
 func (r *ManagementSegmentsService) List() *ManagementSegmentsListCall {
-	c := &ManagementSegmentsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementSegmentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of segments to include in this response.
 func (c *ManagementSegmentsListCall) MaxResults(maxResults int64) *ManagementSegmentsListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -9461,37 +12332,72 @@ func (c *ManagementSegmentsListCall) MaxResults(maxResults int64) *ManagementSeg
 // first segment to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementSegmentsListCall) StartIndex(startIndex int64) *ManagementSegmentsListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementSegmentsListCall) Fields(s ...googleapi.Field) *ManagementSegmentsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementSegmentsListCall) Do() (*Segments, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementSegmentsListCall) IfNoneMatch(entityTag string) *ManagementSegmentsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementSegmentsListCall) Context(ctx context.Context) *ManagementSegmentsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementSegmentsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/segments")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.segments.list" call.
+// Exactly one of *Segments or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Segments.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementSegmentsListCall) Do(opts ...googleapi.CallOption) (*Segments, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9499,7 +12405,12 @@ func (c *ManagementSegmentsListCall) Do() (*Segments, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Segments
+	ret := &Segments{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9536,6 +12447,119 @@ func (c *ManagementSegmentsListCall) Do() (*Segments, error) {
 
 }
 
+// method id "analytics.management.unsampledReports.delete":
+
+type ManagementUnsampledReportsDeleteCall struct {
+	s                 *Service
+	accountId         string
+	webPropertyId     string
+	profileId         string
+	unsampledReportId string
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
+}
+
+// Delete: Deletes an unsampled report.
+func (r *ManagementUnsampledReportsService) Delete(accountId string, webPropertyId string, profileId string, unsampledReportId string) *ManagementUnsampledReportsDeleteCall {
+	c := &ManagementUnsampledReportsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.accountId = accountId
+	c.webPropertyId = webPropertyId
+	c.profileId = profileId
+	c.unsampledReportId = unsampledReportId
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ManagementUnsampledReportsDeleteCall) Fields(s ...googleapi.Field) *ManagementUnsampledReportsDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementUnsampledReportsDeleteCall) Context(ctx context.Context) *ManagementUnsampledReportsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementUnsampledReportsDeleteCall) doRequest(alt string) (*http.Response, error) {
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/unsampledReports/{unsampledReportId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("DELETE", urls, body)
+	googleapi.Expand(req.URL, map[string]string{
+		"accountId":         c.accountId,
+		"webPropertyId":     c.webPropertyId,
+		"profileId":         c.profileId,
+		"unsampledReportId": c.unsampledReportId,
+	})
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.unsampledReports.delete" call.
+func (c *ManagementUnsampledReportsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if err != nil {
+		return err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return err
+	}
+	return nil
+	// {
+	//   "description": "Deletes an unsampled report.",
+	//   "httpMethod": "DELETE",
+	//   "id": "analytics.management.unsampledReports.delete",
+	//   "parameterOrder": [
+	//     "accountId",
+	//     "webPropertyId",
+	//     "profileId",
+	//     "unsampledReportId"
+	//   ],
+	//   "parameters": {
+	//     "accountId": {
+	//       "description": "Account ID to delete the unsampled report for.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "profileId": {
+	//       "description": "View (Profile) ID to delete the unsampled report for.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "unsampledReportId": {
+	//       "description": "ID of the unsampled report to be deleted.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "webPropertyId": {
+	//       "description": "Web property ID to delete the unsampled reports for.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/unsampledReports/{unsampledReportId}",
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/analytics.edit"
+	//   ]
+	// }
+
+}
+
 // method id "analytics.management.unsampledReports.get":
 
 type ManagementUnsampledReportsGetCall struct {
@@ -9544,12 +12568,14 @@ type ManagementUnsampledReportsGetCall struct {
 	webPropertyId     string
 	profileId         string
 	unsampledReportId string
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ifNoneMatch_      string
+	ctx_              context.Context
 }
 
 // Get: Returns a single unsampled report.
 func (r *ManagementUnsampledReportsService) Get(accountId string, webPropertyId string, profileId string, unsampledReportId string) *ManagementUnsampledReportsGetCall {
-	c := &ManagementUnsampledReportsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementUnsampledReportsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -9557,23 +12583,37 @@ func (r *ManagementUnsampledReportsService) Get(accountId string, webPropertyId 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementUnsampledReportsGetCall) Fields(s ...googleapi.Field) *ManagementUnsampledReportsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementUnsampledReportsGetCall) Do() (*UnsampledReport, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementUnsampledReportsGetCall) IfNoneMatch(entityTag string) *ManagementUnsampledReportsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementUnsampledReportsGetCall) Context(ctx context.Context) *ManagementUnsampledReportsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementUnsampledReportsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/unsampledReports/{unsampledReportId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":         c.accountId,
@@ -9581,8 +12621,35 @@ func (c *ManagementUnsampledReportsGetCall) Do() (*UnsampledReport, error) {
 		"profileId":         c.profileId,
 		"unsampledReportId": c.unsampledReportId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.unsampledReports.get" call.
+// Exactly one of *UnsampledReport or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *UnsampledReport.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementUnsampledReportsGetCall) Do(opts ...googleapi.CallOption) (*UnsampledReport, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9590,7 +12657,12 @@ func (c *ManagementUnsampledReportsGetCall) Do() (*UnsampledReport, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *UnsampledReport
+	ret := &UnsampledReport{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9652,12 +12724,13 @@ type ManagementUnsampledReportsInsertCall struct {
 	webPropertyId   string
 	profileId       string
 	unsampledreport *UnsampledReport
-	opt_            map[string]interface{}
+	urlParams_      gensupport.URLParams
+	ctx_            context.Context
 }
 
 // Insert: Create a new unsampled report.
 func (r *ManagementUnsampledReportsService) Insert(accountId string, webPropertyId string, profileId string, unsampledreport *UnsampledReport) *ManagementUnsampledReportsInsertCall {
-	c := &ManagementUnsampledReportsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementUnsampledReportsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -9665,28 +12738,32 @@ func (r *ManagementUnsampledReportsService) Insert(accountId string, webProperty
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementUnsampledReportsInsertCall) Fields(s ...googleapi.Field) *ManagementUnsampledReportsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementUnsampledReportsInsertCall) Do() (*UnsampledReport, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementUnsampledReportsInsertCall) Context(ctx context.Context) *ManagementUnsampledReportsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementUnsampledReportsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.unsampledreport)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/unsampledReports")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -9694,8 +12771,32 @@ func (c *ManagementUnsampledReportsInsertCall) Do() (*UnsampledReport, error) {
 		"profileId":     c.profileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.unsampledReports.insert" call.
+// Exactly one of *UnsampledReport or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *UnsampledReport.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementUnsampledReportsInsertCall) Do(opts ...googleapi.CallOption) (*UnsampledReport, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9703,7 +12804,12 @@ func (c *ManagementUnsampledReportsInsertCall) Do() (*UnsampledReport, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *UnsampledReport
+	ret := &UnsampledReport{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9759,12 +12865,14 @@ type ManagementUnsampledReportsListCall struct {
 	accountId     string
 	webPropertyId string
 	profileId     string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists unsampled reports to which the user has access.
 func (r *ManagementUnsampledReportsService) List(accountId string, webPropertyId string, profileId string) *ManagementUnsampledReportsListCall {
-	c := &ManagementUnsampledReportsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementUnsampledReportsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.profileId = profileId
@@ -9774,7 +12882,7 @@ func (r *ManagementUnsampledReportsService) List(accountId string, webPropertyId
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of unsampled reports to include in this response.
 func (c *ManagementUnsampledReportsListCall) MaxResults(maxResults int64) *ManagementUnsampledReportsListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -9782,41 +12890,76 @@ func (c *ManagementUnsampledReportsListCall) MaxResults(maxResults int64) *Manag
 // first unsampled report to retrieve. Use this parameter as a
 // pagination mechanism along with the max-results parameter.
 func (c *ManagementUnsampledReportsListCall) StartIndex(startIndex int64) *ManagementUnsampledReportsListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementUnsampledReportsListCall) Fields(s ...googleapi.Field) *ManagementUnsampledReportsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementUnsampledReportsListCall) Do() (*UnsampledReports, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementUnsampledReportsListCall) IfNoneMatch(entityTag string) *ManagementUnsampledReportsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementUnsampledReportsListCall) Context(ctx context.Context) *ManagementUnsampledReportsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementUnsampledReportsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/unsampledReports")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 		"profileId":     c.profileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.unsampledReports.list" call.
+// Exactly one of *UnsampledReports or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *UnsampledReports.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementUnsampledReportsListCall) Do(opts ...googleapi.CallOption) (*UnsampledReports, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9824,7 +12967,12 @@ func (c *ManagementUnsampledReportsListCall) Do() (*UnsampledReports, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *UnsampledReports
+	ret := &UnsampledReports{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9892,12 +13040,13 @@ type ManagementUploadsDeleteUploadDataCall struct {
 	webPropertyId                              string
 	customDataSourceId                         string
 	analyticsdataimportdeleteuploaddatarequest *AnalyticsDataimportDeleteUploadDataRequest
-	opt_                                       map[string]interface{}
+	urlParams_                                 gensupport.URLParams
+	ctx_                                       context.Context
 }
 
 // DeleteUploadData: Delete data associated with a previous upload.
 func (r *ManagementUploadsService) DeleteUploadData(accountId string, webPropertyId string, customDataSourceId string, analyticsdataimportdeleteuploaddatarequest *AnalyticsDataimportDeleteUploadDataRequest) *ManagementUploadsDeleteUploadDataCall {
-	c := &ManagementUploadsDeleteUploadDataCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementUploadsDeleteUploadDataCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customDataSourceId = customDataSourceId
@@ -9905,28 +13054,32 @@ func (r *ManagementUploadsService) DeleteUploadData(accountId string, webPropert
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementUploadsDeleteUploadDataCall) Fields(s ...googleapi.Field) *ManagementUploadsDeleteUploadDataCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementUploadsDeleteUploadDataCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementUploadsDeleteUploadDataCall) Context(ctx context.Context) *ManagementUploadsDeleteUploadDataCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementUploadsDeleteUploadDataCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.analyticsdataimportdeleteuploaddatarequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/deleteUploadData")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":          c.accountId,
@@ -9934,8 +13087,17 @@ func (c *ManagementUploadsDeleteUploadDataCall) Do() error {
 		"customDataSourceId": c.customDataSourceId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.uploads.deleteUploadData" call.
+func (c *ManagementUploadsDeleteUploadDataCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -9996,12 +13158,14 @@ type ManagementUploadsGetCall struct {
 	webPropertyId      string
 	customDataSourceId string
 	uploadId           string
-	opt_               map[string]interface{}
+	urlParams_         gensupport.URLParams
+	ifNoneMatch_       string
+	ctx_               context.Context
 }
 
 // Get: List uploads to which the user has access.
 func (r *ManagementUploadsService) Get(accountId string, webPropertyId string, customDataSourceId string, uploadId string) *ManagementUploadsGetCall {
-	c := &ManagementUploadsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementUploadsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customDataSourceId = customDataSourceId
@@ -10009,23 +13173,37 @@ func (r *ManagementUploadsService) Get(accountId string, webPropertyId string, c
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementUploadsGetCall) Fields(s ...googleapi.Field) *ManagementUploadsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementUploadsGetCall) Do() (*Upload, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementUploadsGetCall) IfNoneMatch(entityTag string) *ManagementUploadsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementUploadsGetCall) Context(ctx context.Context) *ManagementUploadsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementUploadsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/uploads/{uploadId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":          c.accountId,
@@ -10033,8 +13211,35 @@ func (c *ManagementUploadsGetCall) Do() (*Upload, error) {
 		"customDataSourceId": c.customDataSourceId,
 		"uploadId":           c.uploadId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.uploads.get" call.
+// Exactly one of *Upload or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Upload.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementUploadsGetCall) Do(opts ...googleapi.CallOption) (*Upload, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -10042,7 +13247,12 @@ func (c *ManagementUploadsGetCall) Do() (*Upload, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Upload
+	ret := &Upload{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -10107,12 +13317,14 @@ type ManagementUploadsListCall struct {
 	accountId          string
 	webPropertyId      string
 	customDataSourceId string
-	opt_               map[string]interface{}
+	urlParams_         gensupport.URLParams
+	ifNoneMatch_       string
+	ctx_               context.Context
 }
 
 // List: List uploads to which the user has access.
 func (r *ManagementUploadsService) List(accountId string, webPropertyId string, customDataSourceId string) *ManagementUploadsListCall {
-	c := &ManagementUploadsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementUploadsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customDataSourceId = customDataSourceId
@@ -10122,7 +13334,7 @@ func (r *ManagementUploadsService) List(accountId string, webPropertyId string, 
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of uploads to include in this response.
 func (c *ManagementUploadsListCall) MaxResults(maxResults int64) *ManagementUploadsListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -10130,41 +13342,76 @@ func (c *ManagementUploadsListCall) MaxResults(maxResults int64) *ManagementUplo
 // of the first upload to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementUploadsListCall) StartIndex(startIndex int64) *ManagementUploadsListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementUploadsListCall) Fields(s ...googleapi.Field) *ManagementUploadsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementUploadsListCall) Do() (*Uploads, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementUploadsListCall) IfNoneMatch(entityTag string) *ManagementUploadsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementUploadsListCall) Context(ctx context.Context) *ManagementUploadsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementUploadsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/uploads")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":          c.accountId,
 		"webPropertyId":      c.webPropertyId,
 		"customDataSourceId": c.customDataSourceId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.uploads.list" call.
+// Exactly one of *Uploads or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Uploads.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementUploadsListCall) Do(opts ...googleapi.CallOption) (*Uploads, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -10172,7 +13419,12 @@ func (c *ManagementUploadsListCall) Do() (*Uploads, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Uploads
+	ret := &Uploads{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -10236,100 +13488,6 @@ func (c *ManagementUploadsListCall) Do() (*Uploads, error) {
 
 }
 
-// method id "analytics.management.uploads.migrateDataImport":
-
-type ManagementUploadsMigrateDataImportCall struct {
-	s                  *Service
-	accountId          string
-	webPropertyId      string
-	customDataSourceId string
-	opt_               map[string]interface{}
-}
-
-// MigrateDataImport: Migrate custom data source and data imports to
-// latest version.
-func (r *ManagementUploadsService) MigrateDataImport(accountId string, webPropertyId string, customDataSourceId string) *ManagementUploadsMigrateDataImportCall {
-	c := &ManagementUploadsMigrateDataImportCall{s: r.s, opt_: make(map[string]interface{})}
-	c.accountId = accountId
-	c.webPropertyId = webPropertyId
-	c.customDataSourceId = customDataSourceId
-	return c
-}
-
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *ManagementUploadsMigrateDataImportCall) Fields(s ...googleapi.Field) *ManagementUploadsMigrateDataImportCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
-	return c
-}
-
-func (c *ManagementUploadsMigrateDataImportCall) Do() error {
-	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
-	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/migrateDataImport")
-	urls += "?" + params.Encode()
-	req, _ := http.NewRequest("POST", urls, body)
-	googleapi.Expand(req.URL, map[string]string{
-		"accountId":          c.accountId,
-		"webPropertyId":      c.webPropertyId,
-		"customDataSourceId": c.customDataSourceId,
-	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return err
-	}
-	return nil
-	// {
-	//   "description": "Migrate custom data source and data imports to latest version.",
-	//   "httpMethod": "POST",
-	//   "id": "analytics.management.uploads.migrateDataImport",
-	//   "parameterOrder": [
-	//     "accountId",
-	//     "webPropertyId",
-	//     "customDataSourceId"
-	//   ],
-	//   "parameters": {
-	//     "accountId": {
-	//       "description": "Account Id for migration.",
-	//       "location": "path",
-	//       "pattern": "\\d+",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "customDataSourceId": {
-	//       "description": "Custom data source Id for migration.",
-	//       "location": "path",
-	//       "pattern": ".{22}",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "webPropertyId": {
-	//       "description": "Web property Id for migration.",
-	//       "location": "path",
-	//       "pattern": "UA-(\\d+)-(\\d+)",
-	//       "required": true,
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/migrateDataImport",
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/analytics",
-	//     "https://www.googleapis.com/auth/analytics.edit"
-	//   ]
-	// }
-
-}
-
 // method id "analytics.management.uploads.uploadData":
 
 type ManagementUploadsUploadDataCall struct {
@@ -10337,86 +13495,108 @@ type ManagementUploadsUploadDataCall struct {
 	accountId          string
 	webPropertyId      string
 	customDataSourceId string
-	opt_               map[string]interface{}
+	urlParams_         gensupport.URLParams
 	media_             io.Reader
-	resumable_         googleapi.SizeReaderAt
+	resumableBuffer_   *gensupport.ResumableBuffer
 	mediaType_         string
+	mediaSize_         int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_   googleapi.ProgressUpdater
 	ctx_               context.Context
-	protocol_          string
 }
 
 // UploadData: Upload data for a custom data source.
 func (r *ManagementUploadsService) UploadData(accountId string, webPropertyId string, customDataSourceId string) *ManagementUploadsUploadDataCall {
-	c := &ManagementUploadsUploadDataCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementUploadsUploadDataCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.customDataSourceId = customDataSourceId
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *ManagementUploadsUploadDataCall) Media(r io.Reader) *ManagementUploadsUploadDataCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *ManagementUploadsUploadDataCall) Media(r io.Reader, options ...googleapi.MediaOption) *ManagementUploadsUploadDataCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *ManagementUploadsUploadDataCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *ManagementUploadsUploadDataCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *ManagementUploadsUploadDataCall) ProgressUpdater(pu googleapi.ProgressUpdater) *ManagementUploadsUploadDataCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementUploadsUploadDataCall) Fields(s ...googleapi.Field) *ManagementUploadsUploadDataCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementUploadsUploadDataCall) Do() (*Upload, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *ManagementUploadsUploadDataCall) Context(ctx context.Context) *ManagementUploadsUploadDataCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementUploadsUploadDataCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/uploads")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
+		}
+		c.urlParams_.Set("uploadType", protocol)
 	}
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	body = new(bytes.Buffer)
 	ctype := "application/json"
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
-		}
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
@@ -10424,18 +13604,38 @@ func (c *ManagementUploadsUploadDataCall) Do() (*Upload, error) {
 		"webPropertyId":      c.webPropertyId,
 		"customDataSourceId": c.customDataSourceId,
 	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.uploads.uploadData" call.
+// Exactly one of *Upload or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Upload.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ManagementUploadsUploadDataCall) Do(opts ...googleapi.CallOption) (*Upload, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -10443,23 +13643,39 @@ func (c *ManagementUploadsUploadDataCall) Do() (*Upload, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return nil, err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return nil, err
+		}
 	}
-	var ret *Upload
+	ret := &Upload{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -10531,43 +13747,57 @@ type ManagementWebPropertyAdWordsLinksDeleteCall struct {
 	accountId                string
 	webPropertyId            string
 	webPropertyAdWordsLinkId string
-	opt_                     map[string]interface{}
+	urlParams_               gensupport.URLParams
+	ctx_                     context.Context
 }
 
 // Delete: Deletes a web property-AdWords link.
 func (r *ManagementWebPropertyAdWordsLinksService) Delete(accountId string, webPropertyId string, webPropertyAdWordsLinkId string) *ManagementWebPropertyAdWordsLinksDeleteCall {
-	c := &ManagementWebPropertyAdWordsLinksDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebPropertyAdWordsLinksDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.webPropertyAdWordsLinkId = webPropertyAdWordsLinkId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebPropertyAdWordsLinksDeleteCall) Fields(s ...googleapi.Field) *ManagementWebPropertyAdWordsLinksDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebPropertyAdWordsLinksDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebPropertyAdWordsLinksDeleteCall) Context(ctx context.Context) *ManagementWebPropertyAdWordsLinksDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebPropertyAdWordsLinksDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityAdWordsLinks/{webPropertyAdWordsLinkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":                c.accountId,
 		"webPropertyId":            c.webPropertyId,
 		"webPropertyAdWordsLinkId": c.webPropertyAdWordsLinkId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webPropertyAdWordsLinks.delete" call.
+func (c *ManagementWebPropertyAdWordsLinksDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -10620,44 +13850,87 @@ type ManagementWebPropertyAdWordsLinksGetCall struct {
 	accountId                string
 	webPropertyId            string
 	webPropertyAdWordsLinkId string
-	opt_                     map[string]interface{}
+	urlParams_               gensupport.URLParams
+	ifNoneMatch_             string
+	ctx_                     context.Context
 }
 
 // Get: Returns a web property-AdWords link to which the user has
 // access.
 func (r *ManagementWebPropertyAdWordsLinksService) Get(accountId string, webPropertyId string, webPropertyAdWordsLinkId string) *ManagementWebPropertyAdWordsLinksGetCall {
-	c := &ManagementWebPropertyAdWordsLinksGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebPropertyAdWordsLinksGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.webPropertyAdWordsLinkId = webPropertyAdWordsLinkId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebPropertyAdWordsLinksGetCall) Fields(s ...googleapi.Field) *ManagementWebPropertyAdWordsLinksGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebPropertyAdWordsLinksGetCall) Do() (*EntityAdWordsLink, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementWebPropertyAdWordsLinksGetCall) IfNoneMatch(entityTag string) *ManagementWebPropertyAdWordsLinksGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebPropertyAdWordsLinksGetCall) Context(ctx context.Context) *ManagementWebPropertyAdWordsLinksGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebPropertyAdWordsLinksGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityAdWordsLinks/{webPropertyAdWordsLinkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":                c.accountId,
 		"webPropertyId":            c.webPropertyId,
 		"webPropertyAdWordsLinkId": c.webPropertyAdWordsLinkId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webPropertyAdWordsLinks.get" call.
+// Exactly one of *EntityAdWordsLink or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *EntityAdWordsLink.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementWebPropertyAdWordsLinksGetCall) Do(opts ...googleapi.CallOption) (*EntityAdWordsLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -10665,7 +13938,12 @@ func (c *ManagementWebPropertyAdWordsLinksGetCall) Do() (*EntityAdWordsLink, err
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityAdWordsLink
+	ret := &EntityAdWordsLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -10718,48 +13996,77 @@ type ManagementWebPropertyAdWordsLinksInsertCall struct {
 	accountId         string
 	webPropertyId     string
 	entityadwordslink *EntityAdWordsLink
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
 }
 
 // Insert: Creates a webProperty-AdWords link.
 func (r *ManagementWebPropertyAdWordsLinksService) Insert(accountId string, webPropertyId string, entityadwordslink *EntityAdWordsLink) *ManagementWebPropertyAdWordsLinksInsertCall {
-	c := &ManagementWebPropertyAdWordsLinksInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebPropertyAdWordsLinksInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.entityadwordslink = entityadwordslink
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebPropertyAdWordsLinksInsertCall) Fields(s ...googleapi.Field) *ManagementWebPropertyAdWordsLinksInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebPropertyAdWordsLinksInsertCall) Do() (*EntityAdWordsLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebPropertyAdWordsLinksInsertCall) Context(ctx context.Context) *ManagementWebPropertyAdWordsLinksInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebPropertyAdWordsLinksInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entityadwordslink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityAdWordsLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webPropertyAdWordsLinks.insert" call.
+// Exactly one of *EntityAdWordsLink or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *EntityAdWordsLink.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementWebPropertyAdWordsLinksInsertCall) Do(opts ...googleapi.CallOption) (*EntityAdWordsLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -10767,7 +14074,12 @@ func (c *ManagementWebPropertyAdWordsLinksInsertCall) Do() (*EntityAdWordsLink, 
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityAdWordsLink
+	ret := &EntityAdWordsLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -10814,12 +14126,14 @@ type ManagementWebPropertyAdWordsLinksListCall struct {
 	s             *Service
 	accountId     string
 	webPropertyId string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists webProperty-AdWords links for a given web property.
 func (r *ManagementWebPropertyAdWordsLinksService) List(accountId string, webPropertyId string) *ManagementWebPropertyAdWordsLinksListCall {
-	c := &ManagementWebPropertyAdWordsLinksListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebPropertyAdWordsLinksListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	return c
@@ -10828,7 +14142,7 @@ func (r *ManagementWebPropertyAdWordsLinksService) List(accountId string, webPro
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of webProperty-AdWords links to include in this response.
 func (c *ManagementWebPropertyAdWordsLinksListCall) MaxResults(maxResults int64) *ManagementWebPropertyAdWordsLinksListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -10836,40 +14150,75 @@ func (c *ManagementWebPropertyAdWordsLinksListCall) MaxResults(maxResults int64)
 // first webProperty-AdWords link to retrieve. Use this parameter as a
 // pagination mechanism along with the max-results parameter.
 func (c *ManagementWebPropertyAdWordsLinksListCall) StartIndex(startIndex int64) *ManagementWebPropertyAdWordsLinksListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebPropertyAdWordsLinksListCall) Fields(s ...googleapi.Field) *ManagementWebPropertyAdWordsLinksListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebPropertyAdWordsLinksListCall) Do() (*EntityAdWordsLinks, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementWebPropertyAdWordsLinksListCall) IfNoneMatch(entityTag string) *ManagementWebPropertyAdWordsLinksListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebPropertyAdWordsLinksListCall) Context(ctx context.Context) *ManagementWebPropertyAdWordsLinksListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebPropertyAdWordsLinksListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityAdWordsLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webPropertyAdWordsLinks.list" call.
+// Exactly one of *EntityAdWordsLinks or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *EntityAdWordsLinks.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementWebPropertyAdWordsLinksListCall) Do(opts ...googleapi.CallOption) (*EntityAdWordsLinks, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -10877,7 +14226,12 @@ func (c *ManagementWebPropertyAdWordsLinksListCall) Do() (*EntityAdWordsLinks, e
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityAdWordsLinks
+	ret := &EntityAdWordsLinks{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -10938,13 +14292,14 @@ type ManagementWebPropertyAdWordsLinksPatchCall struct {
 	webPropertyId            string
 	webPropertyAdWordsLinkId string
 	entityadwordslink        *EntityAdWordsLink
-	opt_                     map[string]interface{}
+	urlParams_               gensupport.URLParams
+	ctx_                     context.Context
 }
 
 // Patch: Updates an existing webProperty-AdWords link. This method
 // supports patch semantics.
 func (r *ManagementWebPropertyAdWordsLinksService) Patch(accountId string, webPropertyId string, webPropertyAdWordsLinkId string, entityadwordslink *EntityAdWordsLink) *ManagementWebPropertyAdWordsLinksPatchCall {
-	c := &ManagementWebPropertyAdWordsLinksPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebPropertyAdWordsLinksPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.webPropertyAdWordsLinkId = webPropertyAdWordsLinkId
@@ -10952,28 +14307,32 @@ func (r *ManagementWebPropertyAdWordsLinksService) Patch(accountId string, webPr
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebPropertyAdWordsLinksPatchCall) Fields(s ...googleapi.Field) *ManagementWebPropertyAdWordsLinksPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebPropertyAdWordsLinksPatchCall) Do() (*EntityAdWordsLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebPropertyAdWordsLinksPatchCall) Context(ctx context.Context) *ManagementWebPropertyAdWordsLinksPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebPropertyAdWordsLinksPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entityadwordslink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityAdWordsLinks/{webPropertyAdWordsLinkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":                c.accountId,
@@ -10981,8 +14340,32 @@ func (c *ManagementWebPropertyAdWordsLinksPatchCall) Do() (*EntityAdWordsLink, e
 		"webPropertyAdWordsLinkId": c.webPropertyAdWordsLinkId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webPropertyAdWordsLinks.patch" call.
+// Exactly one of *EntityAdWordsLink or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *EntityAdWordsLink.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementWebPropertyAdWordsLinksPatchCall) Do(opts ...googleapi.CallOption) (*EntityAdWordsLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -10990,7 +14373,12 @@ func (c *ManagementWebPropertyAdWordsLinksPatchCall) Do() (*EntityAdWordsLink, e
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityAdWordsLink
+	ret := &EntityAdWordsLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -11046,12 +14434,13 @@ type ManagementWebPropertyAdWordsLinksUpdateCall struct {
 	webPropertyId            string
 	webPropertyAdWordsLinkId string
 	entityadwordslink        *EntityAdWordsLink
-	opt_                     map[string]interface{}
+	urlParams_               gensupport.URLParams
+	ctx_                     context.Context
 }
 
 // Update: Updates an existing webProperty-AdWords link.
 func (r *ManagementWebPropertyAdWordsLinksService) Update(accountId string, webPropertyId string, webPropertyAdWordsLinkId string, entityadwordslink *EntityAdWordsLink) *ManagementWebPropertyAdWordsLinksUpdateCall {
-	c := &ManagementWebPropertyAdWordsLinksUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebPropertyAdWordsLinksUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.webPropertyAdWordsLinkId = webPropertyAdWordsLinkId
@@ -11059,28 +14448,32 @@ func (r *ManagementWebPropertyAdWordsLinksService) Update(accountId string, webP
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebPropertyAdWordsLinksUpdateCall) Fields(s ...googleapi.Field) *ManagementWebPropertyAdWordsLinksUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebPropertyAdWordsLinksUpdateCall) Do() (*EntityAdWordsLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebPropertyAdWordsLinksUpdateCall) Context(ctx context.Context) *ManagementWebPropertyAdWordsLinksUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebPropertyAdWordsLinksUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entityadwordslink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityAdWordsLinks/{webPropertyAdWordsLinkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":                c.accountId,
@@ -11088,8 +14481,32 @@ func (c *ManagementWebPropertyAdWordsLinksUpdateCall) Do() (*EntityAdWordsLink, 
 		"webPropertyAdWordsLinkId": c.webPropertyAdWordsLinkId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webPropertyAdWordsLinks.update" call.
+// Exactly one of *EntityAdWordsLink or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *EntityAdWordsLink.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementWebPropertyAdWordsLinksUpdateCall) Do(opts ...googleapi.CallOption) (*EntityAdWordsLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -11097,7 +14514,12 @@ func (c *ManagementWebPropertyAdWordsLinksUpdateCall) Do() (*EntityAdWordsLink, 
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityAdWordsLink
+	ret := &EntityAdWordsLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -11151,41 +14573,84 @@ type ManagementWebpropertiesGetCall struct {
 	s             *Service
 	accountId     string
 	webPropertyId string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get: Gets a web property to which the user has access.
 func (r *ManagementWebpropertiesService) Get(accountId string, webPropertyId string) *ManagementWebpropertiesGetCall {
-	c := &ManagementWebpropertiesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebpropertiesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebpropertiesGetCall) Fields(s ...googleapi.Field) *ManagementWebpropertiesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebpropertiesGetCall) Do() (*Webproperty, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementWebpropertiesGetCall) IfNoneMatch(entityTag string) *ManagementWebpropertiesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebpropertiesGetCall) Context(ctx context.Context) *ManagementWebpropertiesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebpropertiesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webproperties.get" call.
+// Exactly one of *Webproperty or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Webproperty.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementWebpropertiesGetCall) Do(opts ...googleapi.CallOption) (*Webproperty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -11193,7 +14658,12 @@ func (c *ManagementWebpropertiesGetCall) Do() (*Webproperty, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Webproperty
+	ret := &Webproperty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -11240,48 +14710,77 @@ type ManagementWebpropertiesInsertCall struct {
 	s           *Service
 	accountId   string
 	webproperty *Webproperty
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
 // Insert: Create a new property if the account has fewer than 20
 // properties. Web properties are visible in the Google Analytics
 // interface only if they have at least one profile.
 func (r *ManagementWebpropertiesService) Insert(accountId string, webproperty *Webproperty) *ManagementWebpropertiesInsertCall {
-	c := &ManagementWebpropertiesInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebpropertiesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webproperty = webproperty
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebpropertiesInsertCall) Fields(s ...googleapi.Field) *ManagementWebpropertiesInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebpropertiesInsertCall) Do() (*Webproperty, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebpropertiesInsertCall) Context(ctx context.Context) *ManagementWebpropertiesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebpropertiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.webproperty)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webproperties.insert" call.
+// Exactly one of *Webproperty or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Webproperty.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementWebpropertiesInsertCall) Do(opts ...googleapi.CallOption) (*Webproperty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -11289,7 +14788,12 @@ func (c *ManagementWebpropertiesInsertCall) Do() (*Webproperty, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Webproperty
+	ret := &Webproperty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -11326,14 +14830,16 @@ func (c *ManagementWebpropertiesInsertCall) Do() (*Webproperty, error) {
 // method id "analytics.management.webproperties.list":
 
 type ManagementWebpropertiesListCall struct {
-	s         *Service
-	accountId string
-	opt_      map[string]interface{}
+	s            *Service
+	accountId    string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists web properties to which the user has access.
 func (r *ManagementWebpropertiesService) List(accountId string) *ManagementWebpropertiesListCall {
-	c := &ManagementWebpropertiesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebpropertiesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	return c
 }
@@ -11341,7 +14847,7 @@ func (r *ManagementWebpropertiesService) List(accountId string) *ManagementWebpr
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of web properties to include in this response.
 func (c *ManagementWebpropertiesListCall) MaxResults(maxResults int64) *ManagementWebpropertiesListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -11349,39 +14855,74 @@ func (c *ManagementWebpropertiesListCall) MaxResults(maxResults int64) *Manageme
 // first entity to retrieve. Use this parameter as a pagination
 // mechanism along with the max-results parameter.
 func (c *ManagementWebpropertiesListCall) StartIndex(startIndex int64) *ManagementWebpropertiesListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebpropertiesListCall) Fields(s ...googleapi.Field) *ManagementWebpropertiesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebpropertiesListCall) Do() (*Webproperties, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementWebpropertiesListCall) IfNoneMatch(entityTag string) *ManagementWebpropertiesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebpropertiesListCall) Context(ctx context.Context) *ManagementWebpropertiesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebpropertiesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": c.accountId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webproperties.list" call.
+// Exactly one of *Webproperties or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Webproperties.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementWebpropertiesListCall) Do(opts ...googleapi.CallOption) (*Webproperties, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -11389,7 +14930,12 @@ func (c *ManagementWebpropertiesListCall) Do() (*Webproperties, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Webproperties
+	ret := &Webproperties{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -11442,49 +14988,78 @@ type ManagementWebpropertiesPatchCall struct {
 	accountId     string
 	webPropertyId string
 	webproperty   *Webproperty
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Patch: Updates an existing web property. This method supports patch
 // semantics.
 func (r *ManagementWebpropertiesService) Patch(accountId string, webPropertyId string, webproperty *Webproperty) *ManagementWebpropertiesPatchCall {
-	c := &ManagementWebpropertiesPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebpropertiesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.webproperty = webproperty
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebpropertiesPatchCall) Fields(s ...googleapi.Field) *ManagementWebpropertiesPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebpropertiesPatchCall) Do() (*Webproperty, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebpropertiesPatchCall) Context(ctx context.Context) *ManagementWebpropertiesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebpropertiesPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.webproperty)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webproperties.patch" call.
+// Exactly one of *Webproperty or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Webproperty.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementWebpropertiesPatchCall) Do(opts ...googleapi.CallOption) (*Webproperty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -11492,7 +15067,12 @@ func (c *ManagementWebpropertiesPatchCall) Do() (*Webproperty, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Webproperty
+	ret := &Webproperty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -11540,48 +15120,77 @@ type ManagementWebpropertiesUpdateCall struct {
 	accountId     string
 	webPropertyId string
 	webproperty   *Webproperty
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Update: Updates an existing web property.
 func (r *ManagementWebpropertiesService) Update(accountId string, webPropertyId string, webproperty *Webproperty) *ManagementWebpropertiesUpdateCall {
-	c := &ManagementWebpropertiesUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebpropertiesUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.webproperty = webproperty
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebpropertiesUpdateCall) Fields(s ...googleapi.Field) *ManagementWebpropertiesUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebpropertiesUpdateCall) Do() (*Webproperty, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebpropertiesUpdateCall) Context(ctx context.Context) *ManagementWebpropertiesUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebpropertiesUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.webproperty)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webproperties.update" call.
+// Exactly one of *Webproperty or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Webproperty.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ManagementWebpropertiesUpdateCall) Do(opts ...googleapi.CallOption) (*Webproperty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -11589,7 +15198,12 @@ func (c *ManagementWebpropertiesUpdateCall) Do() (*Webproperty, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Webproperty
+	ret := &Webproperty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -11637,43 +15251,57 @@ type ManagementWebpropertyUserLinksDeleteCall struct {
 	accountId     string
 	webPropertyId string
 	linkId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Delete: Removes a user from the given web property.
 func (r *ManagementWebpropertyUserLinksService) Delete(accountId string, webPropertyId string, linkId string) *ManagementWebpropertyUserLinksDeleteCall {
-	c := &ManagementWebpropertyUserLinksDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebpropertyUserLinksDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.linkId = linkId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebpropertyUserLinksDeleteCall) Fields(s ...googleapi.Field) *ManagementWebpropertyUserLinksDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebpropertyUserLinksDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebpropertyUserLinksDeleteCall) Context(ctx context.Context) *ManagementWebpropertyUserLinksDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebpropertyUserLinksDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityUserLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 		"linkId":        c.linkId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webpropertyUserLinks.delete" call.
+func (c *ManagementWebpropertyUserLinksDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -11726,48 +15354,77 @@ type ManagementWebpropertyUserLinksInsertCall struct {
 	accountId      string
 	webPropertyId  string
 	entityuserlink *EntityUserLink
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Insert: Adds a new user to the given web property.
 func (r *ManagementWebpropertyUserLinksService) Insert(accountId string, webPropertyId string, entityuserlink *EntityUserLink) *ManagementWebpropertyUserLinksInsertCall {
-	c := &ManagementWebpropertyUserLinksInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebpropertyUserLinksInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.entityuserlink = entityuserlink
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebpropertyUserLinksInsertCall) Fields(s ...googleapi.Field) *ManagementWebpropertyUserLinksInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebpropertyUserLinksInsertCall) Do() (*EntityUserLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebpropertyUserLinksInsertCall) Context(ctx context.Context) *ManagementWebpropertyUserLinksInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebpropertyUserLinksInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entityuserlink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityUserLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webpropertyUserLinks.insert" call.
+// Exactly one of *EntityUserLink or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *EntityUserLink.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementWebpropertyUserLinksInsertCall) Do(opts ...googleapi.CallOption) (*EntityUserLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -11775,7 +15432,12 @@ func (c *ManagementWebpropertyUserLinksInsertCall) Do() (*EntityUserLink, error)
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityUserLink
+	ret := &EntityUserLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -11822,12 +15484,14 @@ type ManagementWebpropertyUserLinksListCall struct {
 	s             *Service
 	accountId     string
 	webPropertyId string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists webProperty-user links for a given web property.
 func (r *ManagementWebpropertyUserLinksService) List(accountId string, webPropertyId string) *ManagementWebpropertyUserLinksListCall {
-	c := &ManagementWebpropertyUserLinksListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebpropertyUserLinksListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	return c
@@ -11836,7 +15500,7 @@ func (r *ManagementWebpropertyUserLinksService) List(accountId string, webProper
 // MaxResults sets the optional parameter "max-results": The maximum
 // number of webProperty-user Links to include in this response.
 func (c *ManagementWebpropertyUserLinksListCall) MaxResults(maxResults int64) *ManagementWebpropertyUserLinksListCall {
-	c.opt_["max-results"] = maxResults
+	c.urlParams_.Set("max-results", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -11844,40 +15508,75 @@ func (c *ManagementWebpropertyUserLinksListCall) MaxResults(maxResults int64) *M
 // first webProperty-user link to retrieve. Use this parameter as a
 // pagination mechanism along with the max-results parameter.
 func (c *ManagementWebpropertyUserLinksListCall) StartIndex(startIndex int64) *ManagementWebpropertyUserLinksListCall {
-	c.opt_["start-index"] = startIndex
+	c.urlParams_.Set("start-index", fmt.Sprint(startIndex))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebpropertyUserLinksListCall) Fields(s ...googleapi.Field) *ManagementWebpropertyUserLinksListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebpropertyUserLinksListCall) Do() (*EntityUserLinks, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagementWebpropertyUserLinksListCall) IfNoneMatch(entityTag string) *ManagementWebpropertyUserLinksListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebpropertyUserLinksListCall) Context(ctx context.Context) *ManagementWebpropertyUserLinksListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebpropertyUserLinksListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["max-results"]; ok {
-		params.Set("max-results", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["start-index"]; ok {
-		params.Set("start-index", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityUserLinks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
 		"webPropertyId": c.webPropertyId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webpropertyUserLinks.list" call.
+// Exactly one of *EntityUserLinks or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *EntityUserLinks.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementWebpropertyUserLinksListCall) Do(opts ...googleapi.CallOption) (*EntityUserLinks, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -11885,7 +15584,12 @@ func (c *ManagementWebpropertyUserLinksListCall) Do() (*EntityUserLinks, error) 
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityUserLinks
+	ret := &EntityUserLinks{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -11945,13 +15649,14 @@ type ManagementWebpropertyUserLinksUpdateCall struct {
 	webPropertyId  string
 	linkId         string
 	entityuserlink *EntityUserLink
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Update: Updates permissions for an existing user on the given web
 // property.
 func (r *ManagementWebpropertyUserLinksService) Update(accountId string, webPropertyId string, linkId string, entityuserlink *EntityUserLink) *ManagementWebpropertyUserLinksUpdateCall {
-	c := &ManagementWebpropertyUserLinksUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ManagementWebpropertyUserLinksUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.webPropertyId = webPropertyId
 	c.linkId = linkId
@@ -11959,28 +15664,32 @@ func (r *ManagementWebpropertyUserLinksService) Update(accountId string, webProp
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ManagementWebpropertyUserLinksUpdateCall) Fields(s ...googleapi.Field) *ManagementWebpropertyUserLinksUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ManagementWebpropertyUserLinksUpdateCall) Do() (*EntityUserLink, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagementWebpropertyUserLinksUpdateCall) Context(ctx context.Context) *ManagementWebpropertyUserLinksUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ManagementWebpropertyUserLinksUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entityuserlink)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "management/accounts/{accountId}/webproperties/{webPropertyId}/entityUserLinks/{linkId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":     c.accountId,
@@ -11988,8 +15697,32 @@ func (c *ManagementWebpropertyUserLinksUpdateCall) Do() (*EntityUserLink, error)
 		"linkId":        c.linkId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.management.webpropertyUserLinks.update" call.
+// Exactly one of *EntityUserLink or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *EntityUserLink.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ManagementWebpropertyUserLinksUpdateCall) Do(opts ...googleapi.CallOption) (*EntityUserLink, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -11997,7 +15730,12 @@ func (c *ManagementWebpropertyUserLinksUpdateCall) Do() (*EntityUserLink, error)
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *EntityUserLink
+	ret := &EntityUserLink{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -12048,41 +15786,84 @@ func (c *ManagementWebpropertyUserLinksUpdateCall) Do() (*EntityUserLink, error)
 // method id "analytics.metadata.columns.list":
 
 type MetadataColumnsListCall struct {
-	s          *Service
-	reportType string
-	opt_       map[string]interface{}
+	s            *Service
+	reportType   string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists all columns for a report type
 func (r *MetadataColumnsService) List(reportType string) *MetadataColumnsListCall {
-	c := &MetadataColumnsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MetadataColumnsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.reportType = reportType
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MetadataColumnsListCall) Fields(s ...googleapi.Field) *MetadataColumnsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MetadataColumnsListCall) Do() (*Columns, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *MetadataColumnsListCall) IfNoneMatch(entityTag string) *MetadataColumnsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MetadataColumnsListCall) Context(ctx context.Context) *MetadataColumnsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MetadataColumnsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "metadata/{reportType}/columns")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"reportType": c.reportType,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.metadata.columns.list" call.
+// Exactly one of *Columns or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Columns.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *MetadataColumnsListCall) Do(opts ...googleapi.CallOption) (*Columns, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -12090,7 +15871,12 @@ func (c *MetadataColumnsListCall) Do() (*Columns, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Columns
+	ret := &Columns{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -12129,43 +15915,72 @@ func (c *MetadataColumnsListCall) Do() (*Columns, error) {
 type ProvisioningCreateAccountTicketCall struct {
 	s             *Service
 	accountticket *AccountTicket
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // CreateAccountTicket: Creates an account ticket.
 func (r *ProvisioningService) CreateAccountTicket(accountticket *AccountTicket) *ProvisioningCreateAccountTicketCall {
-	c := &ProvisioningCreateAccountTicketCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ProvisioningCreateAccountTicketCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountticket = accountticket
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ProvisioningCreateAccountTicketCall) Fields(s ...googleapi.Field) *ProvisioningCreateAccountTicketCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ProvisioningCreateAccountTicketCall) Do() (*AccountTicket, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProvisioningCreateAccountTicketCall) Context(ctx context.Context) *ProvisioningCreateAccountTicketCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ProvisioningCreateAccountTicketCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.accountticket)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "provisioning/createAccountTicket")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "analytics.provisioning.createAccountTicket" call.
+// Exactly one of *AccountTicket or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *AccountTicket.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProvisioningCreateAccountTicketCall) Do(opts ...googleapi.CallOption) (*AccountTicket, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -12173,7 +15988,12 @@ func (c *ProvisioningCreateAccountTicketCall) Do() (*AccountTicket, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AccountTicket
+	ret := &AccountTicket{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

@@ -1,13 +1,13 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/cxvPCR_xcZiPo49FRoYXODxx8IM\"",
+ "etag": "\"bRFOOrZKfO9LweMbPqu0kcu6De8/fZsPJo85UoWuzkqYF2Sn0RYAm-s\"",
  "discoveryVersion": "v1",
  "id": "doubleclicksearch:v2",
  "name": "doubleclicksearch",
  "version": "v2",
- "revision": "20141222",
+ "revision": "20160302",
  "title": "DoubleClick Search API",
- "description": "Report and modify your advertising data in DoubleClick Search (for example, campaigns, ad groups, keywords, and conversions).",
+ "description": "Reports and modifies your advertising data in DoubleClick Search (for example, campaigns, ad groups, keywords, and conversions).",
  "ownerDomain": "google.com",
  "ownerName": "Google",
  "icons": {
@@ -158,12 +158,16 @@
     },
     "attributionModel": {
      "type": "string",
-     "description": "Attribution model name."
+     "description": "This field is ignored."
     },
     "campaignId": {
      "type": "string",
      "description": "DS campaign ID.",
      "format": "int64"
+    },
+    "channel": {
+     "type": "string",
+     "description": "Sales channel for the product. Acceptable values are:  \n- \"local\": a physical store \n- \"online\": an online store"
     },
     "clickId": {
      "type": "string",
@@ -171,7 +175,7 @@
     },
     "conversionId": {
      "type": "string",
-     "description": "Advertiser-provided ID for the conversion, also known as the order ID.",
+     "description": "For offline conversions, this is an ID that advertisers are required to provide. Advertisers can specify any ID that is meaningful to them. For online conversions, DS copies the dsConversionId or floodlightOrderId into this property depending on the advertiser's Floodlight instructions.",
      "annotations": {
       "required": [
        "doubleclicksearch.conversion.insert"
@@ -195,7 +199,7 @@
     },
     "countMillis": {
      "type": "string",
-     "description": "Conversion count in millis.",
+     "description": "This field is ignored.",
      "format": "int64"
     },
     "criterionId": {
@@ -221,9 +225,13 @@
       "$ref": "CustomMetric"
      }
     },
+    "deviceType": {
+     "type": "string",
+     "description": "The type of device on which the conversion occurred."
+    },
     "dsConversionId": {
      "type": "string",
-     "description": "DS conversion ID.",
+     "description": "ID that DoubleClick Search generates for each conversion.",
      "format": "int64"
     },
     "engineAccountId": {
@@ -233,7 +241,29 @@
     },
     "floodlightOrderId": {
      "type": "string",
-     "description": "The advertiser-provided order id for the conversion."
+     "description": "The Floodlight order ID provided by the advertiser for the conversion."
+    },
+    "inventoryAccountId": {
+     "type": "string",
+     "description": "ID that DS generates and uses to uniquely identify the inventory account that contains the product.",
+     "format": "int64"
+    },
+    "productCountry": {
+     "type": "string",
+     "description": "The country registered for the Merchant Center feed that contains the product. Use an ISO 3166 code to specify a country."
+    },
+    "productGroupId": {
+     "type": "string",
+     "description": "DS product group ID.",
+     "format": "int64"
+    },
+    "productId": {
+     "type": "string",
+     "description": "The product ID (SKU)."
+    },
+    "productLanguage": {
+     "type": "string",
+     "description": "The language registered for the Merchant Center feed that contains the product. Use an ISO 639 code to specify a language."
     },
     "quantityMillis": {
      "type": "string",
@@ -242,7 +272,7 @@
     },
     "revenueMicros": {
      "type": "string",
-     "description": "The revenue amount of this TRANSACTION conversion, in micros.",
+     "description": "The revenue amount of this TRANSACTION conversion, in micros (value multiplied by 1000, no decimal). For example, to specify a revenue value of \"10\" enter \"10000\" in your request.",
      "format": "int64"
     },
     "segmentationId": {
@@ -266,6 +296,10 @@
     "state": {
      "type": "string",
      "description": "The state of the conversion, that is, either ACTIVE or REMOVED. Note: state DELETED is deprecated."
+    },
+    "storeId": {
+     "type": "string",
+     "description": "The ID of the local store for which the product was advertised. Applicable only when the channel is \"local\"."
     },
     "type": {
      "type": "string",
@@ -417,7 +451,11 @@
     },
     "platformSource": {
      "type": "string",
-     "description": "The platform that is used to provide data for the custom dimension. Acceptable values are \"Floodlight\"."
+     "description": "The platform that is used to provide data for the custom dimension. Acceptable values are \"floodlight\"."
+    },
+    "productReportPerspective": {
+     "type": "string",
+     "description": "Returns metrics only for a specific type of product activity. Accepted values are:  \n- \"sold\": returns metrics only for products that were sold \n- \"advertised\": returns metrics only for products that were advertised in a Shopping campaign, and that might or might not have been sold"
     },
     "savedColumnName": {
      "type": "string",
@@ -987,7 +1025,7 @@
      "id": "doubleclicksearch.reports.getFile",
      "path": "reports/{reportId}/files/{reportFragment}",
      "httpMethod": "GET",
-     "description": "Downloads a report file.",
+     "description": "Downloads a report file encoded in UTF-8.",
      "parameters": {
       "reportFragment": {
        "type": "integer",
@@ -1011,7 +1049,8 @@
      "scopes": [
       "https://www.googleapis.com/auth/doubleclicksearch"
      ],
-     "supportsMediaDownload": true
+     "supportsMediaDownload": true,
+     "useMediaDownloadService": true
     },
     "request": {
      "id": "doubleclicksearch.reports.request",

@@ -1,13 +1,13 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/A7O3agkh7yC4B7ApdQ5Stb69Ofk\"",
+ "etag": "\"bRFOOrZKfO9LweMbPqu0kcu6De8/y7JmUhB0GIMusVTZY-o1OGZ6DZQ\"",
  "discoveryVersion": "v1",
  "id": "analytics:v3",
  "name": "analytics",
  "version": "v3",
- "revision": "20150115",
+ "revision": "20160308",
  "title": "Google Analytics API",
- "description": "View and manage your Google Analytics data",
+ "description": "Views and manages your Google Analytics data.",
  "ownerDomain": "google.com",
  "ownerName": "Google",
  "icons": {
@@ -147,6 +147,10 @@
      "type": "string",
      "description": "Link for this account."
     },
+    "starred": {
+     "type": "boolean",
+     "description": "Indicates whether this account is starred or not."
+    },
     "updated": {
      "type": "string",
      "description": "Time the account was last modified.",
@@ -241,6 +245,10 @@
     "name": {
      "type": "string",
      "description": "Account name."
+    },
+    "starred": {
+     "type": "boolean",
+     "description": "Indicates whether this account is starred or not."
     },
     "webProperties": {
      "type": "array",
@@ -819,168 +827,6 @@
     }
    }
   },
-  "DailyUpload": {
-   "id": "DailyUpload",
-   "type": "object",
-   "description": "Metadata for daily upload entity.",
-   "properties": {
-    "accountId": {
-     "type": "string",
-     "description": "Account ID to which this daily upload belongs."
-    },
-    "appendCount": {
-     "type": "integer",
-     "description": "Number of appends for this date.",
-     "format": "int32"
-    },
-    "createdTime": {
-     "type": "string",
-     "description": "Time this daily upload was created.",
-     "format": "date-time"
-    },
-    "customDataSourceId": {
-     "type": "string",
-     "description": "Custom data source ID to which this daily upload belongs."
-    },
-    "date": {
-     "type": "string",
-     "description": "Date associated with daily upload."
-    },
-    "kind": {
-     "type": "string",
-     "description": "Resource type for Analytics daily upload.",
-     "default": "analytics#dailyUpload"
-    },
-    "modifiedTime": {
-     "type": "string",
-     "description": "Time this daily upload was last modified.",
-     "format": "date-time"
-    },
-    "parentLink": {
-     "type": "object",
-     "description": "Parent link for a daily upload. Points to the custom data source to which this daily upload belongs.",
-     "properties": {
-      "href": {
-       "type": "string",
-       "description": "Link to the custom data source to which this daily upload belongs."
-      },
-      "type": {
-       "type": "string",
-       "description": "Value is \"analytics#customDataSource\".",
-       "default": "analytics#customDataSource"
-      }
-     }
-    },
-    "recentChanges": {
-     "type": "array",
-     "description": "Change log for last 10 changes in chronological order.",
-     "items": {
-      "type": "object",
-      "properties": {
-       "change": {
-        "type": "string",
-        "description": "The type of change: APPEND, RESET, or DELETE."
-       },
-       "time": {
-        "type": "string",
-        "description": "The time when the change occurred.",
-        "format": "date-time"
-       }
-      }
-     }
-    },
-    "selfLink": {
-     "type": "string",
-     "description": "Link for this daily upload."
-    },
-    "webPropertyId": {
-     "type": "string",
-     "description": "Web property ID of the form UA-XXXXX-YY to which this daily upload belongs."
-    }
-   }
-  },
-  "DailyUploadAppend": {
-   "id": "DailyUploadAppend",
-   "type": "object",
-   "description": "Metadata returned for a successful append operation.",
-   "properties": {
-    "accountId": {
-     "type": "string",
-     "description": "Account Id to which this daily upload append belongs."
-    },
-    "appendNumber": {
-     "type": "integer",
-     "description": "Append number.",
-     "format": "int32"
-    },
-    "customDataSourceId": {
-     "type": "string",
-     "description": "Custom data source Id to which this daily upload append belongs."
-    },
-    "date": {
-     "type": "string",
-     "description": "Date associated with daily upload append."
-    },
-    "kind": {
-     "type": "string",
-     "description": "Resource type for Analytics daily upload append.",
-     "default": "analytics#dailyUploadAppend"
-    },
-    "nextAppendLink": {
-     "type": "string"
-    },
-    "webPropertyId": {
-     "type": "string",
-     "description": "Web property Id of the form UA-XXXXX-YY to which this daily upload append belongs."
-    }
-   }
-  },
-  "DailyUploads": {
-   "id": "DailyUploads",
-   "type": "object",
-   "description": "A daily upload collection lists Analytics daily uploads to which the user has access. Each resource in the collection corresponds to a single Analytics daily upload.",
-   "properties": {
-    "items": {
-     "type": "array",
-     "description": "A collection of daily uploads.",
-     "items": {
-      "$ref": "DailyUpload"
-     }
-    },
-    "itemsPerPage": {
-     "type": "integer",
-     "description": "The maximum number of resources the response can contain, regardless of the actual number of resources returned. Its value ranges from 1 to 1000 with a value of 1000 by default, or otherwise specified by the max-results query parameter.",
-     "format": "int32"
-    },
-    "kind": {
-     "type": "string",
-     "description": "Collection type. Value is analytics#dailyUploads.",
-     "default": "analytics#dailyUploads"
-    },
-    "nextLink": {
-     "type": "string",
-     "description": "Link to next page for this daily upload collection."
-    },
-    "previousLink": {
-     "type": "string",
-     "description": "Link to previous page for this daily upload collection."
-    },
-    "startIndex": {
-     "type": "integer",
-     "description": "The starting index of the resources, which is 1 by default or otherwise specified by the start-index query parameter.",
-     "format": "int32"
-    },
-    "totalResults": {
-     "type": "integer",
-     "description": "The total number of results for the query, regardless of the number of results in the response.",
-     "format": "int32"
-    },
-    "username": {
-     "type": "string",
-     "description": "Email ID of the authenticated user"
-    }
-   }
-  },
   "EntityAdWordsLink": {
    "id": "EntityAdWordsLink",
    "type": "object",
@@ -1316,7 +1162,7 @@
     },
     "trafficCoverage": {
      "type": "number",
-     "description": "A floating-point number between 0 and 1. Specifies the fraction of the traffic that participates in the experiment. Can be changed for a running experiment. This field may not be changed for an experiments whose status is ENDED.",
+     "description": "A floating-point number in (0, 1]. Specifies the fraction of the traffic that participates in the experiment. Can be changed for a running experiment. This field may not be changed for an experiments whose status is ENDED.",
      "format": "double"
     },
     "updated": {
@@ -1366,7 +1212,7 @@
     },
     "winnerConfidenceLevel": {
      "type": "number",
-     "description": "A floating-point number between 0 and 1. Specifies the necessary confidence level to choose a winner. This field may not be changed for an experiments whose status is ENDED.",
+     "description": "A floating-point number in (0, 1). Specifies the necessary confidence level to choose a winner. This field may not be changed for an experiments whose status is ENDED.",
      "format": "double"
     },
     "winnerFound": {
@@ -1450,6 +1296,11 @@
        "type": "string",
        "description": "Field A."
       },
+      "fieldAIndex": {
+       "type": "integer",
+       "description": "The Index of the custom dimension. Required if field is a CUSTOM_DIMENSION.",
+       "format": "int32"
+      },
       "fieldARequired": {
        "type": "boolean",
        "description": "Indicates if field A is required to match."
@@ -1457,6 +1308,11 @@
       "fieldB": {
        "type": "string",
        "description": "Field B."
+      },
+      "fieldBIndex": {
+       "type": "integer",
+       "description": "The Index of the custom dimension. Required if field is a CUSTOM_DIMENSION.",
+       "format": "int32"
       },
       "fieldBRequired": {
        "type": "boolean",
@@ -1469,6 +1325,11 @@
       "outputToField": {
        "type": "string",
        "description": "Output field."
+      },
+      "outputToFieldIndex": {
+       "type": "integer",
+       "description": "The Index of the custom dimension. Required if field is a CUSTOM_DIMENSION.",
+       "format": "int32"
       },
       "overrideOutputField": {
        "type": "boolean",
@@ -1507,6 +1368,11 @@
       "field": {
        "type": "string",
        "description": "Field to use in the filter."
+      },
+      "fieldIndex": {
+       "type": "integer",
+       "description": "The Index of the custom dimension. Required if field is a CUSTOM_DIMENSION.",
+       "format": "int32"
       }
      }
     },
@@ -1547,6 +1413,11 @@
        "type": "string",
        "description": "Field to use in the filter."
       },
+      "fieldIndex": {
+       "type": "integer",
+       "description": "The Index of the custom dimension. Required if field is a CUSTOM_DIMENSION.",
+       "format": "int32"
+      },
       "replaceString": {
        "type": "string",
        "description": "Term to replace the search term with."
@@ -1585,6 +1456,11 @@
       "field": {
        "type": "string",
        "description": "Field to use in the filter."
+      },
+      "fieldIndex": {
+       "type": "integer",
+       "description": "The Index of the custom dimension. Required if field is a CUSTOM_DIMENSION.",
+       "format": "int32"
       }
      }
     }
@@ -1605,7 +1481,12 @@
     },
     "field": {
      "type": "string",
-     "description": "Field to filter. Possible values:  \n- Content and Traffic  \n- PAGE_REQUEST_URI, \n- PAGE_HOSTNAME, \n- PAGE_TITLE, \n- REFERRAL, \n- COST_DATA_URI (Campaign target URL), \n- HIT_TYPE, \n- INTERNAL_SEARCH_TERM, \n- INTERNAL_SEARCH_TYPE, \n- SOURCE_PROPERTY_TRACKING_ID,   \n- Campaign or AdGroup  \n- CAMPAIGN_SOURCE, \n- CAMPAIGN_MEDIUM, \n- CAMPAIGN_NAME, \n- CAMPAIGN_AD_GROUP, \n- CAMPAIGN_TERM, \n- CAMPAIGN_CONTENT, \n- CAMPAIGN_CODE, \n- CAMPAIGN_REFERRAL_PATH,   \n- E-Commerce  \n- TRANSACTION_COUNTRY, \n- TRANSACTION_REGION, \n- TRANSACTION_CITY, \n- TRANSACTION_AFFILIATION (Store or order location), \n- ITEM_NAME, \n- ITEM_CODE, \n- ITEM_VARIATION, \n- TRANSACTION_ID, \n- TRANSACTION_CURRENCY_CODE, \n- PRODUCT_ACTION_TYPE,   \n- Audience/Users  \n- BROWSER, \n- BROWSER_VERSION, \n- BROWSER_SIZE, \n- PLATFORM, \n- PLATFORM_VERSION, \n- LANGUAGE, \n- SCREEN_RESOLUTION, \n- SCREEN_COLORS, \n- JAVA_ENABLED (Boolean Field), \n- FLASH_VERSION, \n- GEO_SPEED (Connection speed), \n- VISITOR_TYPE, \n- GEO_ORGANIZATION (ISP organization), \n- GEO_DOMAIN, \n- GEO_IP_ADDRESS, \n- GEO_IP_VERSION,   \n- Location  \n- GEO_COUNTRY, \n- GEO_REGION, \n- GEO_CITY,   \n- Event  \n- EVENT_CATEGORY, \n- EVENT_ACTION, \n- EVENT_LABEL,   \n- Other  \n- CUSTOM_FIELD_1, \n- CUSTOM_FIELD_2, \n- USER_DEFINED_VALUE,   \n- Application  \n- APP_ID, \n- APP_INSTALLER_ID, \n- APP_NAME, \n- APP_VERSION, \n- SCREEN, \n- IS_APP (Boolean Field), \n- IS_FATAL_EXCEPTION (Boolean Field), \n- EXCEPTION_DESCRIPTION,   \n- Mobile device  \n- IS_MOBILE (Boolean Field, Deprecated. Use DEVICE_CATEGORY=mobile), \n- IS_TABLET (Boolean Field, Deprecated. Use DEVICE_CATEGORY=tablet), \n- DEVICE_CATEGORY, \n- MOBILE_HAS_QWERTY_KEYBOARD (Boolean Field), \n- MOBILE_HAS_NFC_SUPPORT (Boolean Field), \n- MOBILE_HAS_CELLULAR_RADIO (Boolean Field), \n- MOBILE_HAS_WIFI_SUPPORT (Boolean Field), \n- MOBILE_BRAND_NAME, \n- MOBILE_MODEL_NAME, \n- MOBILE_MARKETING_NAME, \n- MOBILE_POINTING_METHOD,   \n- Social  \n- SOCIAL_NETWORK, \n- SOCIAL_ACTION, \n- SOCIAL_ACTION_TARGET,"
+     "description": "Field to filter. Possible values:  \n- Content and Traffic  \n- PAGE_REQUEST_URI, \n- PAGE_HOSTNAME, \n- PAGE_TITLE, \n- REFERRAL, \n- COST_DATA_URI (Campaign target URL), \n- HIT_TYPE, \n- INTERNAL_SEARCH_TERM, \n- INTERNAL_SEARCH_TYPE, \n- SOURCE_PROPERTY_TRACKING_ID,   \n- Campaign or AdGroup  \n- CAMPAIGN_SOURCE, \n- CAMPAIGN_MEDIUM, \n- CAMPAIGN_NAME, \n- CAMPAIGN_AD_GROUP, \n- CAMPAIGN_TERM, \n- CAMPAIGN_CONTENT, \n- CAMPAIGN_CODE, \n- CAMPAIGN_REFERRAL_PATH,   \n- E-Commerce  \n- TRANSACTION_COUNTRY, \n- TRANSACTION_REGION, \n- TRANSACTION_CITY, \n- TRANSACTION_AFFILIATION (Store or order location), \n- ITEM_NAME, \n- ITEM_CODE, \n- ITEM_VARIATION, \n- TRANSACTION_ID, \n- TRANSACTION_CURRENCY_CODE, \n- PRODUCT_ACTION_TYPE,   \n- Audience/Users  \n- BROWSER, \n- BROWSER_VERSION, \n- BROWSER_SIZE, \n- PLATFORM, \n- PLATFORM_VERSION, \n- LANGUAGE, \n- SCREEN_RESOLUTION, \n- SCREEN_COLORS, \n- JAVA_ENABLED (Boolean Field), \n- FLASH_VERSION, \n- GEO_SPEED (Connection speed), \n- VISITOR_TYPE, \n- GEO_ORGANIZATION (ISP organization), \n- GEO_DOMAIN, \n- GEO_IP_ADDRESS, \n- GEO_IP_VERSION,   \n- Location  \n- GEO_COUNTRY, \n- GEO_REGION, \n- GEO_CITY,   \n- Event  \n- EVENT_CATEGORY, \n- EVENT_ACTION, \n- EVENT_LABEL,   \n- Other  \n- CUSTOM_FIELD_1, \n- CUSTOM_FIELD_2, \n- USER_DEFINED_VALUE,   \n- Application  \n- APP_ID, \n- APP_INSTALLER_ID, \n- APP_NAME, \n- APP_VERSION, \n- SCREEN, \n- IS_APP (Boolean Field), \n- IS_FATAL_EXCEPTION (Boolean Field), \n- EXCEPTION_DESCRIPTION,   \n- Mobile device  \n- IS_MOBILE (Boolean Field, Deprecated. Use DEVICE_CATEGORY=mobile), \n- IS_TABLET (Boolean Field, Deprecated. Use DEVICE_CATEGORY=tablet), \n- DEVICE_CATEGORY, \n- MOBILE_HAS_QWERTY_KEYBOARD (Boolean Field), \n- MOBILE_HAS_NFC_SUPPORT (Boolean Field), \n- MOBILE_HAS_CELLULAR_RADIO (Boolean Field), \n- MOBILE_HAS_WIFI_SUPPORT (Boolean Field), \n- MOBILE_BRAND_NAME, \n- MOBILE_MODEL_NAME, \n- MOBILE_MARKETING_NAME, \n- MOBILE_POINTING_METHOD,   \n- Social  \n- SOCIAL_NETWORK, \n- SOCIAL_ACTION, \n- SOCIAL_ACTION_TARGET,   \n- Custom dimension  \n- CUSTOM_DIMENSION (See accompanying field index),"
+    },
+    "fieldIndex": {
+     "type": "integer",
+     "description": "The Index of the custom dimension. Set only if the field is a is CUSTOM_DIMENSION.",
+     "format": "int32"
     },
     "kind": {
      "type": "string",
@@ -1614,7 +1495,7 @@
     },
     "matchType": {
      "type": "string",
-     "description": "Match type for this filter. Possible values are BEGINS_WITH, EQUAL, ENDS_WITH, CONTAINS, MATCHES. Include and Exclude filters can use any match type. Match type is not applicable to Upper case and Lower case filters. Search and Replace expressions in the Search and Replace filter and all filter expressions in the Advanced filter default to MATCHES. User should not set match type for those filters."
+     "description": "Match type for this filter. Possible values are BEGINS_WITH, EQUAL, ENDS_WITH, CONTAINS, or MATCHES. GEO_DOMAIN, GEO_IP_ADDRESS, PAGE_REQUEST_URI, or PAGE_HOSTNAME filters can use any match type; all other filters must use MATCHES."
     }
    }
   },
@@ -2369,6 +2250,10 @@
      "type": "string",
      "description": "Account ID to which this view (profile) belongs."
     },
+    "botFilteringEnabled": {
+     "type": "boolean",
+     "description": "Indicates whether bot filtering is enabled for this view (profile)."
+    },
     "childLink": {
      "type": "object",
      "description": "Child link for this view (profile). Points to the list of goals for this view (profile).",
@@ -2392,7 +2277,7 @@
     },
     "currency": {
      "type": "string",
-     "description": "The currency type associated with this view (profile). The supported values are:\nARS, AUD, BGN, BRL, CAD, CHF, CNY, CZK, DKK, EUR, GBP, HKD, HUF, IDR, INR, JPY, KRW, LTL, MXN, NOK, NZD, PHP, PLN, RUB, SEK, THB, TRY, TWD, USD, VND, ZAR"
+     "description": "The currency type associated with this view (profile), defaults to USD. The supported values are:\nARS, AUD, BGN, BRL, CAD, CHF, CNY, CZK, DKK, EUR, GBP, HKD, HUF, IDR, INR, JPY, KRW, LTL, MXN, NOK, NZD, PHP, PLN, RUB, SEK, THB, TRY, TWD, USD, VND, ZAR"
     },
     "defaultPage": {
      "type": "string",
@@ -2470,6 +2355,10 @@
     "siteSearchQueryParameters": {
      "type": "string",
      "description": "The site search query parameters for this view (profile)."
+    },
+    "starred": {
+     "type": "boolean",
+     "description": "Indicates whether this view (profile) is starred or not."
     },
     "stripSiteSearchCategoryParameters": {
      "type": "boolean",
@@ -2638,6 +2527,10 @@
     "name": {
      "type": "string",
      "description": "View (profile) name."
+    },
+    "starred": {
+     "type": "boolean",
+     "description": "Indicates whether this view (profile) is starred or not."
     },
     "type": {
      "type": "string",
@@ -3256,6 +3149,10 @@
       "$ref": "ProfileSummary"
      }
     },
+    "starred": {
+     "type": "boolean",
+     "description": "Indicates whether this web property is starred or not."
+    },
     "websiteUrl": {
      "type": "string",
      "description": "Website url for this web property."
@@ -3411,6 +3308,10 @@
      "description": "Link for this web property.",
      "readOnly": true
     },
+    "starred": {
+     "type": "boolean",
+     "description": "Indicates whether this web property is starred or not."
+    },
     "updated": {
      "type": "string",
      "description": "Time this web property was last modified.",
@@ -3459,6 +3360,11 @@
          "description": "Unique table ID for retrieving Analytics data. Table ID is of the form ga:XXXX, where XXXX is the Analytics view (profile) ID.",
          "required": true,
          "pattern": "ga:[0-9]+",
+         "location": "query"
+        },
+        "include-empty-rows": {
+         "type": "boolean",
+         "description": "The response will include empty rows if this parameter is set to true, the default is true",
          "location": "query"
         },
         "max-results": {
@@ -4374,233 +4280,6 @@
       }
      }
     },
-    "dailyUploads": {
-     "methods": {
-      "delete": {
-       "id": "analytics.management.dailyUploads.delete",
-       "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}",
-       "httpMethod": "DELETE",
-       "description": "Delete uploaded data for the given date.",
-       "parameters": {
-        "accountId": {
-         "type": "string",
-         "description": "Account Id associated with daily upload delete.",
-         "required": true,
-         "pattern": "[0-9]+",
-         "location": "path"
-        },
-        "customDataSourceId": {
-         "type": "string",
-         "description": "Custom data source Id associated with daily upload delete.",
-         "required": true,
-         "location": "path"
-        },
-        "date": {
-         "type": "string",
-         "description": "Date for which data is to be deleted. Date should be formatted as YYYY-MM-DD.",
-         "required": true,
-         "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
-         "location": "path"
-        },
-        "type": {
-         "type": "string",
-         "description": "Type of data for this delete.",
-         "required": true,
-         "enum": [
-          "cost"
-         ],
-         "enumDescriptions": [
-          "Value for specifying cost data upload."
-         ],
-         "location": "query"
-        },
-        "webPropertyId": {
-         "type": "string",
-         "description": "Web property Id associated with daily upload delete.",
-         "required": true,
-         "pattern": "UA-[0-9]+-[0-9]+",
-         "location": "path"
-        }
-       },
-       "parameterOrder": [
-        "accountId",
-        "webPropertyId",
-        "customDataSourceId",
-        "date",
-        "type"
-       ],
-       "scopes": [
-        "https://www.googleapis.com/auth/analytics",
-        "https://www.googleapis.com/auth/analytics.edit"
-       ]
-      },
-      "list": {
-       "id": "analytics.management.dailyUploads.list",
-       "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads",
-       "httpMethod": "GET",
-       "description": "List daily uploads to which the user has access.",
-       "parameters": {
-        "accountId": {
-         "type": "string",
-         "description": "Account Id for the daily uploads to retrieve.",
-         "required": true,
-         "pattern": "\\d+",
-         "location": "path"
-        },
-        "customDataSourceId": {
-         "type": "string",
-         "description": "Custom data source Id for daily uploads to retrieve.",
-         "required": true,
-         "pattern": ".{22}",
-         "location": "path"
-        },
-        "end-date": {
-         "type": "string",
-         "description": "End date of the form YYYY-MM-DD.",
-         "required": true,
-         "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
-         "location": "query"
-        },
-        "max-results": {
-         "type": "integer",
-         "description": "The maximum number of custom data sources to include in this response.",
-         "format": "int32",
-         "minimum": "1",
-         "location": "query"
-        },
-        "start-date": {
-         "type": "string",
-         "description": "Start date of the form YYYY-MM-DD.",
-         "required": true,
-         "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
-         "location": "query"
-        },
-        "start-index": {
-         "type": "integer",
-         "description": "A 1-based index of the first daily upload to retrieve. Use this parameter as a pagination mechanism along with the max-results parameter.",
-         "format": "int32",
-         "minimum": "1",
-         "location": "query"
-        },
-        "webPropertyId": {
-         "type": "string",
-         "description": "Web property Id for the daily uploads to retrieve.",
-         "required": true,
-         "pattern": "UA-(\\d+)-(\\d+)",
-         "location": "path"
-        }
-       },
-       "parameterOrder": [
-        "accountId",
-        "webPropertyId",
-        "customDataSourceId",
-        "start-date",
-        "end-date"
-       ],
-       "response": {
-        "$ref": "DailyUploads"
-       },
-       "scopes": [
-        "https://www.googleapis.com/auth/analytics",
-        "https://www.googleapis.com/auth/analytics.readonly"
-       ]
-      },
-      "upload": {
-       "id": "analytics.management.dailyUploads.upload",
-       "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}/uploads",
-       "httpMethod": "POST",
-       "description": "Update/Overwrite data for a custom data source.",
-       "parameters": {
-        "accountId": {
-         "type": "string",
-         "description": "Account Id associated with daily upload.",
-         "required": true,
-         "pattern": "\\d+",
-         "location": "path"
-        },
-        "appendNumber": {
-         "type": "integer",
-         "description": "Append number for this upload indexed from 1.",
-         "required": true,
-         "format": "int32",
-         "minimum": "1",
-         "maximum": "20",
-         "location": "query"
-        },
-        "customDataSourceId": {
-         "type": "string",
-         "description": "Custom data source Id to which the data being uploaded belongs.",
-         "required": true,
-         "location": "path"
-        },
-        "date": {
-         "type": "string",
-         "description": "Date for which data is uploaded. Date should be formatted as YYYY-MM-DD.",
-         "required": true,
-         "pattern": "[0-9]{4}-[0-9]{2}-[0-9]{2}",
-         "location": "path"
-        },
-        "reset": {
-         "type": "boolean",
-         "description": "Reset/Overwrite all previous appends for this date and start over with this file as the first upload.",
-         "default": "false",
-         "location": "query"
-        },
-        "type": {
-         "type": "string",
-         "description": "Type of data for this upload.",
-         "required": true,
-         "enum": [
-          "cost"
-         ],
-         "enumDescriptions": [
-          "Value for specifying cost data upload."
-         ],
-         "location": "query"
-        },
-        "webPropertyId": {
-         "type": "string",
-         "description": "Web property Id associated with daily upload.",
-         "required": true,
-         "pattern": "UA-\\d+-\\d+",
-         "location": "path"
-        }
-       },
-       "parameterOrder": [
-        "accountId",
-        "webPropertyId",
-        "customDataSourceId",
-        "date",
-        "appendNumber",
-        "type"
-       ],
-       "response": {
-        "$ref": "DailyUploadAppend"
-       },
-       "scopes": [
-        "https://www.googleapis.com/auth/analytics",
-        "https://www.googleapis.com/auth/analytics.edit"
-       ],
-       "supportsMediaUpload": true,
-       "mediaUpload": {
-        "accept": [
-         "application/octet-stream"
-        ],
-        "maxSize": "5MB",
-        "protocols": {
-         "simple": {
-          "multipart": true,
-          "path": "/upload/analytics/v3/management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}/uploads"
-         },
-         "resumable": {
-          "multipart": true,
-          "path": "/resumable/upload/analytics/v3/management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/dailyUploads/{date}/uploads"
-         }
-        }
-       }
-      }
-     }
-    },
     "experiments": {
      "methods": {
       "delete": {
@@ -5223,7 +4902,7 @@
        "id": "analytics.management.goals.patch",
        "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/goals/{goalId}",
        "httpMethod": "PATCH",
-       "description": "Updates an existing view (profile). This method supports patch semantics.",
+       "description": "Updates an existing goal. This method supports patch semantics.",
        "parameters": {
         "accountId": {
          "type": "string",
@@ -5270,7 +4949,7 @@
        "id": "analytics.management.goals.update",
        "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/goals/{goalId}",
        "httpMethod": "PUT",
-       "description": "Updates an existing view (profile).",
+       "description": "Updates an existing goal.",
        "parameters": {
         "accountId": {
          "type": "string",
@@ -5837,21 +5516,21 @@
        "parameters": {
         "accountId": {
          "type": "string",
-         "description": "Account ID to retrieve the goal for.",
+         "description": "Account ID to retrieve the view (profile) for.",
          "required": true,
          "pattern": "[0-9]+",
          "location": "path"
         },
         "profileId": {
          "type": "string",
-         "description": "View (Profile) ID to retrieve the goal for.",
+         "description": "View (Profile) ID to retrieve the view (profile) for.",
          "required": true,
          "pattern": "[0-9]+",
          "location": "path"
         },
         "webPropertyId": {
          "type": "string",
-         "description": "Web property ID to retrieve the goal for.",
+         "description": "Web property ID to retrieve the view (profile) for.",
          "required": true,
          "pattern": "UA-[0-9]+-[0-9]+",
          "location": "path"
@@ -6065,6 +5744,47 @@
     },
     "unsampledReports": {
      "methods": {
+      "delete": {
+       "id": "analytics.management.unsampledReports.delete",
+       "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/unsampledReports/{unsampledReportId}",
+       "httpMethod": "DELETE",
+       "description": "Deletes an unsampled report.",
+       "parameters": {
+        "accountId": {
+         "type": "string",
+         "description": "Account ID to delete the unsampled report for.",
+         "required": true,
+         "location": "path"
+        },
+        "profileId": {
+         "type": "string",
+         "description": "View (Profile) ID to delete the unsampled report for.",
+         "required": true,
+         "location": "path"
+        },
+        "unsampledReportId": {
+         "type": "string",
+         "description": "ID of the unsampled report to be deleted.",
+         "required": true,
+         "location": "path"
+        },
+        "webPropertyId": {
+         "type": "string",
+         "description": "Web property ID to delete the unsampled reports for.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "accountId",
+        "webPropertyId",
+        "profileId",
+        "unsampledReportId"
+       ],
+       "scopes": [
+        "https://www.googleapis.com/auth/analytics.edit"
+       ]
+      },
       "get": {
        "id": "analytics.management.unsampledReports.get",
        "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/profiles/{profileId}/unsampledReports/{unsampledReportId}",
@@ -6353,44 +6073,6 @@
         "https://www.googleapis.com/auth/analytics",
         "https://www.googleapis.com/auth/analytics.edit",
         "https://www.googleapis.com/auth/analytics.readonly"
-       ]
-      },
-      "migrateDataImport": {
-       "id": "analytics.management.uploads.migrateDataImport",
-       "path": "management/accounts/{accountId}/webproperties/{webPropertyId}/customDataSources/{customDataSourceId}/migrateDataImport",
-       "httpMethod": "POST",
-       "description": "Migrate custom data source and data imports to latest version.",
-       "parameters": {
-        "accountId": {
-         "type": "string",
-         "description": "Account Id for migration.",
-         "required": true,
-         "pattern": "\\d+",
-         "location": "path"
-        },
-        "customDataSourceId": {
-         "type": "string",
-         "description": "Custom data source Id for migration.",
-         "required": true,
-         "pattern": ".{22}",
-         "location": "path"
-        },
-        "webPropertyId": {
-         "type": "string",
-         "description": "Web property Id for migration.",
-         "required": true,
-         "pattern": "UA-(\\d+)-(\\d+)",
-         "location": "path"
-        }
-       },
-       "parameterOrder": [
-        "accountId",
-        "webPropertyId",
-        "customDataSourceId"
-       ],
-       "scopes": [
-        "https://www.googleapis.com/auth/analytics",
-        "https://www.googleapis.com/auth/analytics.edit"
        ]
       },
       "uploadData": {

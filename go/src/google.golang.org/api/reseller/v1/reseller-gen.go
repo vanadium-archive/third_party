@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/reseller/v1"
 //   ...
 //   resellerService, err := reseller.New(oauthHttpClient)
-package reseller
+package reseller // import "google.golang.org/api/reseller/v1"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "reseller:v1"
 const apiName = "reseller"
@@ -61,12 +65,20 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Customers *CustomersService
 
 	Subscriptions *SubscriptionsService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewCustomersService(s *Service) *CustomersService {
@@ -87,6 +99,7 @@ type SubscriptionsService struct {
 	s *Service
 }
 
+// Address: JSON template for address of a customer.
 type Address struct {
 	// AddressLine1: Address line 1 of the address.
 	AddressLine1 string `json:"addressLine1,omitempty"`
@@ -120,8 +133,23 @@ type Address struct {
 	// Region: Name of the region. This is in accordance with -
 	// http://portablecontacts.net/draft-spec.html#address_element.
 	Region string `json:"region,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AddressLine1") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Address) MarshalJSON() ([]byte, error) {
+	type noMethod Address
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ChangePlanRequest: JSON template for the ChangePlan rpc request.
 type ChangePlanRequest struct {
 	// Kind: Identifies the resource as a subscription change plan request.
 	Kind string `json:"kind,omitempty"`
@@ -134,14 +162,33 @@ type ChangePlanRequest struct {
 
 	// Seats: Number/Limit of seats in the new plan.
 	Seats *Seats `json:"seats,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ChangePlanRequest) MarshalJSON() ([]byte, error) {
+	type noMethod ChangePlanRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Customer: JSON template for a customer.
 type Customer struct {
 	// AlternateEmail: The alternate email of the customer.
 	AlternateEmail string `json:"alternateEmail,omitempty"`
 
 	// CustomerDomain: The domain name of the customer.
 	CustomerDomain string `json:"customerDomain,omitempty"`
+
+	// CustomerDomainVerified: Whether the customer's primary domain has
+	// been verified.
+	CustomerDomainVerified bool `json:"customerDomainVerified,omitempty"`
 
 	// CustomerId: The id of the customer.
 	CustomerId string `json:"customerId,omitempty"`
@@ -157,16 +204,50 @@ type Customer struct {
 
 	// ResourceUiUrl: Ui url for customer resource.
 	ResourceUiUrl string `json:"resourceUiUrl,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AlternateEmail") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Customer) MarshalJSON() ([]byte, error) {
+	type noMethod Customer
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RenewalSettings: JSON template for a subscription renewal settings.
 type RenewalSettings struct {
 	// Kind: Identifies the resource as a subscription renewal setting.
 	Kind string `json:"kind,omitempty"`
 
 	// RenewalType: Subscription renewal type.
 	RenewalType string `json:"renewalType,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RenewalSettings) MarshalJSON() ([]byte, error) {
+	type noMethod RenewalSettings
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Seats: JSON template for subscription seats.
 type Seats struct {
 	// Kind: Identifies the resource as a subscription change plan request.
 	Kind string `json:"kind,omitempty"`
@@ -184,8 +265,23 @@ type Seats struct {
 	// NumberOfSeats: Number of seats to purchase. This is applicable only
 	// for a commitment plan.
 	NumberOfSeats int64 `json:"numberOfSeats,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Seats) MarshalJSON() ([]byte, error) {
+	type noMethod Seats
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Subscription: JSON template for a subscription.
 type Subscription struct {
 	// BillingMethod: Billing method of this subscription.
 	BillingMethod string `json:"billingMethod,omitempty"`
@@ -193,6 +289,9 @@ type Subscription struct {
 	// CreationTime: Creation time of this subscription in milliseconds
 	// since Unix epoch.
 	CreationTime int64 `json:"creationTime,omitempty,string"`
+
+	// CustomerDomain: Primary domain name of the customer
+	CustomerDomain string `json:"customerDomain,omitempty"`
 
 	// CustomerId: The id of the customer to whom the subscription belongs.
 	CustomerId string `json:"customerId,omitempty"`
@@ -224,13 +323,48 @@ type Subscription struct {
 	// SubscriptionId: The id of the subscription.
 	SubscriptionId string `json:"subscriptionId,omitempty"`
 
+	// SuspensionReasons: field listing all current reasons the subscription
+	// is suspended. It is possible for a subscription to have multiple
+	// suspension reasons. A subscription's status is SUSPENDED until all
+	// pending suspensions are removed. Possible options include:
+	// - PENDING_TOS_ACCEPTANCE — The customer has not logged in and
+	// accepted the Google Apps Resold Terms of Services.
+	// - RENEWAL_WITH_TYPE_CANCEL — The customer's commitment ended and
+	// their service was cancelled at the end of their term.
+	// - RESELLER_INITIATED — A manual suspension invoked by a Reseller.
+	//
+	// - TRIAL_ENDED — The customer's trial expired without a plan
+	// selected.
+	// - OTHER — The customer is suspended for an internal Google reason
+	// (e.g. abuse or otherwise).
+	SuspensionReasons []string `json:"suspensionReasons,omitempty"`
+
 	// TransferInfo: Transfer related information for the subscription.
 	TransferInfo *SubscriptionTransferInfo `json:"transferInfo,omitempty"`
 
 	// TrialSettings: Trial Settings of the subscription.
 	TrialSettings *SubscriptionTrialSettings `json:"trialSettings,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "BillingMethod") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Subscription) MarshalJSON() ([]byte, error) {
+	type noMethod Subscription
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SubscriptionPlan: Plan details of the subscription
 type SubscriptionPlan struct {
 	// CommitmentInterval: Interval of the commitment if it is a commitment
 	// plan.
@@ -241,8 +375,24 @@ type SubscriptionPlan struct {
 
 	// PlanName: The plan name of this subscription's plan.
 	PlanName string `json:"planName,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CommitmentInterval")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SubscriptionPlan) MarshalJSON() ([]byte, error) {
+	type noMethod SubscriptionPlan
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SubscriptionPlanCommitmentInterval: Interval of the commitment if it
+// is a commitment plan.
 type SubscriptionPlanCommitmentInterval struct {
 	// EndTime: End time of the commitment interval in milliseconds since
 	// Unix epoch.
@@ -251,24 +401,71 @@ type SubscriptionPlanCommitmentInterval struct {
 	// StartTime: Start time of the commitment interval in milliseconds
 	// since Unix epoch.
 	StartTime int64 `json:"startTime,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "EndTime") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SubscriptionPlanCommitmentInterval) MarshalJSON() ([]byte, error) {
+	type noMethod SubscriptionPlanCommitmentInterval
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SubscriptionTransferInfo: Transfer related information for the
+// subscription.
 type SubscriptionTransferInfo struct {
 	MinimumTransferableSeats int64 `json:"minimumTransferableSeats,omitempty"`
 
 	// TransferabilityExpirationTime: Time when transfer token or intent to
 	// transfer will expire.
 	TransferabilityExpirationTime int64 `json:"transferabilityExpirationTime,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "MinimumTransferableSeats") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SubscriptionTransferInfo) MarshalJSON() ([]byte, error) {
+	type noMethod SubscriptionTransferInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SubscriptionTrialSettings: Trial Settings of the subscription.
 type SubscriptionTrialSettings struct {
 	// IsInTrial: Whether the subscription is in trial.
 	IsInTrial bool `json:"isInTrial,omitempty"`
 
 	// TrialEndTime: End time of the trial in milliseconds since Unix epoch.
 	TrialEndTime int64 `json:"trialEndTime,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "IsInTrial") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SubscriptionTrialSettings) MarshalJSON() ([]byte, error) {
+	type noMethod SubscriptionTrialSettings
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Subscriptions: JSON template for a subscription list.
 type Subscriptions struct {
 	// Kind: Identifies the resource as a collection of subscriptions.
 	Kind string `json:"kind,omitempty"`
@@ -280,47 +477,108 @@ type Subscriptions struct {
 
 	// Subscriptions: The subscriptions in this page of results.
 	Subscriptions []*Subscription `json:"subscriptions,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Subscriptions) MarshalJSON() ([]byte, error) {
+	type noMethod Subscriptions
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "reseller.customers.get":
 
 type CustomersGetCall struct {
-	s          *Service
-	customerId string
-	opt_       map[string]interface{}
+	s            *Service
+	customerId   string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a customer resource if one exists and is owned by the
 // reseller.
 func (r *CustomersService) Get(customerId string) *CustomersGetCall {
-	c := &CustomersGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CustomersGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CustomersGetCall) Fields(s ...googleapi.Field) *CustomersGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CustomersGetCall) Do() (*Customer, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CustomersGetCall) IfNoneMatch(entityTag string) *CustomersGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersGetCall) Context(ctx context.Context) *CustomersGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CustomersGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId": c.customerId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.customers.get" call.
+// Exactly one of *Customer or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Customer.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *CustomersGetCall) Do(opts ...googleapi.CallOption) (*Customer, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +586,12 @@ func (c *CustomersGetCall) Do() (*Customer, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Customer
+	ret := &Customer{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -363,57 +626,82 @@ func (c *CustomersGetCall) Do() (*Customer, error) {
 // method id "reseller.customers.insert":
 
 type CustomersInsertCall struct {
-	s        *Service
-	customer *Customer
-	opt_     map[string]interface{}
+	s          *Service
+	customer   *Customer
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Insert: Creates a customer resource if one does not already exist.
 func (r *CustomersService) Insert(customer *Customer) *CustomersInsertCall {
-	c := &CustomersInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CustomersInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customer = customer
 	return c
 }
 
 // CustomerAuthToken sets the optional parameter "customerAuthToken": An
 // auth token needed for inserting a customer for which domain already
-// exists. Can be generated at
-// https://www.google.com/a/cpanel//TransferToken.
+// exists. Can be generated at https://admin.google.com/TransferToken.
 func (c *CustomersInsertCall) CustomerAuthToken(customerAuthToken string) *CustomersInsertCall {
-	c.opt_["customerAuthToken"] = customerAuthToken
+	c.urlParams_.Set("customerAuthToken", customerAuthToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CustomersInsertCall) Fields(s ...googleapi.Field) *CustomersInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CustomersInsertCall) Do() (*Customer, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersInsertCall) Context(ctx context.Context) *CustomersInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CustomersInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.customer)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["customerAuthToken"]; ok {
-		params.Set("customerAuthToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.customers.insert" call.
+// Exactly one of *Customer or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Customer.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *CustomersInsertCall) Do(opts ...googleapi.CallOption) (*Customer, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -421,7 +709,12 @@ func (c *CustomersInsertCall) Do() (*Customer, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Customer
+	ret := &Customer{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -432,7 +725,7 @@ func (c *CustomersInsertCall) Do() (*Customer, error) {
 	//   "id": "reseller.customers.insert",
 	//   "parameters": {
 	//     "customerAuthToken": {
-	//       "description": "An auth token needed for inserting a customer for which domain already exists. Can be generated at https://www.google.com/a/cpanel//TransferToken. Optional.",
+	//       "description": "An auth token needed for inserting a customer for which domain already exists. Can be generated at https://admin.google.com/TransferToken. Optional.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -457,47 +750,76 @@ type CustomersPatchCall struct {
 	s          *Service
 	customerId string
 	customer   *Customer
-	opt_       map[string]interface{}
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Update a customer resource if one it exists and is owned by
 // the reseller. This method supports patch semantics.
 func (r *CustomersService) Patch(customerId string, customer *Customer) *CustomersPatchCall {
-	c := &CustomersPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CustomersPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.customer = customer
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CustomersPatchCall) Fields(s ...googleapi.Field) *CustomersPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CustomersPatchCall) Do() (*Customer, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersPatchCall) Context(ctx context.Context) *CustomersPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CustomersPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.customer)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId": c.customerId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.customers.patch" call.
+// Exactly one of *Customer or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Customer.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *CustomersPatchCall) Do(opts ...googleapi.CallOption) (*Customer, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +827,12 @@ func (c *CustomersPatchCall) Do() (*Customer, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Customer
+	ret := &Customer{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -545,47 +872,76 @@ type CustomersUpdateCall struct {
 	s          *Service
 	customerId string
 	customer   *Customer
-	opt_       map[string]interface{}
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Update: Update a customer resource if one it exists and is owned by
 // the reseller.
 func (r *CustomersService) Update(customerId string, customer *Customer) *CustomersUpdateCall {
-	c := &CustomersUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CustomersUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.customer = customer
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CustomersUpdateCall) Fields(s ...googleapi.Field) *CustomersUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CustomersUpdateCall) Do() (*Customer, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersUpdateCall) Context(ctx context.Context) *CustomersUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CustomersUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.customer)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId": c.customerId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.customers.update" call.
+// Exactly one of *Customer or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Customer.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *CustomersUpdateCall) Do(opts ...googleapi.CallOption) (*Customer, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -593,7 +949,12 @@ func (c *CustomersUpdateCall) Do() (*Customer, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Customer
+	ret := &Customer{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -633,42 +994,71 @@ type SubscriptionsActivateCall struct {
 	s              *Service
 	customerId     string
 	subscriptionId string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Activate: Activates a subscription previously suspended by the
 // reseller
 func (r *SubscriptionsService) Activate(customerId string, subscriptionId string) *SubscriptionsActivateCall {
-	c := &SubscriptionsActivateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsActivateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.subscriptionId = subscriptionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsActivateCall) Fields(s ...googleapi.Field) *SubscriptionsActivateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsActivateCall) Do() (*Subscription, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsActivateCall) Context(ctx context.Context) *SubscriptionsActivateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsActivateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}/subscriptions/{subscriptionId}/activate")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId":     c.customerId,
 		"subscriptionId": c.subscriptionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.activate" call.
+// Exactly one of *Subscription or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Subscription.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SubscriptionsActivateCall) Do(opts ...googleapi.CallOption) (*Subscription, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -676,7 +1066,12 @@ func (c *SubscriptionsActivateCall) Do() (*Subscription, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Subscription
+	ret := &Subscription{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -721,48 +1116,77 @@ type SubscriptionsChangePlanCall struct {
 	customerId        string
 	subscriptionId    string
 	changeplanrequest *ChangePlanRequest
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
 }
 
 // ChangePlan: Changes the plan of a subscription
 func (r *SubscriptionsService) ChangePlan(customerId string, subscriptionId string, changeplanrequest *ChangePlanRequest) *SubscriptionsChangePlanCall {
-	c := &SubscriptionsChangePlanCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsChangePlanCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.subscriptionId = subscriptionId
 	c.changeplanrequest = changeplanrequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsChangePlanCall) Fields(s ...googleapi.Field) *SubscriptionsChangePlanCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsChangePlanCall) Do() (*Subscription, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsChangePlanCall) Context(ctx context.Context) *SubscriptionsChangePlanCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsChangePlanCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.changeplanrequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}/subscriptions/{subscriptionId}/changePlan")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId":     c.customerId,
 		"subscriptionId": c.subscriptionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.changePlan" call.
+// Exactly one of *Subscription or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Subscription.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SubscriptionsChangePlanCall) Do(opts ...googleapi.CallOption) (*Subscription, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -770,7 +1194,12 @@ func (c *SubscriptionsChangePlanCall) Do() (*Subscription, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Subscription
+	ret := &Subscription{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -818,48 +1247,77 @@ type SubscriptionsChangeRenewalSettingsCall struct {
 	customerId      string
 	subscriptionId  string
 	renewalsettings *RenewalSettings
-	opt_            map[string]interface{}
+	urlParams_      gensupport.URLParams
+	ctx_            context.Context
 }
 
 // ChangeRenewalSettings: Changes the renewal settings of a subscription
 func (r *SubscriptionsService) ChangeRenewalSettings(customerId string, subscriptionId string, renewalsettings *RenewalSettings) *SubscriptionsChangeRenewalSettingsCall {
-	c := &SubscriptionsChangeRenewalSettingsCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsChangeRenewalSettingsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.subscriptionId = subscriptionId
 	c.renewalsettings = renewalsettings
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsChangeRenewalSettingsCall) Fields(s ...googleapi.Field) *SubscriptionsChangeRenewalSettingsCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsChangeRenewalSettingsCall) Do() (*Subscription, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsChangeRenewalSettingsCall) Context(ctx context.Context) *SubscriptionsChangeRenewalSettingsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsChangeRenewalSettingsCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.renewalsettings)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}/subscriptions/{subscriptionId}/changeRenewalSettings")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId":     c.customerId,
 		"subscriptionId": c.subscriptionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.changeRenewalSettings" call.
+// Exactly one of *Subscription or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Subscription.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SubscriptionsChangeRenewalSettingsCall) Do(opts ...googleapi.CallOption) (*Subscription, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -867,7 +1325,12 @@ func (c *SubscriptionsChangeRenewalSettingsCall) Do() (*Subscription, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Subscription
+	ret := &Subscription{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -915,48 +1378,77 @@ type SubscriptionsChangeSeatsCall struct {
 	customerId     string
 	subscriptionId string
 	seats          *Seats
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // ChangeSeats: Changes the seats configuration of a subscription
 func (r *SubscriptionsService) ChangeSeats(customerId string, subscriptionId string, seats *Seats) *SubscriptionsChangeSeatsCall {
-	c := &SubscriptionsChangeSeatsCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsChangeSeatsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.subscriptionId = subscriptionId
 	c.seats = seats
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsChangeSeatsCall) Fields(s ...googleapi.Field) *SubscriptionsChangeSeatsCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsChangeSeatsCall) Do() (*Subscription, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsChangeSeatsCall) Context(ctx context.Context) *SubscriptionsChangeSeatsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsChangeSeatsCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.seats)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}/subscriptions/{subscriptionId}/changeSeats")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId":     c.customerId,
 		"subscriptionId": c.subscriptionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.changeSeats" call.
+// Exactly one of *Subscription or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Subscription.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SubscriptionsChangeSeatsCall) Do(opts ...googleapi.CallOption) (*Subscription, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -964,7 +1456,12 @@ func (c *SubscriptionsChangeSeatsCall) Do() (*Subscription, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Subscription
+	ret := &Subscription{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1011,44 +1508,56 @@ type SubscriptionsDeleteCall struct {
 	s              *Service
 	customerId     string
 	subscriptionId string
-	deletionType   string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Delete: Cancels/Downgrades a subscription.
 func (r *SubscriptionsService) Delete(customerId string, subscriptionId string, deletionType string) *SubscriptionsDeleteCall {
-	c := &SubscriptionsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.subscriptionId = subscriptionId
-	c.deletionType = deletionType
+	c.urlParams_.Set("deletionType", deletionType)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsDeleteCall) Fields(s ...googleapi.Field) *SubscriptionsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsDeleteCall) Context(ctx context.Context) *SubscriptionsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("deletionType", fmt.Sprintf("%v", c.deletionType))
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}/subscriptions/{subscriptionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId":     c.customerId,
 		"subscriptionId": c.subscriptionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.delete" call.
+func (c *SubscriptionsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -1112,41 +1621,84 @@ type SubscriptionsGetCall struct {
 	s              *Service
 	customerId     string
 	subscriptionId string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ifNoneMatch_   string
+	ctx_           context.Context
 }
 
 // Get: Gets a subscription of the customer.
 func (r *SubscriptionsService) Get(customerId string, subscriptionId string) *SubscriptionsGetCall {
-	c := &SubscriptionsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.subscriptionId = subscriptionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsGetCall) Fields(s ...googleapi.Field) *SubscriptionsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsGetCall) Do() (*Subscription, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *SubscriptionsGetCall) IfNoneMatch(entityTag string) *SubscriptionsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsGetCall) Context(ctx context.Context) *SubscriptionsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}/subscriptions/{subscriptionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId":     c.customerId,
 		"subscriptionId": c.subscriptionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.get" call.
+// Exactly one of *Subscription or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Subscription.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SubscriptionsGetCall) Do(opts ...googleapi.CallOption) (*Subscription, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1154,7 +1706,12 @@ func (c *SubscriptionsGetCall) Do() (*Subscription, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Subscription
+	ret := &Subscription{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1199,12 +1756,13 @@ type SubscriptionsInsertCall struct {
 	s            *Service
 	customerId   string
 	subscription *Subscription
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Insert: Creates/Transfers a subscription for the customer.
 func (r *SubscriptionsService) Insert(customerId string, subscription *Subscription) *SubscriptionsInsertCall {
-	c := &SubscriptionsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.subscription = subscription
 	return c
@@ -1214,42 +1772,67 @@ func (r *SubscriptionsService) Insert(customerId string, subscription *Subscript
 // auth token needed for transferring a subscription. Can be generated
 // at https://www.google.com/a/cpanel/customer-domain/TransferToken.
 func (c *SubscriptionsInsertCall) CustomerAuthToken(customerAuthToken string) *SubscriptionsInsertCall {
-	c.opt_["customerAuthToken"] = customerAuthToken
+	c.urlParams_.Set("customerAuthToken", customerAuthToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsInsertCall) Fields(s ...googleapi.Field) *SubscriptionsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsInsertCall) Do() (*Subscription, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsInsertCall) Context(ctx context.Context) *SubscriptionsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.subscription)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["customerAuthToken"]; ok {
-		params.Set("customerAuthToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}/subscriptions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId": c.customerId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.insert" call.
+// Exactly one of *Subscription or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Subscription.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SubscriptionsInsertCall) Do(opts ...googleapi.CallOption) (*Subscription, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1257,7 +1840,12 @@ func (c *SubscriptionsInsertCall) Do() (*Subscription, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Subscription
+	ret := &Subscription{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1299,14 +1887,16 @@ func (c *SubscriptionsInsertCall) Do() (*Subscription, error) {
 // method id "reseller.subscriptions.list":
 
 type SubscriptionsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists subscriptions of a reseller, optionally filtered by a
 // customer name prefix.
 func (r *SubscriptionsService) List() *SubscriptionsListCall {
-	c := &SubscriptionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -1315,14 +1905,14 @@ func (r *SubscriptionsService) List() *SubscriptionsListCall {
 // reseller. Can be generated at
 // https://www.google.com/a/cpanel/customer-domain/TransferToken.
 func (c *SubscriptionsListCall) CustomerAuthToken(customerAuthToken string) *SubscriptionsListCall {
-	c.opt_["customerAuthToken"] = customerAuthToken
+	c.urlParams_.Set("customerAuthToken", customerAuthToken)
 	return c
 }
 
 // CustomerId sets the optional parameter "customerId": Id of the
 // Customer
 func (c *SubscriptionsListCall) CustomerId(customerId string) *SubscriptionsListCall {
-	c.opt_["customerId"] = customerId
+	c.urlParams_.Set("customerId", customerId)
 	return c
 }
 
@@ -1330,60 +1920,86 @@ func (c *SubscriptionsListCall) CustomerId(customerId string) *SubscriptionsList
 // Prefix of the customer's domain name by which the subscriptions
 // should be filtered. Optional
 func (c *SubscriptionsListCall) CustomerNamePrefix(customerNamePrefix string) *SubscriptionsListCall {
-	c.opt_["customerNamePrefix"] = customerNamePrefix
+	c.urlParams_.Set("customerNamePrefix", customerNamePrefix)
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of results to return
 func (c *SubscriptionsListCall) MaxResults(maxResults int64) *SubscriptionsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": Token to specify
 // next page in the list
 func (c *SubscriptionsListCall) PageToken(pageToken string) *SubscriptionsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsListCall) Fields(s ...googleapi.Field) *SubscriptionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsListCall) Do() (*Subscriptions, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *SubscriptionsListCall) IfNoneMatch(entityTag string) *SubscriptionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsListCall) Context(ctx context.Context) *SubscriptionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["customerAuthToken"]; ok {
-		params.Set("customerAuthToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["customerId"]; ok {
-		params.Set("customerId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["customerNamePrefix"]; ok {
-		params.Set("customerNamePrefix", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "subscriptions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.list" call.
+// Exactly one of *Subscriptions or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Subscriptions.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *SubscriptionsListCall) Do(opts ...googleapi.CallOption) (*Subscriptions, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1391,7 +2007,12 @@ func (c *SubscriptionsListCall) Do() (*Subscriptions, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Subscriptions
+	ret := &Subscriptions{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1442,47 +2063,97 @@ func (c *SubscriptionsListCall) Do() (*Subscriptions, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *SubscriptionsListCall) Pages(ctx context.Context, f func(*Subscriptions) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "reseller.subscriptions.startPaidService":
 
 type SubscriptionsStartPaidServiceCall struct {
 	s              *Service
 	customerId     string
 	subscriptionId string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // StartPaidService: Starts paid service of a trial subscription
 func (r *SubscriptionsService) StartPaidService(customerId string, subscriptionId string) *SubscriptionsStartPaidServiceCall {
-	c := &SubscriptionsStartPaidServiceCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsStartPaidServiceCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.subscriptionId = subscriptionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsStartPaidServiceCall) Fields(s ...googleapi.Field) *SubscriptionsStartPaidServiceCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsStartPaidServiceCall) Do() (*Subscription, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsStartPaidServiceCall) Context(ctx context.Context) *SubscriptionsStartPaidServiceCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsStartPaidServiceCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}/subscriptions/{subscriptionId}/startPaidService")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId":     c.customerId,
 		"subscriptionId": c.subscriptionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.startPaidService" call.
+// Exactly one of *Subscription or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Subscription.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SubscriptionsStartPaidServiceCall) Do(opts ...googleapi.CallOption) (*Subscription, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1490,7 +2161,12 @@ func (c *SubscriptionsStartPaidServiceCall) Do() (*Subscription, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Subscription
+	ret := &Subscription{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1534,41 +2210,70 @@ type SubscriptionsSuspendCall struct {
 	s              *Service
 	customerId     string
 	subscriptionId string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Suspend: Suspends an active subscription
 func (r *SubscriptionsService) Suspend(customerId string, subscriptionId string) *SubscriptionsSuspendCall {
-	c := &SubscriptionsSuspendCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &SubscriptionsSuspendCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.customerId = customerId
 	c.subscriptionId = subscriptionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *SubscriptionsSuspendCall) Fields(s ...googleapi.Field) *SubscriptionsSuspendCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *SubscriptionsSuspendCall) Do() (*Subscription, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SubscriptionsSuspendCall) Context(ctx context.Context) *SubscriptionsSuspendCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *SubscriptionsSuspendCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "customers/{customerId}/subscriptions/{subscriptionId}/suspend")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"customerId":     c.customerId,
 		"subscriptionId": c.subscriptionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "reseller.subscriptions.suspend" call.
+// Exactly one of *Subscription or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Subscription.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SubscriptionsSuspendCall) Do(opts ...googleapi.CallOption) (*Subscription, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1576,7 +2281,12 @@ func (c *SubscriptionsSuspendCall) Do() (*Subscription, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Subscription
+	ret := &Subscription{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

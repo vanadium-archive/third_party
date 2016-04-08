@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/mapsengine/exp2"
 //   ...
 //   mapsengineService, err := mapsengine.New(oauthHttpClient)
-package mapsengine
+package mapsengine // import "google.golang.org/api/mapsengine/exp2"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "mapsengine:exp2"
 const apiName = "mapsengine"
@@ -66,8 +70,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Assets *AssetsService
 
@@ -82,6 +87,13 @@ type Service struct {
 	Rasters *RastersService
 
 	Tables *TablesService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewAssetsService(s *Service) *AssetsService {
@@ -339,20 +351,51 @@ type TablesPermissionsService struct {
 	s *Service
 }
 
+// AcquisitionTime: Acquisition time represents acquired time of a
+// raster.
 type AcquisitionTime struct {
 	// End: The end time if acquisition time is a range. The value is an RFC
 	// 3339 formatted date-time value (1970-01-01T00:00:00Z).
 	End string `json:"end,omitempty"`
 
 	// Precision: The precision of acquisition time.
+	//
+	// Possible values:
+	//   "day"
+	//   "hour"
+	//   "minute"
+	//   "month"
+	//   "second"
+	//   "year"
 	Precision string `json:"precision,omitempty"`
 
 	// Start: The acquisition time, or start time if acquisition time is a
 	// range. The value is an RFC 3339 formatted date-time value
 	// (1970-01-01T00:00:00Z).
 	Start string `json:"start,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "End") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AcquisitionTime) MarshalJSON() ([]byte, error) {
+	type noMethod AcquisitionTime
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Asset: An asset is any Google Maps Engine resource that has a
+// globally unique ID. Assets include maps, layers, vector tables,
+// raster collections, and rasters. Projects and features are not
+// considered assets.
+//
+// More detailed information about an asset can be obtained by querying
+// the asset's particular endpoint.
 type Asset struct {
 	// Bbox: A rectangular bounding box which contains all of the data in
 	// this asset. The box is expressed as \"west, south, east, north\". The
@@ -403,21 +446,67 @@ type Asset struct {
 
 	// Type: The type of asset. One of raster, rasterCollection, table, map,
 	// or layer.
+	//
+	// Possible values:
+	//   "layer"
+	//   "map"
+	//   "raster"
+	//   "rasterCollection"
+	//   "table"
 	Type string `json:"type,omitempty"`
 
 	// WritersCanEditPermissions: If true, WRITERs of the asset are able to
 	// edit the asset permissions.
 	WritersCanEditPermissions bool `json:"writersCanEditPermissions,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Bbox") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Asset) MarshalJSON() ([]byte, error) {
+	type noMethod Asset
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AssetsListResponse: The response returned by a call to
+// resources.List.
 type AssetsListResponse struct {
 	// Assets: Assets returned.
 	Assets []*Asset `json:"assets,omitempty"`
 
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Assets") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AssetsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod AssetsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Border: Border in line style. Both color and width are required.
 type Border struct {
 	// Color: Color of the border.
 	Color string `json:"color,omitempty"`
@@ -427,8 +516,23 @@ type Border struct {
 
 	// Width: Width of the border, in pixels.
 	Width float64 `json:"width,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Color") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Border) MarshalJSON() ([]byte, error) {
+	type noMethod Border
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Color: Basic color used in styling.
 type Color struct {
 	// Color: The CSS style color, can be in format of "red" or "#7733EE".
 	Color string `json:"color,omitempty"`
@@ -436,13 +540,42 @@ type Color struct {
 	// Opacity: Opacity ranges from 0 to 1, inclusive. If not provided,
 	// default to 1.
 	Opacity float64 `json:"opacity,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Color") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Color) MarshalJSON() ([]byte, error) {
+	type noMethod Color
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Datasource struct {
 	// Id: The ID of a datasource.
 	Id string `json:"id,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Datasource) MarshalJSON() ([]byte, error) {
+	type noMethod Datasource
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DisplayRule: A display rule of the vector style.
 type DisplayRule struct {
 	// Filters: This display rule will only be applied to features that
 	// match all of the filters here. If filters is empty, then the rule
@@ -466,31 +599,96 @@ type DisplayRule struct {
 
 	// ZoomLevels: The zoom levels that this display rule apply.
 	ZoomLevels *ZoomLevels `json:"zoomLevels,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Filters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DisplayRule) MarshalJSON() ([]byte, error) {
+	type noMethod DisplayRule
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Feature: A feature within a table.
 type Feature struct {
 	// Geometry: The geometry member of this Feature.
 	Geometry GeoJsonGeometry `json:"geometry,omitempty"`
 
 	// Properties: Key/value pairs of this Feature.
-	Properties *GeoJsonProperties `json:"properties,omitempty"`
+	Properties GeoJsonProperties `json:"properties,omitempty"`
 
 	// Type: Identifies this object as a feature.
 	Type string `json:"type,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Geometry") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Feature) MarshalJSON() ([]byte, error) {
+	type noMethod Feature
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FeatureInfo: A feature info contains information about individual
+// feature.
 type FeatureInfo struct {
 	// Content: HTML template of the info window. If not provided, a default
 	// template with all attributes will be generated.
 	Content string `json:"content,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Content") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FeatureInfo) MarshalJSON() ([]byte, error) {
+	type noMethod FeatureInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FeaturesBatchDeleteRequest: The request sent to features.BatchDelete.
 type FeaturesBatchDeleteRequest struct {
-	Gx_ids []string `json:"gx_ids,omitempty"`
+	GxIds []string `json:"gx_ids,omitempty"`
 
 	PrimaryKeys []string `json:"primaryKeys,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "GxIds") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FeaturesBatchDeleteRequest) MarshalJSON() ([]byte, error) {
+	type noMethod FeaturesBatchDeleteRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FeaturesBatchInsertRequest: The request sent to features.Insert.
 type FeaturesBatchInsertRequest struct {
 	Features []*Feature `json:"features,omitempty"`
 
@@ -500,9 +698,26 @@ type FeaturesBatchInsertRequest struct {
 	// feature geometries must be given already normalized. The points in
 	// all LinearRings must be listed in counter-clockwise order, and
 	// LinearRings may not intersect.
-	NormalizeGeometries bool `json:"normalizeGeometries,omitempty"`
+	//
+	// Default: true
+	NormalizeGeometries *bool `json:"normalizeGeometries,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Features") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FeaturesBatchInsertRequest) MarshalJSON() ([]byte, error) {
+	type noMethod FeaturesBatchInsertRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FeaturesBatchPatchRequest: The request sent to features.BatchPatch.
 type FeaturesBatchPatchRequest struct {
 	Features []*Feature `json:"features,omitempty"`
 
@@ -512,9 +727,27 @@ type FeaturesBatchPatchRequest struct {
 	// feature geometries must be given already normalized. The points in
 	// all LinearRings must be listed in counter-clockwise order, and
 	// LinearRings may not intersect.
-	NormalizeGeometries bool `json:"normalizeGeometries,omitempty"`
+	//
+	// Default: true
+	NormalizeGeometries *bool `json:"normalizeGeometries,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Features") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FeaturesBatchPatchRequest) MarshalJSON() ([]byte, error) {
+	type noMethod FeaturesBatchPatchRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FeaturesListResponse: The response returned by a call to
+// features.List.
 type FeaturesListResponse struct {
 	// AllowedQueriesPerSecond: An indicator of the maximum rate at which
 	// queries may be made, if all queries were as expensive as this query.
@@ -530,8 +763,28 @@ type FeaturesListResponse struct {
 	Schema *Schema `json:"schema,omitempty"`
 
 	Type string `json:"type,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "AllowedQueriesPerSecond") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FeaturesListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod FeaturesListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// File: A single File, which is a component of an Asset.
 type File struct {
 	// Filename: The name of the file.
 	Filename string `json:"filename,omitempty"`
@@ -540,18 +793,64 @@ type File struct {
 	Size int64 `json:"size,omitempty,string"`
 
 	// UploadStatus: The upload status of the file.
+	//
+	// Possible values:
+	//   "canceled"
+	//   "complete"
+	//   "failed"
+	//   "inProgress"
 	UploadStatus string `json:"uploadStatus,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Filename") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *File) MarshalJSON() ([]byte, error) {
+	type noMethod File
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Filter: Conditions for filtering features.
 type Filter struct {
 	// Column: The column name to filter on.
 	Column string `json:"column,omitempty"`
 
 	// Operator: Operation used to evaluate the filter.
+	//
+	// Possible values:
+	//   "!="
+	//   "<"
+	//   "<="
+	//   "=="
+	//   ">"
+	//   ">="
+	//   "contains"
+	//   "endsWith"
+	//   "startsWith"
 	Operator string `json:"operator,omitempty"`
 
 	// Value: Value to be evaluated against attribute.
 	Value interface{} `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Column") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Filter) MarshalJSON() ([]byte, error) {
+	type noMethod Filter
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GeoJsonGeometry map[string]interface{}
@@ -616,13 +915,32 @@ func (t GeoJsonGeometry) Polygon() (r GeoJsonPolygon, ok bool) {
 	return r, ok
 }
 
+// GeoJsonGeometryCollection: A heterogenous collection of
+// GeoJsonGeometry objects.
 type GeoJsonGeometryCollection struct {
 	// Geometries: An array of geometry objects. There must be at least 2
 	// different types of geometries in the array.
 	Geometries []GeoJsonGeometry `json:"geometries,omitempty"`
 
 	// Type: Identifies this object as a GeoJsonGeometryCollection.
+	//
+	// Possible values:
+	//   "GeometryCollection"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Geometries") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GeoJsonGeometryCollection) MarshalJSON() ([]byte, error) {
+	type noMethod GeoJsonGeometryCollection
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GeoJsonLineString struct {
@@ -630,16 +948,51 @@ type GeoJsonLineString struct {
 	Coordinates [][]float64 `json:"coordinates,omitempty"`
 
 	// Type: Identifies this object as a GeoJsonLineString.
+	//
+	// Possible values:
+	//   "LineString"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Coordinates") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *GeoJsonLineString) MarshalJSON() ([]byte, error) {
+	type noMethod GeoJsonLineString
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GeoJsonMultiLineString: Multi Line String
 type GeoJsonMultiLineString struct {
 	// Coordinates: An array of at least two GeoJsonLineString coordinate
 	// arrays.
 	Coordinates [][][]float64 `json:"coordinates,omitempty"`
 
 	// Type: Identifies this object as a GeoJsonMultiLineString.
+	//
+	// Possible values:
+	//   "MultiLineString"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Coordinates") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GeoJsonMultiLineString) MarshalJSON() ([]byte, error) {
+	type noMethod GeoJsonMultiLineString
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GeoJsonMultiPoint struct {
@@ -647,7 +1000,24 @@ type GeoJsonMultiPoint struct {
 	Coordinates [][]float64 `json:"coordinates,omitempty"`
 
 	// Type: Identifies this object as a GeoJsonMultiPoint.
+	//
+	// Possible values:
+	//   "MultiPoint"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Coordinates") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GeoJsonMultiPoint) MarshalJSON() ([]byte, error) {
+	type noMethod GeoJsonMultiPoint
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GeoJsonMultiPolygon struct {
@@ -656,7 +1026,24 @@ type GeoJsonMultiPolygon struct {
 	Coordinates [][][][]float64 `json:"coordinates,omitempty"`
 
 	// Type: Identifies this object as a GeoJsonMultiPolygon.
+	//
+	// Possible values:
+	//   "MultiPolygon"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Coordinates") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GeoJsonMultiPolygon) MarshalJSON() ([]byte, error) {
+	type noMethod GeoJsonMultiPolygon
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GeoJsonPoint struct {
@@ -665,7 +1052,24 @@ type GeoJsonPoint struct {
 	Coordinates []float64 `json:"coordinates,omitempty"`
 
 	// Type: Identifies this object as a GeoJsonPoint.
+	//
+	// Possible values:
+	//   "Point"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Coordinates") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GeoJsonPoint) MarshalJSON() ([]byte, error) {
+	type noMethod GeoJsonPoint
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type GeoJsonPolygon struct {
@@ -678,12 +1082,30 @@ type GeoJsonPolygon struct {
 	Coordinates [][][]float64 `json:"coordinates,omitempty"`
 
 	// Type: Identifies this object as a GeoJsonPolygon.
+	//
+	// Possible values:
+	//   "Polygon"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Coordinates") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
-type GeoJsonProperties struct {
+func (s *GeoJsonPolygon) MarshalJSON() ([]byte, error) {
+	type noMethod GeoJsonPolygon
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
+type GeoJsonProperties interface{}
+
+// Icon: An icon is a user-uploaded image that can be used to style
+// point geometries.
 type Icon struct {
 	// Description: The description of this Icon, supplied by the author.
 	Description string `json:"description,omitempty"`
@@ -693,8 +1115,27 @@ type Icon struct {
 
 	// Name: The name of this Icon, supplied by the author.
 	Name string `json:"name,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Description") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Icon) MarshalJSON() ([]byte, error) {
+	type noMethod Icon
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// IconStyle: Style for icon, this is part of point style.
 type IconStyle struct {
 	// Id: Custom icon id.
 	Id string `json:"id,omitempty"`
@@ -710,16 +1151,50 @@ type IconStyle struct {
 	// ScalingFunction: The function used to scale shapes. Required when a
 	// scaledShape is specified.
 	ScalingFunction *ScalingFunction `json:"scalingFunction,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *IconStyle) MarshalJSON() ([]byte, error) {
+	type noMethod IconStyle
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// IconsListResponse: The response returned by a call to icons.List.
 type IconsListResponse struct {
 	// Icons: Resources returned.
 	Icons []*Icon `json:"icons,omitempty"`
 
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Icons") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *IconsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod IconsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// LabelStyle: Text label style.
 type LabelStyle struct {
 	// Color: Color of the text. If not provided, default to black.
 	Color string `json:"color,omitempty"`
@@ -728,9 +1203,17 @@ type LabelStyle struct {
 	Column string `json:"column,omitempty"`
 
 	// FontStyle: Font style of the label, defaults to 'normal'.
+	//
+	// Possible values:
+	//   "italic"
+	//   "normal"
 	FontStyle string `json:"fontStyle,omitempty"`
 
 	// FontWeight: Font weight of the label, defaults to 'normal'.
+	//
+	// Possible values:
+	//   "bold"
+	//   "normal"
 	FontWeight string `json:"fontWeight,omitempty"`
 
 	// Opacity: Opacity of the text.
@@ -742,8 +1225,24 @@ type LabelStyle struct {
 	// Size: Font size of the label, in pixels. 8 <= size <= 15. If not
 	// provided, a default size will be provided.
 	Size float64 `json:"size,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Color") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *LabelStyle) MarshalJSON() ([]byte, error) {
+	type noMethod LabelStyle
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Layer: A Layer combines multiple datasources, with styling
+// information, for presentation on a map.
 type Layer struct {
 	// Bbox: A rectangular bounding box which contains all of the data in
 	// this Layer. The box is expressed as \"west, south, east, north\". The
@@ -761,6 +1260,10 @@ type Layer struct {
 	// DatasourceType: Deprecated: The type of the datasources used to build
 	// this Layer. Note: This has been replaced by layerType, but is still
 	// available for now to maintain backward compatibility.
+	//
+	// Possible values:
+	//   "image"
+	//   "table"
 	DatasourceType string `json:"datasourceType,omitempty"`
 
 	// Datasources: An array of datasources used to build this layer. If
@@ -807,12 +1310,23 @@ type Layer struct {
 	// should be used instead of datasourceType. At least one of layerType
 	// and datasourceType and must be specified, but layerType takes
 	// precedence.
+	//
+	// Possible values:
+	//   "image"
+	//   "vector"
 	LayerType string `json:"layerType,omitempty"`
 
 	// Name: The name of this Layer, supplied by the author.
 	Name string `json:"name,omitempty"`
 
 	// ProcessingStatus: The processing status of this layer.
+	//
+	// Possible values:
+	//   "complete"
+	//   "failed"
+	//   "notReady"
+	//   "processing"
+	//   "ready"
 	ProcessingStatus string `json:"processingStatus,omitempty"`
 
 	// ProjectId: The ID of the project that this Layer is in.
@@ -831,6 +1345,10 @@ type Layer struct {
 	PublishedAccessList string `json:"publishedAccessList,omitempty"`
 
 	// PublishingStatus: The publishing status of this layer.
+	//
+	// Possible values:
+	//   "notPublished"
+	//   "published"
 	PublishingStatus string `json:"publishingStatus,omitempty"`
 
 	// Style: The styling information for a vector layer. Note: Style
@@ -845,16 +1363,58 @@ type Layer struct {
 	// WritersCanEditPermissions: If true, WRITERs of the asset are able to
 	// edit the asset permissions.
 	WritersCanEditPermissions bool `json:"writersCanEditPermissions,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Bbox") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Layer) MarshalJSON() ([]byte, error) {
+	type noMethod Layer
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// LayersListResponse: The response returned by a call to layers.List.
+// Note: The list response does not include all the fields available in
+// a layer. Refer to the layer resource description for details of the
+// fields that are not included. You'll need to send a get request to
+// retrieve the additional fields for each layer.
 type LayersListResponse struct {
 	// Layers: Resources returned.
 	Layers []*Layer `json:"layers,omitempty"`
 
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Layers") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *LayersListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod LayersListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// LineStyle: Style for lines.
 type LineStyle struct {
 	// Border: Border of the line. 0 < border.width <= 5.
 	Border *Border `json:"border,omitempty"`
@@ -870,8 +1430,23 @@ type LineStyle struct {
 
 	// Stroke: Stroke of the line.
 	Stroke *LineStyleStroke `json:"stroke,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Border") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *LineStyle) MarshalJSON() ([]byte, error) {
+	type noMethod LineStyle
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// LineStyleStroke: Stroke of the line.
 type LineStyleStroke struct {
 	// Color: Color of the line.
 	Color string `json:"color,omitempty"`
@@ -882,8 +1457,24 @@ type LineStyleStroke struct {
 	// Width: Width of the line, in pixels. 0 <= width <= 10. If width is
 	// set to 0, the line will be invisible.
 	Width float64 `json:"width,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Color") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *LineStyleStroke) MarshalJSON() ([]byte, error) {
+	type noMethod LineStyleStroke
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Map: A Map is a collection of Layers, optionally contained within
+// folders.
 type Map struct {
 	// Bbox: A rectangular bounding box which contains all of the data in
 	// this Map. The box is expressed as \"west, south, east, north\". The
@@ -940,6 +1531,13 @@ type Map struct {
 
 	// ProcessingStatus: The processing status of this map. Map processing
 	// is automatically started once a map becomes ready for processing.
+	//
+	// Possible values:
+	//   "complete"
+	//   "failed"
+	//   "notReady"
+	//   "processing"
+	//   "ready"
 	ProcessingStatus string `json:"processingStatus,omitempty"`
 
 	// ProjectId: The ID of the project that this Map is in.
@@ -958,6 +1556,10 @@ type Map struct {
 	PublishedAccessList string `json:"publishedAccessList,omitempty"`
 
 	// PublishingStatus: The publishing status of this map.
+	//
+	// Possible values:
+	//   "notPublished"
+	//   "published"
 	PublishingStatus string `json:"publishingStatus,omitempty"`
 
 	// Tags: Tags of this Map.
@@ -971,6 +1573,24 @@ type Map struct {
 	// WritersCanEditPermissions: If true, WRITERs of the asset are able to
 	// edit the asset permissions.
 	WritersCanEditPermissions bool `json:"writersCanEditPermissions,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Bbox") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Map) MarshalJSON() ([]byte, error) {
+	type noMethod Map
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type MapFolder struct {
@@ -992,11 +1612,28 @@ type MapFolder struct {
 	Name string `json:"name,omitempty"`
 
 	// Type: Identifies this object as a MapFolder.
+	//
+	// Possible values:
+	//   "folder"
 	Type string `json:"type,omitempty"`
 
 	// Visibility: The visibility setting of this MapFolder. One of
 	// "defaultOn" or "defaultOff".
 	Visibility string `json:"visibility,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Contents") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *MapFolder) MarshalJSON() ([]byte, error) {
+	type noMethod MapFolder
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type MapItem map[string]interface{}
@@ -1042,11 +1679,28 @@ type MapKmlLink struct {
 	Name string `json:"name,omitempty"`
 
 	// Type: Identifies this object as a MapKmlLink.
+	//
+	// Possible values:
+	//   "kmlLink"
 	Type string `json:"type,omitempty"`
 
 	// Visibility: The visibility setting of this MapKmlLink. One of
 	// "defaultOn" or "defaultOff".
 	Visibility string `json:"visibility,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DefaultViewport") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *MapKmlLink) MarshalJSON() ([]byte, error) {
+	type noMethod MapKmlLink
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type MapLayer struct {
@@ -1066,34 +1720,106 @@ type MapLayer struct {
 	Name string `json:"name,omitempty"`
 
 	// Type: Identifies this object as a MapLayer.
+	//
+	// Possible values:
+	//   "layer"
 	Type string `json:"type,omitempty"`
 
 	// Visibility: The visibility setting of this MapLayer. One of
 	// "defaultOn" or "defaultOff".
 	Visibility string `json:"visibility,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DefaultViewport") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *MapLayer) MarshalJSON() ([]byte, error) {
+	type noMethod MapLayer
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// MapsListResponse: The response returned by a call to maps.List.
 type MapsListResponse struct {
 	// Maps: Resources returned.
 	Maps []*Map `json:"maps,omitempty"`
 
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Maps") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *MapsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod MapsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Parent: A list of the parents of an asset.
 type Parent struct {
 	// Id: The ID of this parent.
 	Id string `json:"id,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Parent) MarshalJSON() ([]byte, error) {
+	type noMethod Parent
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ParentsListResponse: The response returned by a call to parents.List.
 type ParentsListResponse struct {
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// Parents: The parent assets.
 	Parents []*Parent `json:"parents,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ParentsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ParentsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Permission: A permission defines the user or group that has access to
+// an asset, and the type of access they have.
 type Permission struct {
 	// Discoverable: Indicates whether a public asset is listed and can be
 	// found via a web search (value true), or is visible only to people who
@@ -1106,35 +1832,121 @@ type Permission struct {
 	Id string `json:"id,omitempty"`
 
 	// Role: The type of access granted to this user or group.
+	//
+	// Possible values:
+	//   "owner"
+	//   "reader"
+	//   "viewer"
+	//   "writer"
 	Role string `json:"role,omitempty"`
 
 	// Type: The account type.
+	//
+	// Possible values:
+	//   "anyone"
+	//   "group"
+	//   "user"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Discoverable") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Permission) MarshalJSON() ([]byte, error) {
+	type noMethod Permission
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PermissionsBatchDeleteRequest: The request sent to
+// mapsengine.permissions.batchDelete.
 type PermissionsBatchDeleteRequest struct {
 	// Ids: An array of permission ids to be removed. This could be the
 	// email address of the user or group this permission refers to, or the
 	// string "anyone" for public permissions.
 	Ids []string `json:"ids,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Ids") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PermissionsBatchDeleteRequest) MarshalJSON() ([]byte, error) {
+	type noMethod PermissionsBatchDeleteRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PermissionsBatchDeleteResponse: The response returned by a call to
+// mapsengine.permissions.batchDelete.
 type PermissionsBatchDeleteResponse struct {
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
 }
 
+// PermissionsBatchUpdateRequest: The request sent to
+// mapsengine.permissions.batchUpdate.
 type PermissionsBatchUpdateRequest struct {
 	// Permissions: The permissions to be inserted or updated.
 	Permissions []*Permission `json:"permissions,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Permissions") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PermissionsBatchUpdateRequest) MarshalJSON() ([]byte, error) {
+	type noMethod PermissionsBatchUpdateRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PermissionsBatchUpdateResponse: The response returned by a call to
+// mapsengine.permissions.batchUpdate.
 type PermissionsBatchUpdateResponse struct {
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
 }
 
 type PermissionsListResponse struct {
 	// Permissions: The set of permissions associated with this asset.
 	Permissions []*Permission `json:"permissions,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Permissions") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PermissionsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod PermissionsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PointStyle: Style for points.
 type PointStyle struct {
 	// Icon: Icon for the point; if it isn't null, exactly one of 'name',
 	// 'id' or 'scaledShape' must be set.
@@ -1142,8 +1954,23 @@ type PointStyle struct {
 
 	// Label: Label style for the point.
 	Label *LabelStyle `json:"label,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Icon") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PointStyle) MarshalJSON() ([]byte, error) {
+	type noMethod PointStyle
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PolygonStyle: Style for polygons.
 type PolygonStyle struct {
 	// Fill: Fill color of the polygon. If not provided, the polygon will be
 	// transparent and not visible if there is no border.
@@ -1154,27 +1981,87 @@ type PolygonStyle struct {
 
 	// Stroke: Border of the polygon. 0 < border.width <= 10.
 	Stroke *Border `json:"stroke,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Fill") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PolygonStyle) MarshalJSON() ([]byte, error) {
+	type noMethod PolygonStyle
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProcessResponse: The response returned by a call to any asset's
+// Process method.
 type ProcessResponse struct {
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
 }
 
+// Project: A project groups a collection of resources.
 type Project struct {
 	// Id: An ID used to refer to this project.
 	Id string `json:"id,omitempty"`
 
 	// Name: A user provided name for this project.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Project) MarshalJSON() ([]byte, error) {
+	type noMethod Project
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProjectsListResponse: The response returned by a call to
+// projects.List.
 type ProjectsListResponse struct {
 	// Projects: Projects returned.
 	Projects []*Project `json:"projects,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Projects") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ProjectsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ProjectsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PublishResponse: The response returned by a call to any asset's
+// Publish method.
 type PublishResponse struct {
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
 }
 
+// PublishedLayer: The published version of a layer.
 type PublishedLayer struct {
 	// Description: The description of this Layer, supplied by the author.
 	Description string `json:"description,omitempty"`
@@ -1186,6 +2073,10 @@ type PublishedLayer struct {
 	// should be used instead of datasourceType. At least one of layerType
 	// and datasourceType and must be specified, but layerType takes
 	// precedence.
+	//
+	// Possible values:
+	//   "image"
+	//   "vector"
 	LayerType string `json:"layerType,omitempty"`
 
 	// Name: The name of this Layer, supplied by the author.
@@ -1193,16 +2084,55 @@ type PublishedLayer struct {
 
 	// ProjectId: The ID of the project that this Layer is in.
 	ProjectId string `json:"projectId,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Description") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PublishedLayer) MarshalJSON() ([]byte, error) {
+	type noMethod PublishedLayer
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PublishedLayersListResponse: The response returned by a call to
+// layers.List.published.
 type PublishedLayersListResponse struct {
 	// Layers: Resources returned.
 	Layers []*PublishedLayer `json:"layers,omitempty"`
 
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Layers") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PublishedLayersListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod PublishedLayersListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PublishedMap: The published version of a map asset.
 type PublishedMap struct {
 	// Contents: The contents of this Map.
 	Contents []MapItem `json:"contents,omitempty"`
@@ -1223,16 +2153,55 @@ type PublishedMap struct {
 
 	// ProjectId: The ID of the project that this Map is in.
 	ProjectId string `json:"projectId,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Contents") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PublishedMap) MarshalJSON() ([]byte, error) {
+	type noMethod PublishedMap
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PublishedMapsListResponse: The response returned by a call to
+// maps.List.published.
 type PublishedMapsListResponse struct {
 	// Maps: Resources returned.
 	Maps []*PublishedMap `json:"maps,omitempty"`
 
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Maps") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PublishedMapsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod PublishedMapsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Raster: A geo-referenced raster.
 type Raster struct {
 	// AcquisitionTime: The acquisition time of this Raster.
 	AcquisitionTime *AcquisitionTime `json:"acquisitionTime,omitempty"`
@@ -1292,12 +2261,22 @@ type Raster struct {
 	Name string `json:"name,omitempty"`
 
 	// ProcessingStatus: The processing status of this Raster.
+	//
+	// Possible values:
+	//   "complete"
+	//   "failed"
+	//   "notReady"
+	//   "processing"
+	//   "ready"
 	ProcessingStatus string `json:"processingStatus,omitempty"`
 
 	// ProjectId: The ID of the project that this Raster is in.
 	ProjectId string `json:"projectId,omitempty"`
 
 	// RasterType: The type of this Raster. Always "image" today.
+	//
+	// Possible values:
+	//   "image"
 	RasterType string `json:"rasterType,omitempty"`
 
 	// Tags: Tags of this Raster.
@@ -1306,8 +2285,28 @@ type Raster struct {
 	// WritersCanEditPermissions: If true, WRITERs of the asset are able to
 	// edit the asset permissions.
 	WritersCanEditPermissions bool `json:"writersCanEditPermissions,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AcquisitionTime") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Raster) MarshalJSON() ([]byte, error) {
+	type noMethod Raster
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RasterCollection: A raster collection groups multiple Raster
+// resources for inclusion in a Layer.
 type RasterCollection struct {
 	// Attribution: The name of the attribution to be used for this
 	// RasterCollection. Note: Attribution is returned in response to a get
@@ -1370,6 +2369,13 @@ type RasterCollection struct {
 	Name string `json:"name,omitempty"`
 
 	// ProcessingStatus: The processing status of this RasterCollection.
+	//
+	// Possible values:
+	//   "complete"
+	//   "failed"
+	//   "notReady"
+	//   "processing"
+	//   "ready"
 	ProcessingStatus string `json:"processingStatus,omitempty"`
 
 	// ProjectId: The ID of the project that this RasterCollection is in.
@@ -1377,6 +2383,9 @@ type RasterCollection struct {
 
 	// RasterType: The type of rasters contained within this
 	// RasterCollection.
+	//
+	// Possible values:
+	//   "image"
 	RasterType string `json:"rasterType,omitempty"`
 
 	// Tags: Tags of this RasterCollection.
@@ -1385,16 +2394,59 @@ type RasterCollection struct {
 	// WritersCanEditPermissions: If true, WRITERs of the asset are able to
 	// edit the asset permissions.
 	WritersCanEditPermissions bool `json:"writersCanEditPermissions,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Attribution") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RasterCollection) MarshalJSON() ([]byte, error) {
+	type noMethod RasterCollection
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RasterCollectionsListResponse: The response returned by a call to
+// raster_collections.List. Note: The list response does not include all
+// the fields available in a raster collection. Refer to the
+// RasterCollection resource description for details of the fields that
+// are not included. You'll need to send a get request to retrieve the
+// additional fields for each raster collection.
 type RasterCollectionsListResponse struct {
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// RasterCollections: Resources returned.
 	RasterCollections []*RasterCollection `json:"rasterCollections,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RasterCollectionsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod RasterCollectionsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RasterCollectionsRaster: A raster resource.
 type RasterCollectionsRaster struct {
 	// Bbox: A rectangular bounding box which contains all of the data in
 	// this Raster. The box is expressed as \"west, south, east, north\".
@@ -1426,42 +2478,138 @@ type RasterCollectionsRaster struct {
 
 	// Tags: Tags of this Raster.
 	Tags []string `json:"tags,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Bbox") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RasterCollectionsRaster) MarshalJSON() ([]byte, error) {
+	type noMethod RasterCollectionsRaster
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RasterCollectionsRasterBatchDeleteRequest: The request sent to
+// rasterCollections.Rasters.BatchDelete.
 type RasterCollectionsRasterBatchDeleteRequest struct {
 	// Ids: An array of Raster asset IDs to be removed from this
 	// RasterCollection.
 	Ids []string `json:"ids,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Ids") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RasterCollectionsRasterBatchDeleteRequest) MarshalJSON() ([]byte, error) {
+	type noMethod RasterCollectionsRasterBatchDeleteRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RasterCollectionsRastersBatchDeleteResponse: The response returned by
+// a call to rasterCollections.rasters.batchDelete.
 type RasterCollectionsRastersBatchDeleteResponse struct {
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
 }
 
+// RasterCollectionsRastersBatchInsertRequest: The request sent to
+// rasterCollections.Rasters.BatchInsert.
 type RasterCollectionsRastersBatchInsertRequest struct {
 	// Ids: An array of Raster asset IDs to be added to this
 	// RasterCollection.
 	Ids []string `json:"ids,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Ids") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RasterCollectionsRastersBatchInsertRequest) MarshalJSON() ([]byte, error) {
+	type noMethod RasterCollectionsRastersBatchInsertRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RasterCollectionsRastersBatchInsertResponse: The response returned by
+// a call to rasterCollections.rasters.batchInsert.
 type RasterCollectionsRastersBatchInsertResponse struct {
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
 }
 
+// RasterCollectionsRastersListResponse: The response returned by a call
+// to rasterCollections.rasters.List.
 type RasterCollectionsRastersListResponse struct {
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// Rasters: Resources returned.
 	Rasters []*RasterCollectionsRaster `json:"rasters,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RasterCollectionsRastersListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod RasterCollectionsRastersListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RastersListResponse: The response returned by a call to rasters.List.
 type RastersListResponse struct {
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// Rasters: Resources returned.
 	Rasters []*Raster `json:"rasters,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RastersListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod RastersListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ScaledShape: Parameters for styling points as scaled shapes.
 type ScaledShape struct {
 	// Border: Border color/width of the shape. If not specified the shape
 	// won't have a border.
@@ -1472,15 +2620,37 @@ type ScaledShape struct {
 	Fill *Color `json:"fill,omitempty"`
 
 	// Shape: Name of the shape.
+	//
+	// Possible values:
+	//   "circle"
 	Shape string `json:"shape,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Border") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ScaledShape) MarshalJSON() ([]byte, error) {
+	type noMethod ScaledShape
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ScalingFunction: Parameters for scaling scaled shapes.
 type ScalingFunction struct {
 	// Column: Name of the numeric column used to scale a shape.
 	Column string `json:"column,omitempty"`
 
 	// ScalingType: The type of scaling function to use. Defaults to SQRT.
 	// Currently only linear and square root scaling are supported.
+	//
+	// Possible values:
+	//   "linear"
+	//   "sqrt"
 	ScalingType string `json:"scalingType,omitempty"`
 
 	// SizeRange: The range of shape sizes, in pixels. For circles, the size
@@ -1489,8 +2659,24 @@ type ScalingFunction struct {
 
 	// ValueRange: The range of values to display across the size range.
 	ValueRange *ValueRange `json:"valueRange,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Column") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ScalingFunction) MarshalJSON() ([]byte, error) {
+	type noMethod ScalingFunction
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Schema: A schema indicating the properties which may be associated
+// with features within a Table, and the types of those properties.
 type Schema struct {
 	// Columns: An array of TableColumn objects. The first object in the
 	// array must be named geometry and be of type points, lineStrings,
@@ -1506,16 +2692,47 @@ type Schema struct {
 	// PrimaryKey: The name of the column that contains the unique
 	// identifier of a Feature.
 	PrimaryKey string `json:"primaryKey,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Columns") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Schema) MarshalJSON() ([]byte, error) {
+	type noMethod Schema
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SizeRange: Scaled shape size range in pixels. For circles, size
+// corresponds to diameter.
 type SizeRange struct {
 	// Max: Maximum size, in pixels.
 	Max float64 `json:"max,omitempty"`
 
 	// Min: Minimum size, in pixels.
 	Min float64 `json:"min,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Max") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SizeRange) MarshalJSON() ([]byte, error) {
+	type noMethod SizeRange
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Table: A collection of geographic features, and associated metadata.
 type Table struct {
 	// Bbox: A rectangular bounding box which contains all of the data in
 	// this Table. The box is expressed as \"west, south, east, north\". The
@@ -1566,6 +2783,13 @@ type Table struct {
 	Name string `json:"name,omitempty"`
 
 	// ProcessingStatus: The processing status of this table.
+	//
+	// Possible values:
+	//   "complete"
+	//   "failed"
+	//   "notReady"
+	//   "processing"
+	//   "ready"
 	ProcessingStatus string `json:"processingStatus,omitempty"`
 
 	// ProjectId: The ID of the project to which the table belongs.
@@ -1601,6 +2825,24 @@ type Table struct {
 	// WritersCanEditPermissions: If true, WRITERs of the asset are able to
 	// edit the asset permissions.
 	WritersCanEditPermissions bool `json:"writersCanEditPermissions,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Bbox") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Table) MarshalJSON() ([]byte, error) {
+	type noMethod Table
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type TableColumn struct {
@@ -1608,25 +2850,90 @@ type TableColumn struct {
 	Name string `json:"name,omitempty"`
 
 	// Type: The type of data stored in this column.
+	//
+	// Possible values:
+	//   "datetime"
+	//   "double"
+	//   "integer"
+	//   "lineStrings"
+	//   "mixedGeometry"
+	//   "points"
+	//   "polygons"
+	//   "string"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *TableColumn) MarshalJSON() ([]byte, error) {
+	type noMethod TableColumn
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// TablesListResponse: The response returned by a call to tables.List.
+// Note: The list response does not include all the fields available in
+// a table. Refer to the table resource description for details of the
+// fields that are not included. You'll need to send a get request to
+// retrieve the additional fields for each table.
 type TablesListResponse struct {
 	// NextPageToken: Next page token.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// Tables: Resources returned.
 	Tables []*Table `json:"tables,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *TablesListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod TablesListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ValueRange: Range of values used for scaling shapes. The min/max
+// values will be drawn as shapes with the min/max size.
 type ValueRange struct {
 	// Max: Maximum value.
 	Max float64 `json:"max,omitempty"`
 
 	// Min: Minimum value.
 	Min float64 `json:"min,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Max") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ValueRange) MarshalJSON() ([]byte, error) {
+	type noMethod ValueRange
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// VectorStyle: A vector style contains styling information for vector
+// layer.
 type VectorStyle struct {
 	DisplayRules []*DisplayRule `json:"displayRules,omitempty"`
 
@@ -1637,55 +2944,131 @@ type VectorStyle struct {
 
 	// Type: The type of the vector style. Currently, only displayRule is
 	// supported.
+	//
+	// Possible values:
+	//   "displayRule"
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DisplayRules") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *VectorStyle) MarshalJSON() ([]byte, error) {
+	type noMethod VectorStyle
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ZoomLevels: Zoom level range. Zoom levels are restricted between 0
+// and 24, inclusive.
 type ZoomLevels struct {
 	// Max: Maximum zoom level.
 	Max int64 `json:"max,omitempty"`
 
 	// Min: Minimum zoom level.
 	Min int64 `json:"min,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Max") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ZoomLevels) MarshalJSON() ([]byte, error) {
+	type noMethod ZoomLevels
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "mapsengine.assets.get":
 
 type AssetsGetCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Return metadata for a particular asset.
 func (r *AssetsService) Get(id string) *AssetsGetCall {
-	c := &AssetsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AssetsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AssetsGetCall) Fields(s ...googleapi.Field) *AssetsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AssetsGetCall) Do() (*Asset, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AssetsGetCall) IfNoneMatch(entityTag string) *AssetsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AssetsGetCall) Context(ctx context.Context) *AssetsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AssetsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "assets/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.assets.get" call.
+// Exactly one of *Asset or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Asset.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *AssetsGetCall) Do(opts ...googleapi.CallOption) (*Asset, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1693,7 +3076,12 @@ func (c *AssetsGetCall) Do() (*Asset, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Asset
+	ret := &Asset{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1728,13 +3116,15 @@ func (c *AssetsGetCall) Do() (*Asset, error) {
 // method id "mapsengine.assets.list":
 
 type AssetsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all assets readable by the current user.
 func (r *AssetsService) List() *AssetsListCall {
-	c := &AssetsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AssetsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -1742,7 +3132,7 @@ func (r *AssetsService) List() *AssetsListCall {
 // "west,south,east,north". If set, only assets which intersect this
 // bounding box will be returned.
 func (c *AssetsListCall) Bbox(bbox string) *AssetsListCall {
-	c.opt_["bbox"] = bbox
+	c.urlParams_.Set("bbox", bbox)
 	return c
 }
 
@@ -1750,7 +3140,7 @@ func (c *AssetsListCall) Bbox(bbox string) *AssetsListCall {
 // formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or after this time.
 func (c *AssetsListCall) CreatedAfter(createdAfter string) *AssetsListCall {
-	c.opt_["createdAfter"] = createdAfter
+	c.urlParams_.Set("createdAfter", createdAfter)
 	return c
 }
 
@@ -1758,7 +3148,7 @@ func (c *AssetsListCall) CreatedAfter(createdAfter string) *AssetsListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or before this time.
 func (c *AssetsListCall) CreatedBefore(createdBefore string) *AssetsListCall {
-	c.opt_["createdBefore"] = createdBefore
+	c.urlParams_.Set("createdBefore", createdBefore)
 	return c
 }
 
@@ -1766,7 +3156,7 @@ func (c *AssetsListCall) CreatedBefore(createdBefore string) *AssetsListCall {
 // address representing a user. Returned assets that have been created
 // by the user associated with the provided email address.
 func (c *AssetsListCall) CreatorEmail(creatorEmail string) *AssetsListCall {
-	c.opt_["creatorEmail"] = creatorEmail
+	c.urlParams_.Set("creatorEmail", creatorEmail)
 	return c
 }
 
@@ -1774,7 +3164,7 @@ func (c *AssetsListCall) CreatorEmail(creatorEmail string) *AssetsListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 100.
 func (c *AssetsListCall) MaxResults(maxResults int64) *AssetsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -1782,7 +3172,7 @@ func (c *AssetsListCall) MaxResults(maxResults int64) *AssetsListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or after this time.
 func (c *AssetsListCall) ModifiedAfter(modifiedAfter string) *AssetsListCall {
-	c.opt_["modifiedAfter"] = modifiedAfter
+	c.urlParams_.Set("modifiedAfter", modifiedAfter)
 	return c
 }
 
@@ -1790,7 +3180,7 @@ func (c *AssetsListCall) ModifiedAfter(modifiedAfter string) *AssetsListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or before this time.
 func (c *AssetsListCall) ModifiedBefore(modifiedBefore string) *AssetsListCall {
-	c.opt_["modifiedBefore"] = modifiedBefore
+	c.urlParams_.Set("modifiedBefore", modifiedBefore)
 	return c
 }
 
@@ -1799,7 +3189,7 @@ func (c *AssetsListCall) ModifiedBefore(modifiedBefore string) *AssetsListCall {
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *AssetsListCall) PageToken(pageToken string) *AssetsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
@@ -1809,29 +3199,34 @@ func (c *AssetsListCall) PageToken(pageToken string) *AssetsListCall {
 // find your project ID as the value of the DashboardPlace:cid URL
 // parameter when signed in to mapsengine.google.com.
 func (c *AssetsListCall) ProjectId(projectId string) *AssetsListCall {
-	c.opt_["projectId"] = projectId
+	c.urlParams_.Set("projectId", projectId)
 	return c
 }
 
 // Role sets the optional parameter "role": The role parameter indicates
 // that the response should only contain assets where the current user
 // has the specified level of access.
+//
+// Possible values:
+//   "owner" - The user can read, write and administer the asset.
+//   "reader" - The user can read the asset.
+//   "writer" - The user can read and write the asset.
 func (c *AssetsListCall) Role(role string) *AssetsListCall {
-	c.opt_["role"] = role
+	c.urlParams_.Set("role", role)
 	return c
 }
 
 // Search sets the optional parameter "search": An unstructured search
 // string used to filter the set of results based on asset metadata.
 func (c *AssetsListCall) Search(search string) *AssetsListCall {
-	c.opt_["search"] = search
+	c.urlParams_.Set("search", search)
 	return c
 }
 
 // Tags sets the optional parameter "tags": A comma separated list of
 // tags. Returned assets will contain all the tags from the list.
 func (c *AssetsListCall) Tags(tags string) *AssetsListCall {
-	c.opt_["tags"] = tags
+	c.urlParams_.Set("tags", tags)
 	return c
 }
 
@@ -1840,70 +3235,72 @@ func (c *AssetsListCall) Tags(tags string) *AssetsListCall {
 // provided list. Supported values are 'map', 'layer',
 // 'rasterCollection' and 'table'.
 func (c *AssetsListCall) Type(type_ string) *AssetsListCall {
-	c.opt_["type"] = type_
+	c.urlParams_.Set("type", type_)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AssetsListCall) Fields(s ...googleapi.Field) *AssetsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AssetsListCall) Do() (*AssetsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AssetsListCall) IfNoneMatch(entityTag string) *AssetsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AssetsListCall) Context(ctx context.Context) *AssetsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AssetsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["bbox"]; ok {
-		params.Set("bbox", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdAfter"]; ok {
-		params.Set("createdAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdBefore"]; ok {
-		params.Set("createdBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["creatorEmail"]; ok {
-		params.Set("creatorEmail", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedAfter"]; ok {
-		params.Set("modifiedAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedBefore"]; ok {
-		params.Set("modifiedBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projectId"]; ok {
-		params.Set("projectId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["role"]; ok {
-		params.Set("role", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["search"]; ok {
-		params.Set("search", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["tags"]; ok {
-		params.Set("tags", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["type"]; ok {
-		params.Set("type", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "assets")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.assets.list" call.
+// Exactly one of *AssetsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *AssetsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *AssetsListCall) Do(opts ...googleapi.CallOption) (*AssetsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1911,7 +3308,12 @@ func (c *AssetsListCall) Do() (*AssetsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AssetsListResponse
+	ret := &AssetsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2014,17 +3416,40 @@ func (c *AssetsListCall) Do() (*AssetsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *AssetsListCall) Pages(ctx context.Context, f func(*AssetsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.assets.parents.list":
 
 type AssetsParentsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all parent ids of the specified asset.
 func (r *AssetsParentsService) List(id string) *AssetsParentsListCall {
-	c := &AssetsParentsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AssetsParentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -2033,7 +3458,7 @@ func (r *AssetsParentsService) List(id string) *AssetsParentsListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 50.
 func (c *AssetsParentsListCall) MaxResults(maxResults int64) *AssetsParentsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -2042,39 +3467,74 @@ func (c *AssetsParentsListCall) MaxResults(maxResults int64) *AssetsParentsListC
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *AssetsParentsListCall) PageToken(pageToken string) *AssetsParentsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AssetsParentsListCall) Fields(s ...googleapi.Field) *AssetsParentsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AssetsParentsListCall) Do() (*ParentsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AssetsParentsListCall) IfNoneMatch(entityTag string) *AssetsParentsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AssetsParentsListCall) Context(ctx context.Context) *AssetsParentsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AssetsParentsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "assets/{id}/parents")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.assets.parents.list" call.
+// Exactly one of *ParentsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ParentsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *AssetsParentsListCall) Do(opts ...googleapi.CallOption) (*ParentsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2082,7 +3542,12 @@ func (c *AssetsParentsListCall) Do() (*ParentsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ParentsListResponse
+	ret := &ParentsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2125,44 +3590,108 @@ func (c *AssetsParentsListCall) Do() (*ParentsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *AssetsParentsListCall) Pages(ctx context.Context, f func(*ParentsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.assets.permissions.list":
 
 type AssetsPermissionsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all of the permissions for the specified asset.
 func (r *AssetsPermissionsService) List(id string) *AssetsPermissionsListCall {
-	c := &AssetsPermissionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AssetsPermissionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AssetsPermissionsListCall) Fields(s ...googleapi.Field) *AssetsPermissionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AssetsPermissionsListCall) Do() (*PermissionsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AssetsPermissionsListCall) IfNoneMatch(entityTag string) *AssetsPermissionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AssetsPermissionsListCall) Context(ctx context.Context) *AssetsPermissionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AssetsPermissionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "assets/{id}/permissions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.assets.permissions.list" call.
+// Exactly one of *PermissionsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PermissionsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *AssetsPermissionsListCall) Do(opts ...googleapi.CallOption) (*PermissionsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2170,7 +3699,12 @@ func (c *AssetsPermissionsListCall) Do() (*PermissionsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsListResponse
+	ret := &PermissionsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2205,41 +3739,70 @@ func (c *AssetsPermissionsListCall) Do() (*PermissionsListResponse, error) {
 // method id "mapsengine.layers.cancelProcessing":
 
 type LayersCancelProcessingCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // CancelProcessing: Cancel processing on a layer asset.
 func (r *LayersService) CancelProcessing(id string) *LayersCancelProcessingCall {
-	c := &LayersCancelProcessingCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersCancelProcessingCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersCancelProcessingCall) Fields(s ...googleapi.Field) *LayersCancelProcessingCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersCancelProcessingCall) Do() (*ProcessResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersCancelProcessingCall) Context(ctx context.Context) *LayersCancelProcessingCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersCancelProcessingCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}/cancelProcessing")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.cancelProcessing" call.
+// Exactly one of *ProcessResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ProcessResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersCancelProcessingCall) Do(opts ...googleapi.CallOption) (*ProcessResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2247,7 +3810,12 @@ func (c *LayersCancelProcessingCall) Do() (*ProcessResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProcessResponse
+	ret := &ProcessResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2281,14 +3849,15 @@ func (c *LayersCancelProcessingCall) Do() (*ProcessResponse, error) {
 // method id "mapsengine.layers.create":
 
 type LayersCreateCall struct {
-	s     *Service
-	layer *Layer
-	opt_  map[string]interface{}
+	s          *Service
+	layer      *Layer
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Create: Create a layer asset.
 func (r *LayersService) Create(layer *Layer) *LayersCreateCall {
-	c := &LayersCreateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.layer = layer
 	return c
 }
@@ -2296,40 +3865,65 @@ func (r *LayersService) Create(layer *Layer) *LayersCreateCall {
 // Process sets the optional parameter "process": Whether to queue the
 // created layer for processing.
 func (c *LayersCreateCall) Process(process bool) *LayersCreateCall {
-	c.opt_["process"] = process
+	c.urlParams_.Set("process", fmt.Sprint(process))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersCreateCall) Fields(s ...googleapi.Field) *LayersCreateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersCreateCall) Do() (*Layer, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersCreateCall) Context(ctx context.Context) *LayersCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersCreateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.layer)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["process"]; ok {
-		params.Set("process", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.create" call.
+// Exactly one of *Layer or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Layer.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *LayersCreateCall) Do(opts ...googleapi.CallOption) (*Layer, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2337,7 +3931,12 @@ func (c *LayersCreateCall) Do() (*Layer, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Layer
+	ret := &Layer{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2370,41 +3969,55 @@ func (c *LayersCreateCall) Do() (*Layer, error) {
 // method id "mapsengine.layers.delete":
 
 type LayersDeleteCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Delete a layer.
 func (r *LayersService) Delete(id string) *LayersDeleteCall {
-	c := &LayersDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersDeleteCall) Fields(s ...googleapi.Field) *LayersDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersDeleteCall) Context(ctx context.Context) *LayersDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.delete" call.
+func (c *LayersDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -2439,14 +4052,16 @@ func (c *LayersDeleteCall) Do() error {
 // method id "mapsengine.layers.get":
 
 type LayersGetCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Return metadata for a particular layer.
 func (r *LayersService) Get(id string) *LayersGetCall {
-	c := &LayersGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -2456,37 +4071,79 @@ func (r *LayersService) Get(id string) *LayersGetCall {
 // returned. When version is set to published, the published version of
 // the layer will be returned. Please use the layers.getPublished
 // endpoint instead.
+//
+// Possible values:
+//   "draft" - The draft version.
+//   "published" - The published version.
 func (c *LayersGetCall) Version(version string) *LayersGetCall {
-	c.opt_["version"] = version
+	c.urlParams_.Set("version", version)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersGetCall) Fields(s ...googleapi.Field) *LayersGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersGetCall) Do() (*Layer, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *LayersGetCall) IfNoneMatch(entityTag string) *LayersGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersGetCall) Context(ctx context.Context) *LayersGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["version"]; ok {
-		params.Set("version", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.get" call.
+// Exactly one of *Layer or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Layer.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *LayersGetCall) Do(opts ...googleapi.CallOption) (*Layer, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2494,7 +4151,12 @@ func (c *LayersGetCall) Do() (*Layer, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Layer
+	ret := &Layer{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2542,41 +4204,84 @@ func (c *LayersGetCall) Do() (*Layer, error) {
 // method id "mapsengine.layers.getPublished":
 
 type LayersGetPublishedCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // GetPublished: Return the published metadata for a particular layer.
 func (r *LayersService) GetPublished(id string) *LayersGetPublishedCall {
-	c := &LayersGetPublishedCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersGetPublishedCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersGetPublishedCall) Fields(s ...googleapi.Field) *LayersGetPublishedCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersGetPublishedCall) Do() (*PublishedLayer, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *LayersGetPublishedCall) IfNoneMatch(entityTag string) *LayersGetPublishedCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersGetPublishedCall) Context(ctx context.Context) *LayersGetPublishedCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersGetPublishedCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}/published")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.getPublished" call.
+// Exactly one of *PublishedLayer or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *PublishedLayer.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersGetPublishedCall) Do(opts ...googleapi.CallOption) (*PublishedLayer, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2584,7 +4289,12 @@ func (c *LayersGetPublishedCall) Do() (*PublishedLayer, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PublishedLayer
+	ret := &PublishedLayer{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2619,13 +4329,15 @@ func (c *LayersGetPublishedCall) Do() (*PublishedLayer, error) {
 // method id "mapsengine.layers.list":
 
 type LayersListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all layers readable by the current user.
 func (r *LayersService) List() *LayersListCall {
-	c := &LayersListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -2633,7 +4345,7 @@ func (r *LayersService) List() *LayersListCall {
 // "west,south,east,north". If set, only assets which intersect this
 // bounding box will be returned.
 func (c *LayersListCall) Bbox(bbox string) *LayersListCall {
-	c.opt_["bbox"] = bbox
+	c.urlParams_.Set("bbox", bbox)
 	return c
 }
 
@@ -2641,7 +4353,7 @@ func (c *LayersListCall) Bbox(bbox string) *LayersListCall {
 // formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or after this time.
 func (c *LayersListCall) CreatedAfter(createdAfter string) *LayersListCall {
-	c.opt_["createdAfter"] = createdAfter
+	c.urlParams_.Set("createdAfter", createdAfter)
 	return c
 }
 
@@ -2649,7 +4361,7 @@ func (c *LayersListCall) CreatedAfter(createdAfter string) *LayersListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or before this time.
 func (c *LayersListCall) CreatedBefore(createdBefore string) *LayersListCall {
-	c.opt_["createdBefore"] = createdBefore
+	c.urlParams_.Set("createdBefore", createdBefore)
 	return c
 }
 
@@ -2657,7 +4369,7 @@ func (c *LayersListCall) CreatedBefore(createdBefore string) *LayersListCall {
 // address representing a user. Returned assets that have been created
 // by the user associated with the provided email address.
 func (c *LayersListCall) CreatorEmail(creatorEmail string) *LayersListCall {
-	c.opt_["creatorEmail"] = creatorEmail
+	c.urlParams_.Set("creatorEmail", creatorEmail)
 	return c
 }
 
@@ -2665,7 +4377,7 @@ func (c *LayersListCall) CreatorEmail(creatorEmail string) *LayersListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 100.
 func (c *LayersListCall) MaxResults(maxResults int64) *LayersListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -2673,7 +4385,7 @@ func (c *LayersListCall) MaxResults(maxResults int64) *LayersListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or after this time.
 func (c *LayersListCall) ModifiedAfter(modifiedAfter string) *LayersListCall {
-	c.opt_["modifiedAfter"] = modifiedAfter
+	c.urlParams_.Set("modifiedAfter", modifiedAfter)
 	return c
 }
 
@@ -2681,7 +4393,7 @@ func (c *LayersListCall) ModifiedAfter(modifiedAfter string) *LayersListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or before this time.
 func (c *LayersListCall) ModifiedBefore(modifiedBefore string) *LayersListCall {
-	c.opt_["modifiedBefore"] = modifiedBefore
+	c.urlParams_.Set("modifiedBefore", modifiedBefore)
 	return c
 }
 
@@ -2690,13 +4402,20 @@ func (c *LayersListCall) ModifiedBefore(modifiedBefore string) *LayersListCall {
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *LayersListCall) PageToken(pageToken string) *LayersListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // ProcessingStatus sets the optional parameter "processingStatus":
+//
+// Possible values:
+//   "complete" - The layer has completed processing.
+//   "failed" - The layer has failed processing.
+//   "notReady" - The layer is not ready for processing.
+//   "processing" - The layer is processing.
+//   "ready" - The layer is ready for processing.
 func (c *LayersListCall) ProcessingStatus(processingStatus string) *LayersListCall {
-	c.opt_["processingStatus"] = processingStatus
+	c.urlParams_.Set("processingStatus", processingStatus)
 	return c
 }
 
@@ -2706,92 +4425,99 @@ func (c *LayersListCall) ProcessingStatus(processingStatus string) *LayersListCa
 // find your project ID as the value of the DashboardPlace:cid URL
 // parameter when signed in to mapsengine.google.com.
 func (c *LayersListCall) ProjectId(projectId string) *LayersListCall {
-	c.opt_["projectId"] = projectId
+	c.urlParams_.Set("projectId", projectId)
 	return c
 }
 
 // Role sets the optional parameter "role": The role parameter indicates
 // that the response should only contain assets where the current user
 // has the specified level of access.
+//
+// Possible values:
+//   "owner" - The user can read, write and administer the asset.
+//   "reader" - The user can read the asset.
+//   "writer" - The user can read and write the asset.
 func (c *LayersListCall) Role(role string) *LayersListCall {
-	c.opt_["role"] = role
+	c.urlParams_.Set("role", role)
 	return c
 }
 
 // Search sets the optional parameter "search": An unstructured search
 // string used to filter the set of results based on asset metadata.
 func (c *LayersListCall) Search(search string) *LayersListCall {
-	c.opt_["search"] = search
+	c.urlParams_.Set("search", search)
 	return c
 }
 
 // Tags sets the optional parameter "tags": A comma separated list of
 // tags. Returned assets will contain all the tags from the list.
 func (c *LayersListCall) Tags(tags string) *LayersListCall {
-	c.opt_["tags"] = tags
+	c.urlParams_.Set("tags", tags)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersListCall) Fields(s ...googleapi.Field) *LayersListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersListCall) Do() (*LayersListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *LayersListCall) IfNoneMatch(entityTag string) *LayersListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersListCall) Context(ctx context.Context) *LayersListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["bbox"]; ok {
-		params.Set("bbox", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdAfter"]; ok {
-		params.Set("createdAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdBefore"]; ok {
-		params.Set("createdBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["creatorEmail"]; ok {
-		params.Set("creatorEmail", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedAfter"]; ok {
-		params.Set("modifiedAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedBefore"]; ok {
-		params.Set("modifiedBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["processingStatus"]; ok {
-		params.Set("processingStatus", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projectId"]; ok {
-		params.Set("projectId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["role"]; ok {
-		params.Set("role", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["search"]; ok {
-		params.Set("search", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["tags"]; ok {
-		params.Set("tags", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.list" call.
+// Exactly one of *LayersListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *LayersListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersListCall) Do(opts ...googleapi.CallOption) (*LayersListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2799,7 +4525,12 @@ func (c *LayersListCall) Do() (*LayersListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *LayersListResponse
+	ret := &LayersListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2915,17 +4646,40 @@ func (c *LayersListCall) Do() (*LayersListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *LayersListCall) Pages(ctx context.Context, f func(*LayersListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.layers.listPublished":
 
 type LayersListPublishedCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // ListPublished: Return all published layers readable by the current
 // user.
 func (r *LayersService) ListPublished() *LayersListPublishedCall {
-	c := &LayersListPublishedCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersListPublishedCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -2933,7 +4687,7 @@ func (r *LayersService) ListPublished() *LayersListPublishedCall {
 // number of items to include in a single response page. The maximum
 // supported value is 100.
 func (c *LayersListPublishedCall) MaxResults(maxResults int64) *LayersListPublishedCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -2942,7 +4696,7 @@ func (c *LayersListPublishedCall) MaxResults(maxResults int64) *LayersListPublis
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *LayersListPublishedCall) PageToken(pageToken string) *LayersListPublishedCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
@@ -2952,50 +4706,79 @@ func (c *LayersListPublishedCall) PageToken(pageToken string) *LayersListPublish
 // find your project ID as the value of the DashboardPlace:cid URL
 // parameter when signed in to mapsengine.google.com.
 func (c *LayersListPublishedCall) ProjectId(projectId string) *LayersListPublishedCall {
-	c.opt_["projectId"] = projectId
+	c.urlParams_.Set("projectId", projectId)
 	return c
 }
 
 // Search sets the optional parameter "search": An unstructured search
 // string used to filter the set of results based on asset metadata.
 func (c *LayersListPublishedCall) Search(search string) *LayersListPublishedCall {
-	c.opt_["search"] = search
+	c.urlParams_.Set("search", search)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersListPublishedCall) Fields(s ...googleapi.Field) *LayersListPublishedCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersListPublishedCall) Do() (*PublishedLayersListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *LayersListPublishedCall) IfNoneMatch(entityTag string) *LayersListPublishedCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersListPublishedCall) Context(ctx context.Context) *LayersListPublishedCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersListPublishedCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projectId"]; ok {
-		params.Set("projectId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["search"]; ok {
-		params.Set("search", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/published")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.listPublished" call.
+// Exactly one of *PublishedLayersListResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *PublishedLayersListResponse.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersListPublishedCall) Do(opts ...googleapi.CallOption) (*PublishedLayersListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3003,7 +4786,12 @@ func (c *LayersListPublishedCall) Do() (*PublishedLayersListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PublishedLayersListResponse
+	ret := &PublishedLayersListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3047,52 +4835,87 @@ func (c *LayersListPublishedCall) Do() (*PublishedLayersListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *LayersListPublishedCall) Pages(ctx context.Context, f func(*PublishedLayersListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.layers.patch":
 
 type LayersPatchCall struct {
-	s     *Service
-	id    string
-	layer *Layer
-	opt_  map[string]interface{}
+	s          *Service
+	id         string
+	layer      *Layer
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Mutate a layer asset.
 func (r *LayersService) Patch(id string, layer *Layer) *LayersPatchCall {
-	c := &LayersPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.layer = layer
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersPatchCall) Fields(s ...googleapi.Field) *LayersPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersPatchCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersPatchCall) Context(ctx context.Context) *LayersPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.layer)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.patch" call.
+func (c *LayersPatchCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -3130,41 +4953,70 @@ func (c *LayersPatchCall) Do() error {
 // method id "mapsengine.layers.process":
 
 type LayersProcessCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Process: Process a layer asset.
 func (r *LayersService) Process(id string) *LayersProcessCall {
-	c := &LayersProcessCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersProcessCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersProcessCall) Fields(s ...googleapi.Field) *LayersProcessCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersProcessCall) Do() (*ProcessResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersProcessCall) Context(ctx context.Context) *LayersProcessCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersProcessCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}/process")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.process" call.
+// Exactly one of *ProcessResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ProcessResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersProcessCall) Do(opts ...googleapi.CallOption) (*ProcessResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3172,7 +5024,12 @@ func (c *LayersProcessCall) Do() (*ProcessResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProcessResponse
+	ret := &ProcessResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3206,14 +5063,15 @@ func (c *LayersProcessCall) Do() (*ProcessResponse, error) {
 // method id "mapsengine.layers.publish":
 
 type LayersPublishCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Publish: Publish a layer asset.
 func (r *LayersService) Publish(id string) *LayersPublishCall {
-	c := &LayersPublishCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersPublishCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -3223,36 +5081,61 @@ func (r *LayersService) Publish(id string) *LayersPublishCall {
 // true, you'll need to reprocess any out-of-date layer before
 // publishing.
 func (c *LayersPublishCall) Force(force bool) *LayersPublishCall {
-	c.opt_["force"] = force
+	c.urlParams_.Set("force", fmt.Sprint(force))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersPublishCall) Fields(s ...googleapi.Field) *LayersPublishCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersPublishCall) Do() (*PublishResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersPublishCall) Context(ctx context.Context) *LayersPublishCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersPublishCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["force"]; ok {
-		params.Set("force", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}/publish")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.publish" call.
+// Exactly one of *PublishResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *PublishResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersPublishCall) Do(opts ...googleapi.CallOption) (*PublishResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3260,7 +5143,12 @@ func (c *LayersPublishCall) Do() (*PublishResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PublishResponse
+	ret := &PublishResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3299,41 +5187,70 @@ func (c *LayersPublishCall) Do() (*PublishResponse, error) {
 // method id "mapsengine.layers.unpublish":
 
 type LayersUnpublishCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Unpublish: Unpublish a layer asset.
 func (r *LayersService) Unpublish(id string) *LayersUnpublishCall {
-	c := &LayersUnpublishCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersUnpublishCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersUnpublishCall) Fields(s ...googleapi.Field) *LayersUnpublishCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersUnpublishCall) Do() (*PublishResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersUnpublishCall) Context(ctx context.Context) *LayersUnpublishCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersUnpublishCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}/unpublish")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.unpublish" call.
+// Exactly one of *PublishResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *PublishResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersUnpublishCall) Do(opts ...googleapi.CallOption) (*PublishResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3341,7 +5258,12 @@ func (c *LayersUnpublishCall) Do() (*PublishResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PublishResponse
+	ret := &PublishResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3375,14 +5297,16 @@ func (c *LayersUnpublishCall) Do() (*PublishResponse, error) {
 // method id "mapsengine.layers.parents.list":
 
 type LayersParentsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all parent ids of the specified layer.
 func (r *LayersParentsService) List(id string) *LayersParentsListCall {
-	c := &LayersParentsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersParentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -3391,7 +5315,7 @@ func (r *LayersParentsService) List(id string) *LayersParentsListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 50.
 func (c *LayersParentsListCall) MaxResults(maxResults int64) *LayersParentsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -3400,39 +5324,74 @@ func (c *LayersParentsListCall) MaxResults(maxResults int64) *LayersParentsListC
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *LayersParentsListCall) PageToken(pageToken string) *LayersParentsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersParentsListCall) Fields(s ...googleapi.Field) *LayersParentsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersParentsListCall) Do() (*ParentsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *LayersParentsListCall) IfNoneMatch(entityTag string) *LayersParentsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersParentsListCall) Context(ctx context.Context) *LayersParentsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersParentsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}/parents")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.parents.list" call.
+// Exactly one of *ParentsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ParentsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersParentsListCall) Do(opts ...googleapi.CallOption) (*ParentsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3440,7 +5399,12 @@ func (c *LayersParentsListCall) Do() (*ParentsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ParentsListResponse
+	ret := &ParentsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3483,53 +5447,103 @@ func (c *LayersParentsListCall) Do() (*ParentsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *LayersParentsListCall) Pages(ctx context.Context, f func(*ParentsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.layers.permissions.batchDelete":
 
 type LayersPermissionsBatchDeleteCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchdeleterequest *PermissionsBatchDeleteRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchDelete: Remove permission entries from an already existing
 // asset.
 func (r *LayersPermissionsService) BatchDelete(id string, permissionsbatchdeleterequest *PermissionsBatchDeleteRequest) *LayersPermissionsBatchDeleteCall {
-	c := &LayersPermissionsBatchDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersPermissionsBatchDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchdeleterequest = permissionsbatchdeleterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersPermissionsBatchDeleteCall) Fields(s ...googleapi.Field) *LayersPermissionsBatchDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersPermissionsBatchDeleteCall) Do() (*PermissionsBatchDeleteResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersPermissionsBatchDeleteCall) Context(ctx context.Context) *LayersPermissionsBatchDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersPermissionsBatchDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchdeleterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}/permissions/batchDelete")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.permissions.batchDelete" call.
+// Exactly one of *PermissionsBatchDeleteResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchDeleteResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersPermissionsBatchDeleteCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchDeleteResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3537,7 +5551,12 @@ func (c *LayersPermissionsBatchDeleteCall) Do() (*PermissionsBatchDeleteResponse
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchDeleteResponse
+	ret := &PermissionsBatchDeleteResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3577,7 +5596,8 @@ type LayersPermissionsBatchUpdateCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchupdaterequest *PermissionsBatchUpdateRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchUpdate: Add or update permission entries to an already existing
@@ -3586,41 +5606,69 @@ type LayersPermissionsBatchUpdateCall struct {
 // An asset can hold up to 20 different permission entries. Each
 // batchInsert request is atomic.
 func (r *LayersPermissionsService) BatchUpdate(id string, permissionsbatchupdaterequest *PermissionsBatchUpdateRequest) *LayersPermissionsBatchUpdateCall {
-	c := &LayersPermissionsBatchUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersPermissionsBatchUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchupdaterequest = permissionsbatchupdaterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersPermissionsBatchUpdateCall) Fields(s ...googleapi.Field) *LayersPermissionsBatchUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersPermissionsBatchUpdateCall) Context(ctx context.Context) *LayersPermissionsBatchUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersPermissionsBatchUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchupdaterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}/permissions/batchUpdate")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.permissions.batchUpdate" call.
+// Exactly one of *PermissionsBatchUpdateResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchUpdateResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersPermissionsBatchUpdateCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchUpdateResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3628,7 +5676,12 @@ func (c *LayersPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchUpdateResponse
+	ret := &PermissionsBatchUpdateResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3665,41 +5718,84 @@ func (c *LayersPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse
 // method id "mapsengine.layers.permissions.list":
 
 type LayersPermissionsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all of the permissions for the specified asset.
 func (r *LayersPermissionsService) List(id string) *LayersPermissionsListCall {
-	c := &LayersPermissionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &LayersPermissionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *LayersPermissionsListCall) Fields(s ...googleapi.Field) *LayersPermissionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *LayersPermissionsListCall) Do() (*PermissionsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *LayersPermissionsListCall) IfNoneMatch(entityTag string) *LayersPermissionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *LayersPermissionsListCall) Context(ctx context.Context) *LayersPermissionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *LayersPermissionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "layers/{id}/permissions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.layers.permissions.list" call.
+// Exactly one of *PermissionsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PermissionsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *LayersPermissionsListCall) Do(opts ...googleapi.CallOption) (*PermissionsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3707,7 +5803,12 @@ func (c *LayersPermissionsListCall) Do() (*PermissionsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsListResponse
+	ret := &PermissionsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3742,45 +5843,74 @@ func (c *LayersPermissionsListCall) Do() (*PermissionsListResponse, error) {
 // method id "mapsengine.maps.create":
 
 type MapsCreateCall struct {
-	s    *Service
-	map_ *Map
-	opt_ map[string]interface{}
+	s          *Service
+	map_       *Map
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Create: Create a map asset.
 func (r *MapsService) Create(map_ *Map) *MapsCreateCall {
-	c := &MapsCreateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.map_ = map_
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsCreateCall) Fields(s ...googleapi.Field) *MapsCreateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsCreateCall) Do() (*Map, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsCreateCall) Context(ctx context.Context) *MapsCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsCreateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.map_)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.create" call.
+// Exactly one of *Map or error will be non-nil. Any non-2xx status code
+// is an error. Response headers are in either
+// *Map.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *MapsCreateCall) Do(opts ...googleapi.CallOption) (*Map, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3788,7 +5918,12 @@ func (c *MapsCreateCall) Do() (*Map, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Map
+	ret := &Map{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3814,41 +5949,55 @@ func (c *MapsCreateCall) Do() (*Map, error) {
 // method id "mapsengine.maps.delete":
 
 type MapsDeleteCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Delete a map.
 func (r *MapsService) Delete(id string) *MapsDeleteCall {
-	c := &MapsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsDeleteCall) Fields(s ...googleapi.Field) *MapsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsDeleteCall) Context(ctx context.Context) *MapsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.delete" call.
+func (c *MapsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -3883,14 +6032,16 @@ func (c *MapsDeleteCall) Do() error {
 // method id "mapsengine.maps.get":
 
 type MapsGetCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Return metadata for a particular map.
 func (r *MapsService) Get(id string) *MapsGetCall {
-	c := &MapsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -3900,37 +6051,79 @@ func (r *MapsService) Get(id string) *MapsGetCall {
 // returned. When version is set to published, the published version of
 // the map will be returned. Please use the maps.getPublished endpoint
 // instead.
+//
+// Possible values:
+//   "draft" - The draft version.
+//   "published" - The published version.
 func (c *MapsGetCall) Version(version string) *MapsGetCall {
-	c.opt_["version"] = version
+	c.urlParams_.Set("version", version)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsGetCall) Fields(s ...googleapi.Field) *MapsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsGetCall) Do() (*Map, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *MapsGetCall) IfNoneMatch(entityTag string) *MapsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsGetCall) Context(ctx context.Context) *MapsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["version"]; ok {
-		params.Set("version", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.get" call.
+// Exactly one of *Map or error will be non-nil. Any non-2xx status code
+// is an error. Response headers are in either
+// *Map.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *MapsGetCall) Do(opts ...googleapi.CallOption) (*Map, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3938,7 +6131,12 @@ func (c *MapsGetCall) Do() (*Map, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Map
+	ret := &Map{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3986,41 +6184,84 @@ func (c *MapsGetCall) Do() (*Map, error) {
 // method id "mapsengine.maps.getPublished":
 
 type MapsGetPublishedCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // GetPublished: Return the published metadata for a particular map.
 func (r *MapsService) GetPublished(id string) *MapsGetPublishedCall {
-	c := &MapsGetPublishedCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsGetPublishedCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsGetPublishedCall) Fields(s ...googleapi.Field) *MapsGetPublishedCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsGetPublishedCall) Do() (*PublishedMap, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *MapsGetPublishedCall) IfNoneMatch(entityTag string) *MapsGetPublishedCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsGetPublishedCall) Context(ctx context.Context) *MapsGetPublishedCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsGetPublishedCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/{id}/published")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.getPublished" call.
+// Exactly one of *PublishedMap or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *PublishedMap.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *MapsGetPublishedCall) Do(opts ...googleapi.CallOption) (*PublishedMap, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4028,7 +6269,12 @@ func (c *MapsGetPublishedCall) Do() (*PublishedMap, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PublishedMap
+	ret := &PublishedMap{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4063,13 +6309,15 @@ func (c *MapsGetPublishedCall) Do() (*PublishedMap, error) {
 // method id "mapsengine.maps.list":
 
 type MapsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all maps readable by the current user.
 func (r *MapsService) List() *MapsListCall {
-	c := &MapsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -4077,7 +6325,7 @@ func (r *MapsService) List() *MapsListCall {
 // "west,south,east,north". If set, only assets which intersect this
 // bounding box will be returned.
 func (c *MapsListCall) Bbox(bbox string) *MapsListCall {
-	c.opt_["bbox"] = bbox
+	c.urlParams_.Set("bbox", bbox)
 	return c
 }
 
@@ -4085,7 +6333,7 @@ func (c *MapsListCall) Bbox(bbox string) *MapsListCall {
 // formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or after this time.
 func (c *MapsListCall) CreatedAfter(createdAfter string) *MapsListCall {
-	c.opt_["createdAfter"] = createdAfter
+	c.urlParams_.Set("createdAfter", createdAfter)
 	return c
 }
 
@@ -4093,7 +6341,7 @@ func (c *MapsListCall) CreatedAfter(createdAfter string) *MapsListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or before this time.
 func (c *MapsListCall) CreatedBefore(createdBefore string) *MapsListCall {
-	c.opt_["createdBefore"] = createdBefore
+	c.urlParams_.Set("createdBefore", createdBefore)
 	return c
 }
 
@@ -4101,7 +6349,7 @@ func (c *MapsListCall) CreatedBefore(createdBefore string) *MapsListCall {
 // address representing a user. Returned assets that have been created
 // by the user associated with the provided email address.
 func (c *MapsListCall) CreatorEmail(creatorEmail string) *MapsListCall {
-	c.opt_["creatorEmail"] = creatorEmail
+	c.urlParams_.Set("creatorEmail", creatorEmail)
 	return c
 }
 
@@ -4109,7 +6357,7 @@ func (c *MapsListCall) CreatorEmail(creatorEmail string) *MapsListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 100.
 func (c *MapsListCall) MaxResults(maxResults int64) *MapsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -4117,7 +6365,7 @@ func (c *MapsListCall) MaxResults(maxResults int64) *MapsListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or after this time.
 func (c *MapsListCall) ModifiedAfter(modifiedAfter string) *MapsListCall {
-	c.opt_["modifiedAfter"] = modifiedAfter
+	c.urlParams_.Set("modifiedAfter", modifiedAfter)
 	return c
 }
 
@@ -4125,7 +6373,7 @@ func (c *MapsListCall) ModifiedAfter(modifiedAfter string) *MapsListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or before this time.
 func (c *MapsListCall) ModifiedBefore(modifiedBefore string) *MapsListCall {
-	c.opt_["modifiedBefore"] = modifiedBefore
+	c.urlParams_.Set("modifiedBefore", modifiedBefore)
 	return c
 }
 
@@ -4134,13 +6382,19 @@ func (c *MapsListCall) ModifiedBefore(modifiedBefore string) *MapsListCall {
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *MapsListCall) PageToken(pageToken string) *MapsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // ProcessingStatus sets the optional parameter "processingStatus":
+//
+// Possible values:
+//   "complete" - The map has completed processing.
+//   "failed" - The map has failed processing.
+//   "notReady" - The map is not ready for processing.
+//   "processing" - The map is processing.
 func (c *MapsListCall) ProcessingStatus(processingStatus string) *MapsListCall {
-	c.opt_["processingStatus"] = processingStatus
+	c.urlParams_.Set("processingStatus", processingStatus)
 	return c
 }
 
@@ -4150,29 +6404,34 @@ func (c *MapsListCall) ProcessingStatus(processingStatus string) *MapsListCall {
 // find your project ID as the value of the DashboardPlace:cid URL
 // parameter when signed in to mapsengine.google.com.
 func (c *MapsListCall) ProjectId(projectId string) *MapsListCall {
-	c.opt_["projectId"] = projectId
+	c.urlParams_.Set("projectId", projectId)
 	return c
 }
 
 // Role sets the optional parameter "role": The role parameter indicates
 // that the response should only contain assets where the current user
 // has the specified level of access.
+//
+// Possible values:
+//   "owner" - The user can read, write and administer the asset.
+//   "reader" - The user can read the asset.
+//   "writer" - The user can read and write the asset.
 func (c *MapsListCall) Role(role string) *MapsListCall {
-	c.opt_["role"] = role
+	c.urlParams_.Set("role", role)
 	return c
 }
 
 // Search sets the optional parameter "search": An unstructured search
 // string used to filter the set of results based on asset metadata.
 func (c *MapsListCall) Search(search string) *MapsListCall {
-	c.opt_["search"] = search
+	c.urlParams_.Set("search", search)
 	return c
 }
 
 // Tags sets the optional parameter "tags": A comma separated list of
 // tags. Returned assets will contain all the tags from the list.
 func (c *MapsListCall) Tags(tags string) *MapsListCall {
-	c.opt_["tags"] = tags
+	c.urlParams_.Set("tags", tags)
 	return c
 }
 
@@ -4181,74 +6440,77 @@ func (c *MapsListCall) Tags(tags string) *MapsListCall {
 // returned. When version is set to published this parameter will filter
 // the result set to include only maps that are published. Please use
 // the maps.listPublished endpoint instead.
+//
+// Possible values:
+//   "draft" - The draft version.
+//   "published" - The published version.
 func (c *MapsListCall) Version(version string) *MapsListCall {
-	c.opt_["version"] = version
+	c.urlParams_.Set("version", version)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsListCall) Fields(s ...googleapi.Field) *MapsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsListCall) Do() (*MapsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *MapsListCall) IfNoneMatch(entityTag string) *MapsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsListCall) Context(ctx context.Context) *MapsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["bbox"]; ok {
-		params.Set("bbox", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdAfter"]; ok {
-		params.Set("createdAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdBefore"]; ok {
-		params.Set("createdBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["creatorEmail"]; ok {
-		params.Set("creatorEmail", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedAfter"]; ok {
-		params.Set("modifiedAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedBefore"]; ok {
-		params.Set("modifiedBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["processingStatus"]; ok {
-		params.Set("processingStatus", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projectId"]; ok {
-		params.Set("projectId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["role"]; ok {
-		params.Set("role", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["search"]; ok {
-		params.Set("search", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["tags"]; ok {
-		params.Set("tags", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["version"]; ok {
-		params.Set("version", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.list" call.
+// Exactly one of *MapsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *MapsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *MapsListCall) Do(opts ...googleapi.CallOption) (*MapsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4256,7 +6518,12 @@ func (c *MapsListCall) Do() (*MapsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *MapsListResponse
+	ret := &MapsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4383,17 +6650,40 @@ func (c *MapsListCall) Do() (*MapsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *MapsListCall) Pages(ctx context.Context, f func(*MapsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.maps.listPublished":
 
 type MapsListPublishedCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // ListPublished: Return all published maps readable by the current
 // user.
 func (r *MapsService) ListPublished() *MapsListPublishedCall {
-	c := &MapsListPublishedCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsListPublishedCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -4401,7 +6691,7 @@ func (r *MapsService) ListPublished() *MapsListPublishedCall {
 // number of items to include in a single response page. The maximum
 // supported value is 100.
 func (c *MapsListPublishedCall) MaxResults(maxResults int64) *MapsListPublishedCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -4410,7 +6700,7 @@ func (c *MapsListPublishedCall) MaxResults(maxResults int64) *MapsListPublishedC
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *MapsListPublishedCall) PageToken(pageToken string) *MapsListPublishedCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
@@ -4420,50 +6710,79 @@ func (c *MapsListPublishedCall) PageToken(pageToken string) *MapsListPublishedCa
 // find your project ID as the value of the DashboardPlace:cid URL
 // parameter when signed in to mapsengine.google.com.
 func (c *MapsListPublishedCall) ProjectId(projectId string) *MapsListPublishedCall {
-	c.opt_["projectId"] = projectId
+	c.urlParams_.Set("projectId", projectId)
 	return c
 }
 
 // Search sets the optional parameter "search": An unstructured search
 // string used to filter the set of results based on asset metadata.
 func (c *MapsListPublishedCall) Search(search string) *MapsListPublishedCall {
-	c.opt_["search"] = search
+	c.urlParams_.Set("search", search)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsListPublishedCall) Fields(s ...googleapi.Field) *MapsListPublishedCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsListPublishedCall) Do() (*PublishedMapsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *MapsListPublishedCall) IfNoneMatch(entityTag string) *MapsListPublishedCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsListPublishedCall) Context(ctx context.Context) *MapsListPublishedCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsListPublishedCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projectId"]; ok {
-		params.Set("projectId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["search"]; ok {
-		params.Set("search", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/published")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.listPublished" call.
+// Exactly one of *PublishedMapsListResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *PublishedMapsListResponse.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *MapsListPublishedCall) Do(opts ...googleapi.CallOption) (*PublishedMapsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4471,7 +6790,12 @@ func (c *MapsListPublishedCall) Do() (*PublishedMapsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PublishedMapsListResponse
+	ret := &PublishedMapsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4515,52 +6839,87 @@ func (c *MapsListPublishedCall) Do() (*PublishedMapsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *MapsListPublishedCall) Pages(ctx context.Context, f func(*PublishedMapsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.maps.patch":
 
 type MapsPatchCall struct {
-	s    *Service
-	id   string
-	map_ *Map
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	map_       *Map
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Mutate a map asset.
 func (r *MapsService) Patch(id string, map_ *Map) *MapsPatchCall {
-	c := &MapsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.map_ = map_
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsPatchCall) Fields(s ...googleapi.Field) *MapsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsPatchCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsPatchCall) Context(ctx context.Context) *MapsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.map_)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.patch" call.
+func (c *MapsPatchCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -4598,14 +6957,15 @@ func (c *MapsPatchCall) Do() error {
 // method id "mapsengine.maps.publish":
 
 type MapsPublishCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Publish: Publish a map asset.
 func (r *MapsService) Publish(id string) *MapsPublishCall {
-	c := &MapsPublishCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsPublishCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -4614,36 +6974,61 @@ func (r *MapsService) Publish(id string) *MapsPublishCall {
 // will allow publication of the map even if it's out of date. If false,
 // the map must have a processingStatus of complete before publishing.
 func (c *MapsPublishCall) Force(force bool) *MapsPublishCall {
-	c.opt_["force"] = force
+	c.urlParams_.Set("force", fmt.Sprint(force))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsPublishCall) Fields(s ...googleapi.Field) *MapsPublishCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsPublishCall) Do() (*PublishResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsPublishCall) Context(ctx context.Context) *MapsPublishCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsPublishCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["force"]; ok {
-		params.Set("force", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/{id}/publish")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.publish" call.
+// Exactly one of *PublishResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *PublishResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *MapsPublishCall) Do(opts ...googleapi.CallOption) (*PublishResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4651,7 +7036,12 @@ func (c *MapsPublishCall) Do() (*PublishResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PublishResponse
+	ret := &PublishResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4690,41 +7080,70 @@ func (c *MapsPublishCall) Do() (*PublishResponse, error) {
 // method id "mapsengine.maps.unpublish":
 
 type MapsUnpublishCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Unpublish: Unpublish a map asset.
 func (r *MapsService) Unpublish(id string) *MapsUnpublishCall {
-	c := &MapsUnpublishCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsUnpublishCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsUnpublishCall) Fields(s ...googleapi.Field) *MapsUnpublishCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsUnpublishCall) Do() (*PublishResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsUnpublishCall) Context(ctx context.Context) *MapsUnpublishCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsUnpublishCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/{id}/unpublish")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.unpublish" call.
+// Exactly one of *PublishResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *PublishResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *MapsUnpublishCall) Do(opts ...googleapi.CallOption) (*PublishResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4732,7 +7151,12 @@ func (c *MapsUnpublishCall) Do() (*PublishResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PublishResponse
+	ret := &PublishResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4769,47 +7193,76 @@ type MapsPermissionsBatchDeleteCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchdeleterequest *PermissionsBatchDeleteRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchDelete: Remove permission entries from an already existing
 // asset.
 func (r *MapsPermissionsService) BatchDelete(id string, permissionsbatchdeleterequest *PermissionsBatchDeleteRequest) *MapsPermissionsBatchDeleteCall {
-	c := &MapsPermissionsBatchDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsPermissionsBatchDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchdeleterequest = permissionsbatchdeleterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsPermissionsBatchDeleteCall) Fields(s ...googleapi.Field) *MapsPermissionsBatchDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsPermissionsBatchDeleteCall) Do() (*PermissionsBatchDeleteResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsPermissionsBatchDeleteCall) Context(ctx context.Context) *MapsPermissionsBatchDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsPermissionsBatchDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchdeleterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/{id}/permissions/batchDelete")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.permissions.batchDelete" call.
+// Exactly one of *PermissionsBatchDeleteResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchDeleteResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *MapsPermissionsBatchDeleteCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchDeleteResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4817,7 +7270,12 @@ func (c *MapsPermissionsBatchDeleteCall) Do() (*PermissionsBatchDeleteResponse, 
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchDeleteResponse
+	ret := &PermissionsBatchDeleteResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4857,7 +7315,8 @@ type MapsPermissionsBatchUpdateCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchupdaterequest *PermissionsBatchUpdateRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchUpdate: Add or update permission entries to an already existing
@@ -4866,41 +7325,69 @@ type MapsPermissionsBatchUpdateCall struct {
 // An asset can hold up to 20 different permission entries. Each
 // batchInsert request is atomic.
 func (r *MapsPermissionsService) BatchUpdate(id string, permissionsbatchupdaterequest *PermissionsBatchUpdateRequest) *MapsPermissionsBatchUpdateCall {
-	c := &MapsPermissionsBatchUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsPermissionsBatchUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchupdaterequest = permissionsbatchupdaterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsPermissionsBatchUpdateCall) Fields(s ...googleapi.Field) *MapsPermissionsBatchUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsPermissionsBatchUpdateCall) Context(ctx context.Context) *MapsPermissionsBatchUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsPermissionsBatchUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchupdaterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/{id}/permissions/batchUpdate")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.permissions.batchUpdate" call.
+// Exactly one of *PermissionsBatchUpdateResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchUpdateResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *MapsPermissionsBatchUpdateCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchUpdateResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4908,7 +7395,12 @@ func (c *MapsPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse, 
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchUpdateResponse
+	ret := &PermissionsBatchUpdateResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4945,41 +7437,84 @@ func (c *MapsPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse, 
 // method id "mapsengine.maps.permissions.list":
 
 type MapsPermissionsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all of the permissions for the specified asset.
 func (r *MapsPermissionsService) List(id string) *MapsPermissionsListCall {
-	c := &MapsPermissionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &MapsPermissionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *MapsPermissionsListCall) Fields(s ...googleapi.Field) *MapsPermissionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *MapsPermissionsListCall) Do() (*PermissionsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *MapsPermissionsListCall) IfNoneMatch(entityTag string) *MapsPermissionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *MapsPermissionsListCall) Context(ctx context.Context) *MapsPermissionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *MapsPermissionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "maps/{id}/permissions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.maps.permissions.list" call.
+// Exactly one of *PermissionsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PermissionsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *MapsPermissionsListCall) Do(opts ...googleapi.CallOption) (*PermissionsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4987,7 +7522,12 @@ func (c *MapsPermissionsListCall) Do() (*PermissionsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsListResponse
+	ret := &PermissionsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5022,37 +7562,80 @@ func (c *MapsPermissionsListCall) Do() (*PermissionsListResponse, error) {
 // method id "mapsengine.projects.list":
 
 type ProjectsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all projects readable by the current user.
 func (r *ProjectsService) List() *ProjectsListCall {
-	c := &ProjectsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ProjectsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ProjectsListCall) Fields(s ...googleapi.Field) *ProjectsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ProjectsListCall) Do() (*ProjectsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsListCall) IfNoneMatch(entityTag string) *ProjectsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsListCall) Context(ctx context.Context) *ProjectsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ProjectsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.projects.list" call.
+// Exactly one of *ProjectsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ProjectsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsListCall) Do(opts ...googleapi.CallOption) (*ProjectsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5060,7 +7643,12 @@ func (c *ProjectsListCall) Do() (*ProjectsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProjectsListResponse
+	ret := &ProjectsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5084,108 +7672,150 @@ func (c *ProjectsListCall) Do() (*ProjectsListResponse, error) {
 // method id "mapsengine.projects.icons.create":
 
 type ProjectsIconsCreateCall struct {
-	s          *Service
-	projectId  string
-	icon       *Icon
-	opt_       map[string]interface{}
-	media_     io.Reader
-	resumable_ googleapi.SizeReaderAt
-	mediaType_ string
-	ctx_       context.Context
-	protocol_  string
+	s                *Service
+	projectId        string
+	icon             *Icon
+	urlParams_       gensupport.URLParams
+	media_           io.Reader
+	resumableBuffer_ *gensupport.ResumableBuffer
+	mediaType_       string
+	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_ googleapi.ProgressUpdater
+	ctx_             context.Context
 }
 
 // Create: Create an icon.
 func (r *ProjectsIconsService) Create(projectId string, icon *Icon) *ProjectsIconsCreateCall {
-	c := &ProjectsIconsCreateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ProjectsIconsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
 	c.icon = icon
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *ProjectsIconsCreateCall) Media(r io.Reader) *ProjectsIconsCreateCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *ProjectsIconsCreateCall) Media(r io.Reader, options ...googleapi.MediaOption) *ProjectsIconsCreateCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *ProjectsIconsCreateCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *ProjectsIconsCreateCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *ProjectsIconsCreateCall) ProgressUpdater(pu googleapi.ProgressUpdater) *ProjectsIconsCreateCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ProjectsIconsCreateCall) Fields(s ...googleapi.Field) *ProjectsIconsCreateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ProjectsIconsCreateCall) Do() (*Icon, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *ProjectsIconsCreateCall) Context(ctx context.Context) *ProjectsIconsCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ProjectsIconsCreateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.icon)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{projectId}/icons")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
-	}
-	urls += "?" + params.Encode()
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
 		}
+		c.urlParams_.Set("uploadType", protocol)
+	}
+	urls += "?" + c.urlParams_.Encode()
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectId": c.projectId,
 	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.projects.icons.create" call.
+// Exactly one of *Icon or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Icon.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ProjectsIconsCreateCall) Do(opts ...googleapi.CallOption) (*Icon, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5193,23 +7823,39 @@ func (c *ProjectsIconsCreateCall) Do() (*Icon, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return nil, err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return nil, err
+		}
 	}
-	var ret *Icon
+	ret := &Icon{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5263,44 +7909,103 @@ func (c *ProjectsIconsCreateCall) Do() (*Icon, error) {
 // method id "mapsengine.projects.icons.get":
 
 type ProjectsIconsGetCall struct {
-	s         *Service
-	projectId string
-	id        string
-	opt_      map[string]interface{}
+	s            *Service
+	projectId    string
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Return an icon or its associated metadata
 func (r *ProjectsIconsService) Get(projectId string, id string) *ProjectsIconsGetCall {
-	c := &ProjectsIconsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ProjectsIconsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ProjectsIconsGetCall) Fields(s ...googleapi.Field) *ProjectsIconsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ProjectsIconsGetCall) Do() (*Icon, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsIconsGetCall) IfNoneMatch(entityTag string) *ProjectsIconsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do and Download
+// methods. Any pending HTTP request will be aborted if the provided
+// context is canceled.
+func (c *ProjectsIconsGetCall) Context(ctx context.Context) *ProjectsIconsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ProjectsIconsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{projectId}/icons/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectId": c.projectId,
 		"id":        c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Download fetches the API endpoint's "media" value, instead of the normal
+// API response value. If the returned error is nil, the Response is guaranteed to
+// have a 2xx status code. Callers must close the Response.Body as usual.
+func (c *ProjectsIconsGetCall) Download(opts ...googleapi.CallOption) (*http.Response, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("media")
+	if err != nil {
+		return nil, err
+	}
+	if err := googleapi.CheckMediaResponse(res); err != nil {
+		res.Body.Close()
+		return nil, err
+	}
+	return res, nil
+}
+
+// Do executes the "mapsengine.projects.icons.get" call.
+// Exactly one of *Icon or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Icon.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ProjectsIconsGetCall) Do(opts ...googleapi.CallOption) (*Icon, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5308,7 +8013,12 @@ func (c *ProjectsIconsGetCall) Do() (*Icon, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Icon
+	ret := &Icon{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5351,14 +8061,16 @@ func (c *ProjectsIconsGetCall) Do() (*Icon, error) {
 // method id "mapsengine.projects.icons.list":
 
 type ProjectsIconsListCall struct {
-	s         *Service
-	projectId string
-	opt_      map[string]interface{}
+	s            *Service
+	projectId    string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all icons in the current project
 func (r *ProjectsIconsService) List(projectId string) *ProjectsIconsListCall {
-	c := &ProjectsIconsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ProjectsIconsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.projectId = projectId
 	return c
 }
@@ -5367,7 +8079,7 @@ func (r *ProjectsIconsService) List(projectId string) *ProjectsIconsListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 50.
 func (c *ProjectsIconsListCall) MaxResults(maxResults int64) *ProjectsIconsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -5376,39 +8088,74 @@ func (c *ProjectsIconsListCall) MaxResults(maxResults int64) *ProjectsIconsListC
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *ProjectsIconsListCall) PageToken(pageToken string) *ProjectsIconsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ProjectsIconsListCall) Fields(s ...googleapi.Field) *ProjectsIconsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ProjectsIconsListCall) Do() (*IconsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsIconsListCall) IfNoneMatch(entityTag string) *ProjectsIconsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsIconsListCall) Context(ctx context.Context) *ProjectsIconsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ProjectsIconsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{projectId}/icons")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"projectId": c.projectId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.projects.icons.list" call.
+// Exactly one of *IconsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *IconsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsIconsListCall) Do(opts ...googleapi.CallOption) (*IconsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5416,7 +8163,12 @@ func (c *ProjectsIconsListCall) Do() (*IconsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *IconsListResponse
+	ret := &IconsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5459,44 +8211,94 @@ func (c *ProjectsIconsListCall) Do() (*IconsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ProjectsIconsListCall) Pages(ctx context.Context, f func(*IconsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.rasterCollections.cancelProcessing":
 
 type RasterCollectionsCancelProcessingCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // CancelProcessing: Cancel processing on a raster collection asset.
 func (r *RasterCollectionsService) CancelProcessing(id string) *RasterCollectionsCancelProcessingCall {
-	c := &RasterCollectionsCancelProcessingCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsCancelProcessingCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsCancelProcessingCall) Fields(s ...googleapi.Field) *RasterCollectionsCancelProcessingCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsCancelProcessingCall) Do() (*ProcessResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsCancelProcessingCall) Context(ctx context.Context) *RasterCollectionsCancelProcessingCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsCancelProcessingCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}/cancelProcessing")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.cancelProcessing" call.
+// Exactly one of *ProcessResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ProcessResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RasterCollectionsCancelProcessingCall) Do(opts ...googleapi.CallOption) (*ProcessResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5504,7 +8306,12 @@ func (c *RasterCollectionsCancelProcessingCall) Do() (*ProcessResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProcessResponse
+	ret := &ProcessResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5540,43 +8347,72 @@ func (c *RasterCollectionsCancelProcessingCall) Do() (*ProcessResponse, error) {
 type RasterCollectionsCreateCall struct {
 	s                *Service
 	rastercollection *RasterCollection
-	opt_             map[string]interface{}
+	urlParams_       gensupport.URLParams
+	ctx_             context.Context
 }
 
 // Create: Create a raster collection asset.
 func (r *RasterCollectionsService) Create(rastercollection *RasterCollection) *RasterCollectionsCreateCall {
-	c := &RasterCollectionsCreateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.rastercollection = rastercollection
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsCreateCall) Fields(s ...googleapi.Field) *RasterCollectionsCreateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsCreateCall) Do() (*RasterCollection, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsCreateCall) Context(ctx context.Context) *RasterCollectionsCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsCreateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.rastercollection)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.create" call.
+// Exactly one of *RasterCollection or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *RasterCollection.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RasterCollectionsCreateCall) Do(opts ...googleapi.CallOption) (*RasterCollection, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5584,7 +8420,12 @@ func (c *RasterCollectionsCreateCall) Do() (*RasterCollection, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *RasterCollection
+	ret := &RasterCollection{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5610,41 +8451,55 @@ func (c *RasterCollectionsCreateCall) Do() (*RasterCollection, error) {
 // method id "mapsengine.rasterCollections.delete":
 
 type RasterCollectionsDeleteCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Delete a raster collection.
 func (r *RasterCollectionsService) Delete(id string) *RasterCollectionsDeleteCall {
-	c := &RasterCollectionsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsDeleteCall) Fields(s ...googleapi.Field) *RasterCollectionsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsDeleteCall) Context(ctx context.Context) *RasterCollectionsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.delete" call.
+func (c *RasterCollectionsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -5679,41 +8534,84 @@ func (c *RasterCollectionsDeleteCall) Do() error {
 // method id "mapsengine.rasterCollections.get":
 
 type RasterCollectionsGetCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Return metadata for a particular raster collection.
 func (r *RasterCollectionsService) Get(id string) *RasterCollectionsGetCall {
-	c := &RasterCollectionsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsGetCall) Fields(s ...googleapi.Field) *RasterCollectionsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsGetCall) Do() (*RasterCollection, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RasterCollectionsGetCall) IfNoneMatch(entityTag string) *RasterCollectionsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsGetCall) Context(ctx context.Context) *RasterCollectionsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.get" call.
+// Exactly one of *RasterCollection or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *RasterCollection.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RasterCollectionsGetCall) Do(opts ...googleapi.CallOption) (*RasterCollection, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5721,7 +8619,12 @@ func (c *RasterCollectionsGetCall) Do() (*RasterCollection, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *RasterCollection
+	ret := &RasterCollection{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5756,13 +8659,15 @@ func (c *RasterCollectionsGetCall) Do() (*RasterCollection, error) {
 // method id "mapsengine.rasterCollections.list":
 
 type RasterCollectionsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all raster collections readable by the current user.
 func (r *RasterCollectionsService) List() *RasterCollectionsListCall {
-	c := &RasterCollectionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -5770,7 +8675,7 @@ func (r *RasterCollectionsService) List() *RasterCollectionsListCall {
 // "west,south,east,north". If set, only assets which intersect this
 // bounding box will be returned.
 func (c *RasterCollectionsListCall) Bbox(bbox string) *RasterCollectionsListCall {
-	c.opt_["bbox"] = bbox
+	c.urlParams_.Set("bbox", bbox)
 	return c
 }
 
@@ -5778,7 +8683,7 @@ func (c *RasterCollectionsListCall) Bbox(bbox string) *RasterCollectionsListCall
 // formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or after this time.
 func (c *RasterCollectionsListCall) CreatedAfter(createdAfter string) *RasterCollectionsListCall {
-	c.opt_["createdAfter"] = createdAfter
+	c.urlParams_.Set("createdAfter", createdAfter)
 	return c
 }
 
@@ -5786,7 +8691,7 @@ func (c *RasterCollectionsListCall) CreatedAfter(createdAfter string) *RasterCol
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or before this time.
 func (c *RasterCollectionsListCall) CreatedBefore(createdBefore string) *RasterCollectionsListCall {
-	c.opt_["createdBefore"] = createdBefore
+	c.urlParams_.Set("createdBefore", createdBefore)
 	return c
 }
 
@@ -5794,7 +8699,7 @@ func (c *RasterCollectionsListCall) CreatedBefore(createdBefore string) *RasterC
 // address representing a user. Returned assets that have been created
 // by the user associated with the provided email address.
 func (c *RasterCollectionsListCall) CreatorEmail(creatorEmail string) *RasterCollectionsListCall {
-	c.opt_["creatorEmail"] = creatorEmail
+	c.urlParams_.Set("creatorEmail", creatorEmail)
 	return c
 }
 
@@ -5802,7 +8707,7 @@ func (c *RasterCollectionsListCall) CreatorEmail(creatorEmail string) *RasterCol
 // number of items to include in a single response page. The maximum
 // supported value is 100.
 func (c *RasterCollectionsListCall) MaxResults(maxResults int64) *RasterCollectionsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -5810,7 +8715,7 @@ func (c *RasterCollectionsListCall) MaxResults(maxResults int64) *RasterCollecti
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or after this time.
 func (c *RasterCollectionsListCall) ModifiedAfter(modifiedAfter string) *RasterCollectionsListCall {
-	c.opt_["modifiedAfter"] = modifiedAfter
+	c.urlParams_.Set("modifiedAfter", modifiedAfter)
 	return c
 }
 
@@ -5818,7 +8723,7 @@ func (c *RasterCollectionsListCall) ModifiedAfter(modifiedAfter string) *RasterC
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or before this time.
 func (c *RasterCollectionsListCall) ModifiedBefore(modifiedBefore string) *RasterCollectionsListCall {
-	c.opt_["modifiedBefore"] = modifiedBefore
+	c.urlParams_.Set("modifiedBefore", modifiedBefore)
 	return c
 }
 
@@ -5827,13 +8732,20 @@ func (c *RasterCollectionsListCall) ModifiedBefore(modifiedBefore string) *Raste
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *RasterCollectionsListCall) PageToken(pageToken string) *RasterCollectionsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // ProcessingStatus sets the optional parameter "processingStatus":
+//
+// Possible values:
+//   "complete" - The raster collection has completed processing.
+//   "failed" - The raster collection has failed processing.
+//   "notReady" - The raster collection is not ready for processing.
+//   "processing" - The raster collection is processing.
+//   "ready" - The raster collection is ready for processing.
 func (c *RasterCollectionsListCall) ProcessingStatus(processingStatus string) *RasterCollectionsListCall {
-	c.opt_["processingStatus"] = processingStatus
+	c.urlParams_.Set("processingStatus", processingStatus)
 	return c
 }
 
@@ -5843,92 +8755,99 @@ func (c *RasterCollectionsListCall) ProcessingStatus(processingStatus string) *R
 // find your project ID as the value of the DashboardPlace:cid URL
 // parameter when signed in to mapsengine.google.com.
 func (c *RasterCollectionsListCall) ProjectId(projectId string) *RasterCollectionsListCall {
-	c.opt_["projectId"] = projectId
+	c.urlParams_.Set("projectId", projectId)
 	return c
 }
 
 // Role sets the optional parameter "role": The role parameter indicates
 // that the response should only contain assets where the current user
 // has the specified level of access.
+//
+// Possible values:
+//   "owner" - The user can read, write and administer the asset.
+//   "reader" - The user can read the asset.
+//   "writer" - The user can read and write the asset.
 func (c *RasterCollectionsListCall) Role(role string) *RasterCollectionsListCall {
-	c.opt_["role"] = role
+	c.urlParams_.Set("role", role)
 	return c
 }
 
 // Search sets the optional parameter "search": An unstructured search
 // string used to filter the set of results based on asset metadata.
 func (c *RasterCollectionsListCall) Search(search string) *RasterCollectionsListCall {
-	c.opt_["search"] = search
+	c.urlParams_.Set("search", search)
 	return c
 }
 
 // Tags sets the optional parameter "tags": A comma separated list of
 // tags. Returned assets will contain all the tags from the list.
 func (c *RasterCollectionsListCall) Tags(tags string) *RasterCollectionsListCall {
-	c.opt_["tags"] = tags
+	c.urlParams_.Set("tags", tags)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsListCall) Fields(s ...googleapi.Field) *RasterCollectionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsListCall) Do() (*RasterCollectionsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RasterCollectionsListCall) IfNoneMatch(entityTag string) *RasterCollectionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsListCall) Context(ctx context.Context) *RasterCollectionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["bbox"]; ok {
-		params.Set("bbox", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdAfter"]; ok {
-		params.Set("createdAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdBefore"]; ok {
-		params.Set("createdBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["creatorEmail"]; ok {
-		params.Set("creatorEmail", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedAfter"]; ok {
-		params.Set("modifiedAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedBefore"]; ok {
-		params.Set("modifiedBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["processingStatus"]; ok {
-		params.Set("processingStatus", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projectId"]; ok {
-		params.Set("projectId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["role"]; ok {
-		params.Set("role", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["search"]; ok {
-		params.Set("search", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["tags"]; ok {
-		params.Set("tags", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.list" call.
+// Exactly one of *RasterCollectionsListResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *RasterCollectionsListResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RasterCollectionsListCall) Do(opts ...googleapi.CallOption) (*RasterCollectionsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5936,7 +8855,12 @@ func (c *RasterCollectionsListCall) Do() (*RasterCollectionsListResponse, error)
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *RasterCollectionsListResponse
+	ret := &RasterCollectionsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6052,52 +8976,87 @@ func (c *RasterCollectionsListCall) Do() (*RasterCollectionsListResponse, error)
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *RasterCollectionsListCall) Pages(ctx context.Context, f func(*RasterCollectionsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.rasterCollections.patch":
 
 type RasterCollectionsPatchCall struct {
 	s                *Service
 	id               string
 	rastercollection *RasterCollection
-	opt_             map[string]interface{}
+	urlParams_       gensupport.URLParams
+	ctx_             context.Context
 }
 
 // Patch: Mutate a raster collection asset.
 func (r *RasterCollectionsService) Patch(id string, rastercollection *RasterCollection) *RasterCollectionsPatchCall {
-	c := &RasterCollectionsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.rastercollection = rastercollection
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsPatchCall) Fields(s ...googleapi.Field) *RasterCollectionsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsPatchCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsPatchCall) Context(ctx context.Context) *RasterCollectionsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.rastercollection)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.patch" call.
+func (c *RasterCollectionsPatchCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -6135,41 +9094,70 @@ func (c *RasterCollectionsPatchCall) Do() error {
 // method id "mapsengine.rasterCollections.process":
 
 type RasterCollectionsProcessCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Process: Process a raster collection asset.
 func (r *RasterCollectionsService) Process(id string) *RasterCollectionsProcessCall {
-	c := &RasterCollectionsProcessCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsProcessCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsProcessCall) Fields(s ...googleapi.Field) *RasterCollectionsProcessCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsProcessCall) Do() (*ProcessResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsProcessCall) Context(ctx context.Context) *RasterCollectionsProcessCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsProcessCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}/process")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.process" call.
+// Exactly one of *ProcessResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ProcessResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RasterCollectionsProcessCall) Do(opts ...googleapi.CallOption) (*ProcessResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6177,7 +9165,12 @@ func (c *RasterCollectionsProcessCall) Do() (*ProcessResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProcessResponse
+	ret := &ProcessResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6211,14 +9204,16 @@ func (c *RasterCollectionsProcessCall) Do() (*ProcessResponse, error) {
 // method id "mapsengine.rasterCollections.parents.list":
 
 type RasterCollectionsParentsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all parent ids of the specified raster collection.
 func (r *RasterCollectionsParentsService) List(id string) *RasterCollectionsParentsListCall {
-	c := &RasterCollectionsParentsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsParentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -6227,7 +9222,7 @@ func (r *RasterCollectionsParentsService) List(id string) *RasterCollectionsPare
 // number of items to include in a single response page. The maximum
 // supported value is 50.
 func (c *RasterCollectionsParentsListCall) MaxResults(maxResults int64) *RasterCollectionsParentsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -6236,39 +9231,74 @@ func (c *RasterCollectionsParentsListCall) MaxResults(maxResults int64) *RasterC
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *RasterCollectionsParentsListCall) PageToken(pageToken string) *RasterCollectionsParentsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsParentsListCall) Fields(s ...googleapi.Field) *RasterCollectionsParentsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsParentsListCall) Do() (*ParentsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RasterCollectionsParentsListCall) IfNoneMatch(entityTag string) *RasterCollectionsParentsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsParentsListCall) Context(ctx context.Context) *RasterCollectionsParentsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsParentsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}/parents")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.parents.list" call.
+// Exactly one of *ParentsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ParentsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RasterCollectionsParentsListCall) Do(opts ...googleapi.CallOption) (*ParentsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6276,7 +9306,12 @@ func (c *RasterCollectionsParentsListCall) Do() (*ParentsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ParentsListResponse
+	ret := &ParentsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6319,53 +9354,103 @@ func (c *RasterCollectionsParentsListCall) Do() (*ParentsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *RasterCollectionsParentsListCall) Pages(ctx context.Context, f func(*ParentsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.rasterCollections.permissions.batchDelete":
 
 type RasterCollectionsPermissionsBatchDeleteCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchdeleterequest *PermissionsBatchDeleteRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchDelete: Remove permission entries from an already existing
 // asset.
 func (r *RasterCollectionsPermissionsService) BatchDelete(id string, permissionsbatchdeleterequest *PermissionsBatchDeleteRequest) *RasterCollectionsPermissionsBatchDeleteCall {
-	c := &RasterCollectionsPermissionsBatchDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsPermissionsBatchDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchdeleterequest = permissionsbatchdeleterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsPermissionsBatchDeleteCall) Fields(s ...googleapi.Field) *RasterCollectionsPermissionsBatchDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsPermissionsBatchDeleteCall) Do() (*PermissionsBatchDeleteResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsPermissionsBatchDeleteCall) Context(ctx context.Context) *RasterCollectionsPermissionsBatchDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsPermissionsBatchDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchdeleterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}/permissions/batchDelete")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.permissions.batchDelete" call.
+// Exactly one of *PermissionsBatchDeleteResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchDeleteResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RasterCollectionsPermissionsBatchDeleteCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchDeleteResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6373,7 +9458,12 @@ func (c *RasterCollectionsPermissionsBatchDeleteCall) Do() (*PermissionsBatchDel
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchDeleteResponse
+	ret := &PermissionsBatchDeleteResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6413,7 +9503,8 @@ type RasterCollectionsPermissionsBatchUpdateCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchupdaterequest *PermissionsBatchUpdateRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchUpdate: Add or update permission entries to an already existing
@@ -6422,41 +9513,69 @@ type RasterCollectionsPermissionsBatchUpdateCall struct {
 // An asset can hold up to 20 different permission entries. Each
 // batchInsert request is atomic.
 func (r *RasterCollectionsPermissionsService) BatchUpdate(id string, permissionsbatchupdaterequest *PermissionsBatchUpdateRequest) *RasterCollectionsPermissionsBatchUpdateCall {
-	c := &RasterCollectionsPermissionsBatchUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsPermissionsBatchUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchupdaterequest = permissionsbatchupdaterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsPermissionsBatchUpdateCall) Fields(s ...googleapi.Field) *RasterCollectionsPermissionsBatchUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsPermissionsBatchUpdateCall) Context(ctx context.Context) *RasterCollectionsPermissionsBatchUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsPermissionsBatchUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchupdaterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}/permissions/batchUpdate")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.permissions.batchUpdate" call.
+// Exactly one of *PermissionsBatchUpdateResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchUpdateResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RasterCollectionsPermissionsBatchUpdateCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchUpdateResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6464,7 +9583,12 @@ func (c *RasterCollectionsPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpd
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchUpdateResponse
+	ret := &PermissionsBatchUpdateResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6501,41 +9625,84 @@ func (c *RasterCollectionsPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpd
 // method id "mapsengine.rasterCollections.permissions.list":
 
 type RasterCollectionsPermissionsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all of the permissions for the specified asset.
 func (r *RasterCollectionsPermissionsService) List(id string) *RasterCollectionsPermissionsListCall {
-	c := &RasterCollectionsPermissionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsPermissionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsPermissionsListCall) Fields(s ...googleapi.Field) *RasterCollectionsPermissionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsPermissionsListCall) Do() (*PermissionsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RasterCollectionsPermissionsListCall) IfNoneMatch(entityTag string) *RasterCollectionsPermissionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsPermissionsListCall) Context(ctx context.Context) *RasterCollectionsPermissionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsPermissionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}/permissions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.permissions.list" call.
+// Exactly one of *PermissionsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PermissionsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RasterCollectionsPermissionsListCall) Do(opts ...googleapi.CallOption) (*PermissionsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6543,7 +9710,12 @@ func (c *RasterCollectionsPermissionsListCall) Do() (*PermissionsListResponse, e
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsListResponse
+	ret := &PermissionsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6581,50 +9753,80 @@ type RasterCollectionsRastersBatchDeleteCall struct {
 	s                                         *Service
 	id                                        string
 	rastercollectionsrasterbatchdeleterequest *RasterCollectionsRasterBatchDeleteRequest
-	opt_                                      map[string]interface{}
+	urlParams_                                gensupport.URLParams
+	ctx_                                      context.Context
 }
 
 // BatchDelete: Remove rasters from an existing raster collection.
 //
-// Up
-// to 50 rasters can be included in a single batchDelete request. Each
-// batchDelete request is atomic.
+// Up to 50 rasters can be included in a single batchDelete request.
+// Each batchDelete request is atomic.
 func (r *RasterCollectionsRastersService) BatchDelete(id string, rastercollectionsrasterbatchdeleterequest *RasterCollectionsRasterBatchDeleteRequest) *RasterCollectionsRastersBatchDeleteCall {
-	c := &RasterCollectionsRastersBatchDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsRastersBatchDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.rastercollectionsrasterbatchdeleterequest = rastercollectionsrasterbatchdeleterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsRastersBatchDeleteCall) Fields(s ...googleapi.Field) *RasterCollectionsRastersBatchDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsRastersBatchDeleteCall) Do() (*RasterCollectionsRastersBatchDeleteResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsRastersBatchDeleteCall) Context(ctx context.Context) *RasterCollectionsRastersBatchDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsRastersBatchDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.rastercollectionsrasterbatchdeleterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}/rasters/batchDelete")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.rasters.batchDelete" call.
+// Exactly one of *RasterCollectionsRastersBatchDeleteResponse or error
+// will be non-nil. Any non-2xx status code is an error. Response
+// headers are in either
+// *RasterCollectionsRastersBatchDeleteResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *RasterCollectionsRastersBatchDeleteCall) Do(opts ...googleapi.CallOption) (*RasterCollectionsRastersBatchDeleteResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6632,7 +9834,12 @@ func (c *RasterCollectionsRastersBatchDeleteCall) Do() (*RasterCollectionsRaster
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *RasterCollectionsRastersBatchDeleteResponse
+	ret := &RasterCollectionsRastersBatchDeleteResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6672,51 +9879,82 @@ type RasterCollectionsRastersBatchInsertCall struct {
 	s                                          *Service
 	id                                         string
 	rastercollectionsrastersbatchinsertrequest *RasterCollectionsRastersBatchInsertRequest
-	opt_                                       map[string]interface{}
+	urlParams_                                 gensupport.URLParams
+	ctx_                                       context.Context
 }
 
 // BatchInsert: Add rasters to an existing raster collection. Rasters
 // must be successfully processed in order to be added to a raster
 // collection.
 //
-// Up to 50 rasters can be included in a single batchInsert
-// request. Each batchInsert request is atomic.
+// Up to 50 rasters can be included in a single batchInsert request.
+// Each batchInsert request is atomic.
 func (r *RasterCollectionsRastersService) BatchInsert(id string, rastercollectionsrastersbatchinsertrequest *RasterCollectionsRastersBatchInsertRequest) *RasterCollectionsRastersBatchInsertCall {
-	c := &RasterCollectionsRastersBatchInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsRastersBatchInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.rastercollectionsrastersbatchinsertrequest = rastercollectionsrastersbatchinsertrequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsRastersBatchInsertCall) Fields(s ...googleapi.Field) *RasterCollectionsRastersBatchInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsRastersBatchInsertCall) Do() (*RasterCollectionsRastersBatchInsertResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsRastersBatchInsertCall) Context(ctx context.Context) *RasterCollectionsRastersBatchInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsRastersBatchInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.rastercollectionsrastersbatchinsertrequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}/rasters/batchInsert")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.rasters.batchInsert" call.
+// Exactly one of *RasterCollectionsRastersBatchInsertResponse or error
+// will be non-nil. Any non-2xx status code is an error. Response
+// headers are in either
+// *RasterCollectionsRastersBatchInsertResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *RasterCollectionsRastersBatchInsertCall) Do(opts ...googleapi.CallOption) (*RasterCollectionsRastersBatchInsertResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6724,7 +9962,12 @@ func (c *RasterCollectionsRastersBatchInsertCall) Do() (*RasterCollectionsRaster
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *RasterCollectionsRastersBatchInsertResponse
+	ret := &RasterCollectionsRastersBatchInsertResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6761,14 +10004,16 @@ func (c *RasterCollectionsRastersBatchInsertCall) Do() (*RasterCollectionsRaster
 // method id "mapsengine.rasterCollections.rasters.list":
 
 type RasterCollectionsRastersListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all rasters within a raster collection.
 func (r *RasterCollectionsRastersService) List(id string) *RasterCollectionsRastersListCall {
-	c := &RasterCollectionsRastersListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RasterCollectionsRastersListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -6777,7 +10022,7 @@ func (r *RasterCollectionsRastersService) List(id string) *RasterCollectionsRast
 // "west,south,east,north". If set, only assets which intersect this
 // bounding box will be returned.
 func (c *RasterCollectionsRastersListCall) Bbox(bbox string) *RasterCollectionsRastersListCall {
-	c.opt_["bbox"] = bbox
+	c.urlParams_.Set("bbox", bbox)
 	return c
 }
 
@@ -6785,7 +10030,7 @@ func (c *RasterCollectionsRastersListCall) Bbox(bbox string) *RasterCollectionsR
 // formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or after this time.
 func (c *RasterCollectionsRastersListCall) CreatedAfter(createdAfter string) *RasterCollectionsRastersListCall {
-	c.opt_["createdAfter"] = createdAfter
+	c.urlParams_.Set("createdAfter", createdAfter)
 	return c
 }
 
@@ -6793,7 +10038,7 @@ func (c *RasterCollectionsRastersListCall) CreatedAfter(createdAfter string) *Ra
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or before this time.
 func (c *RasterCollectionsRastersListCall) CreatedBefore(createdBefore string) *RasterCollectionsRastersListCall {
-	c.opt_["createdBefore"] = createdBefore
+	c.urlParams_.Set("createdBefore", createdBefore)
 	return c
 }
 
@@ -6801,7 +10046,7 @@ func (c *RasterCollectionsRastersListCall) CreatedBefore(createdBefore string) *
 // address representing a user. Returned assets that have been created
 // by the user associated with the provided email address.
 func (c *RasterCollectionsRastersListCall) CreatorEmail(creatorEmail string) *RasterCollectionsRastersListCall {
-	c.opt_["creatorEmail"] = creatorEmail
+	c.urlParams_.Set("creatorEmail", creatorEmail)
 	return c
 }
 
@@ -6809,7 +10054,7 @@ func (c *RasterCollectionsRastersListCall) CreatorEmail(creatorEmail string) *Ra
 // number of items to include in a single response page. The maximum
 // supported value is 100.
 func (c *RasterCollectionsRastersListCall) MaxResults(maxResults int64) *RasterCollectionsRastersListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -6817,7 +10062,7 @@ func (c *RasterCollectionsRastersListCall) MaxResults(maxResults int64) *RasterC
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or after this time.
 func (c *RasterCollectionsRastersListCall) ModifiedAfter(modifiedAfter string) *RasterCollectionsRastersListCall {
-	c.opt_["modifiedAfter"] = modifiedAfter
+	c.urlParams_.Set("modifiedAfter", modifiedAfter)
 	return c
 }
 
@@ -6825,7 +10070,7 @@ func (c *RasterCollectionsRastersListCall) ModifiedAfter(modifiedAfter string) *
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or before this time.
 func (c *RasterCollectionsRastersListCall) ModifiedBefore(modifiedBefore string) *RasterCollectionsRastersListCall {
-	c.opt_["modifiedBefore"] = modifiedBefore
+	c.urlParams_.Set("modifiedBefore", modifiedBefore)
 	return c
 }
 
@@ -6834,88 +10079,102 @@ func (c *RasterCollectionsRastersListCall) ModifiedBefore(modifiedBefore string)
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *RasterCollectionsRastersListCall) PageToken(pageToken string) *RasterCollectionsRastersListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // Role sets the optional parameter "role": The role parameter indicates
 // that the response should only contain assets where the current user
 // has the specified level of access.
+//
+// Possible values:
+//   "owner" - The user can read, write and administer the asset.
+//   "reader" - The user can read the asset.
+//   "writer" - The user can read and write the asset.
 func (c *RasterCollectionsRastersListCall) Role(role string) *RasterCollectionsRastersListCall {
-	c.opt_["role"] = role
+	c.urlParams_.Set("role", role)
 	return c
 }
 
 // Search sets the optional parameter "search": An unstructured search
 // string used to filter the set of results based on asset metadata.
 func (c *RasterCollectionsRastersListCall) Search(search string) *RasterCollectionsRastersListCall {
-	c.opt_["search"] = search
+	c.urlParams_.Set("search", search)
 	return c
 }
 
 // Tags sets the optional parameter "tags": A comma separated list of
 // tags. Returned assets will contain all the tags from the list.
 func (c *RasterCollectionsRastersListCall) Tags(tags string) *RasterCollectionsRastersListCall {
-	c.opt_["tags"] = tags
+	c.urlParams_.Set("tags", tags)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RasterCollectionsRastersListCall) Fields(s ...googleapi.Field) *RasterCollectionsRastersListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RasterCollectionsRastersListCall) Do() (*RasterCollectionsRastersListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RasterCollectionsRastersListCall) IfNoneMatch(entityTag string) *RasterCollectionsRastersListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RasterCollectionsRastersListCall) Context(ctx context.Context) *RasterCollectionsRastersListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RasterCollectionsRastersListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["bbox"]; ok {
-		params.Set("bbox", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdAfter"]; ok {
-		params.Set("createdAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdBefore"]; ok {
-		params.Set("createdBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["creatorEmail"]; ok {
-		params.Set("creatorEmail", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedAfter"]; ok {
-		params.Set("modifiedAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedBefore"]; ok {
-		params.Set("modifiedBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["role"]; ok {
-		params.Set("role", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["search"]; ok {
-		params.Set("search", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["tags"]; ok {
-		params.Set("tags", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasterCollections/{id}/rasters")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasterCollections.rasters.list" call.
+// Exactly one of *RasterCollectionsRastersListResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *RasterCollectionsRastersListResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *RasterCollectionsRastersListCall) Do(opts ...googleapi.CallOption) (*RasterCollectionsRastersListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6923,7 +10182,12 @@ func (c *RasterCollectionsRastersListCall) Do() (*RasterCollectionsRastersListRe
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *RasterCollectionsRastersListResponse
+	ret := &RasterCollectionsRastersListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7025,44 +10289,79 @@ func (c *RasterCollectionsRastersListCall) Do() (*RasterCollectionsRastersListRe
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *RasterCollectionsRastersListCall) Pages(ctx context.Context, f func(*RasterCollectionsRastersListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.rasters.delete":
 
 type RastersDeleteCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Delete a raster.
 func (r *RastersService) Delete(id string) *RastersDeleteCall {
-	c := &RastersDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersDeleteCall) Fields(s ...googleapi.Field) *RastersDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersDeleteCall) Context(ctx context.Context) *RastersDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.delete" call.
+func (c *RastersDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -7097,41 +10396,84 @@ func (c *RastersDeleteCall) Do() error {
 // method id "mapsengine.rasters.get":
 
 type RastersGetCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Return metadata for a single raster.
 func (r *RastersService) Get(id string) *RastersGetCall {
-	c := &RastersGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersGetCall) Fields(s ...googleapi.Field) *RastersGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersGetCall) Do() (*Raster, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RastersGetCall) IfNoneMatch(entityTag string) *RastersGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersGetCall) Context(ctx context.Context) *RastersGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.get" call.
+// Exactly one of *Raster or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Raster.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *RastersGetCall) Do(opts ...googleapi.CallOption) (*Raster, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7139,7 +10481,12 @@ func (c *RastersGetCall) Do() (*Raster, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Raster
+	ret := &Raster{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7174,15 +10521,16 @@ func (c *RastersGetCall) Do() (*Raster, error) {
 // method id "mapsengine.rasters.list":
 
 type RastersListCall struct {
-	s         *Service
-	projectId string
-	opt_      map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all rasters readable by the current user.
 func (r *RastersService) List(projectId string) *RastersListCall {
-	c := &RastersListCall{s: r.s, opt_: make(map[string]interface{})}
-	c.projectId = projectId
+	c := &RastersListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.urlParams_.Set("projectId", projectId)
 	return c
 }
 
@@ -7190,7 +10538,7 @@ func (r *RastersService) List(projectId string) *RastersListCall {
 // "west,south,east,north". If set, only assets which intersect this
 // bounding box will be returned.
 func (c *RastersListCall) Bbox(bbox string) *RastersListCall {
-	c.opt_["bbox"] = bbox
+	c.urlParams_.Set("bbox", bbox)
 	return c
 }
 
@@ -7198,7 +10546,7 @@ func (c *RastersListCall) Bbox(bbox string) *RastersListCall {
 // formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or after this time.
 func (c *RastersListCall) CreatedAfter(createdAfter string) *RastersListCall {
-	c.opt_["createdAfter"] = createdAfter
+	c.urlParams_.Set("createdAfter", createdAfter)
 	return c
 }
 
@@ -7206,7 +10554,7 @@ func (c *RastersListCall) CreatedAfter(createdAfter string) *RastersListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or before this time.
 func (c *RastersListCall) CreatedBefore(createdBefore string) *RastersListCall {
-	c.opt_["createdBefore"] = createdBefore
+	c.urlParams_.Set("createdBefore", createdBefore)
 	return c
 }
 
@@ -7214,7 +10562,7 @@ func (c *RastersListCall) CreatedBefore(createdBefore string) *RastersListCall {
 // address representing a user. Returned assets that have been created
 // by the user associated with the provided email address.
 func (c *RastersListCall) CreatorEmail(creatorEmail string) *RastersListCall {
-	c.opt_["creatorEmail"] = creatorEmail
+	c.urlParams_.Set("creatorEmail", creatorEmail)
 	return c
 }
 
@@ -7222,7 +10570,7 @@ func (c *RastersListCall) CreatorEmail(creatorEmail string) *RastersListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 100.
 func (c *RastersListCall) MaxResults(maxResults int64) *RastersListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -7230,7 +10578,7 @@ func (c *RastersListCall) MaxResults(maxResults int64) *RastersListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or after this time.
 func (c *RastersListCall) ModifiedAfter(modifiedAfter string) *RastersListCall {
-	c.opt_["modifiedAfter"] = modifiedAfter
+	c.urlParams_.Set("modifiedAfter", modifiedAfter)
 	return c
 }
 
@@ -7238,7 +10586,7 @@ func (c *RastersListCall) ModifiedAfter(modifiedAfter string) *RastersListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or before this time.
 func (c *RastersListCall) ModifiedBefore(modifiedBefore string) *RastersListCall {
-	c.opt_["modifiedBefore"] = modifiedBefore
+	c.urlParams_.Set("modifiedBefore", modifiedBefore)
 	return c
 }
 
@@ -7247,96 +10595,112 @@ func (c *RastersListCall) ModifiedBefore(modifiedBefore string) *RastersListCall
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *RastersListCall) PageToken(pageToken string) *RastersListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // ProcessingStatus sets the optional parameter "processingStatus":
+//
+// Possible values:
+//   "complete" - The raster has completed processing.
+//   "failed" - The raster has failed processing.
+//   "notReady" - The raster is not ready for processing.
+//   "processing" - The raster is processing.
+//   "ready" - The raster is ready for processing.
 func (c *RastersListCall) ProcessingStatus(processingStatus string) *RastersListCall {
-	c.opt_["processingStatus"] = processingStatus
+	c.urlParams_.Set("processingStatus", processingStatus)
 	return c
 }
 
 // Role sets the optional parameter "role": The role parameter indicates
 // that the response should only contain assets where the current user
 // has the specified level of access.
+//
+// Possible values:
+//   "owner" - The user can read, write and administer the asset.
+//   "reader" - The user can read the asset.
+//   "writer" - The user can read and write the asset.
 func (c *RastersListCall) Role(role string) *RastersListCall {
-	c.opt_["role"] = role
+	c.urlParams_.Set("role", role)
 	return c
 }
 
 // Search sets the optional parameter "search": An unstructured search
 // string used to filter the set of results based on asset metadata.
 func (c *RastersListCall) Search(search string) *RastersListCall {
-	c.opt_["search"] = search
+	c.urlParams_.Set("search", search)
 	return c
 }
 
 // Tags sets the optional parameter "tags": A comma separated list of
 // tags. Returned assets will contain all the tags from the list.
 func (c *RastersListCall) Tags(tags string) *RastersListCall {
-	c.opt_["tags"] = tags
+	c.urlParams_.Set("tags", tags)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersListCall) Fields(s ...googleapi.Field) *RastersListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersListCall) Do() (*RastersListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RastersListCall) IfNoneMatch(entityTag string) *RastersListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersListCall) Context(ctx context.Context) *RastersListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("projectId", fmt.Sprintf("%v", c.projectId))
-	if v, ok := c.opt_["bbox"]; ok {
-		params.Set("bbox", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdAfter"]; ok {
-		params.Set("createdAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdBefore"]; ok {
-		params.Set("createdBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["creatorEmail"]; ok {
-		params.Set("creatorEmail", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedAfter"]; ok {
-		params.Set("modifiedAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedBefore"]; ok {
-		params.Set("modifiedBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["processingStatus"]; ok {
-		params.Set("processingStatus", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["role"]; ok {
-		params.Set("role", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["search"]; ok {
-		params.Set("search", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["tags"]; ok {
-		params.Set("tags", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.list" call.
+// Exactly one of *RastersListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *RastersListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RastersListCall) Do(opts ...googleapi.CallOption) (*RastersListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7344,7 +10708,12 @@ func (c *RastersListCall) Do() (*RastersListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *RastersListResponse
+	ret := &RastersListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7464,52 +10833,87 @@ func (c *RastersListCall) Do() (*RastersListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *RastersListCall) Pages(ctx context.Context, f func(*RastersListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.rasters.patch":
 
 type RastersPatchCall struct {
-	s      *Service
-	id     string
-	raster *Raster
-	opt_   map[string]interface{}
+	s          *Service
+	id         string
+	raster     *Raster
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Mutate a raster asset.
 func (r *RastersService) Patch(id string, raster *Raster) *RastersPatchCall {
-	c := &RastersPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.raster = raster
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersPatchCall) Fields(s ...googleapi.Field) *RastersPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersPatchCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersPatchCall) Context(ctx context.Context) *RastersPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.raster)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.patch" call.
+func (c *RastersPatchCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -7547,41 +10951,70 @@ func (c *RastersPatchCall) Do() error {
 // method id "mapsengine.rasters.process":
 
 type RastersProcessCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Process: Process a raster asset.
 func (r *RastersService) Process(id string) *RastersProcessCall {
-	c := &RastersProcessCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersProcessCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersProcessCall) Fields(s ...googleapi.Field) *RastersProcessCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersProcessCall) Do() (*ProcessResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersProcessCall) Context(ctx context.Context) *RastersProcessCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersProcessCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/{id}/process")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.process" call.
+// Exactly one of *ProcessResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ProcessResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RastersProcessCall) Do(opts ...googleapi.CallOption) (*ProcessResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7589,7 +11022,12 @@ func (c *RastersProcessCall) Do() (*ProcessResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProcessResponse
+	ret := &ProcessResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7623,45 +11061,74 @@ func (c *RastersProcessCall) Do() (*ProcessResponse, error) {
 // method id "mapsengine.rasters.upload":
 
 type RastersUploadCall struct {
-	s      *Service
-	raster *Raster
-	opt_   map[string]interface{}
+	s          *Service
+	raster     *Raster
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Upload: Create a skeleton raster asset for upload.
 func (r *RastersService) Upload(raster *Raster) *RastersUploadCall {
-	c := &RastersUploadCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersUploadCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.raster = raster
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersUploadCall) Fields(s ...googleapi.Field) *RastersUploadCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersUploadCall) Do() (*Raster, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersUploadCall) Context(ctx context.Context) *RastersUploadCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersUploadCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.raster)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/upload")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.upload" call.
+// Exactly one of *Raster or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Raster.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *RastersUploadCall) Do(opts ...googleapi.CallOption) (*Raster, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7669,7 +11136,12 @@ func (c *RastersUploadCall) Do() (*Raster, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Raster
+	ret := &Raster{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7695,106 +11167,131 @@ func (c *RastersUploadCall) Do() (*Raster, error) {
 // method id "mapsengine.rasters.files.insert":
 
 type RastersFilesInsertCall struct {
-	s          *Service
-	id         string
-	filename   string
-	opt_       map[string]interface{}
-	media_     io.Reader
-	resumable_ googleapi.SizeReaderAt
-	mediaType_ string
-	ctx_       context.Context
-	protocol_  string
+	s                *Service
+	id               string
+	urlParams_       gensupport.URLParams
+	media_           io.Reader
+	resumableBuffer_ *gensupport.ResumableBuffer
+	mediaType_       string
+	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_ googleapi.ProgressUpdater
+	ctx_             context.Context
 }
 
 // Insert: Upload a file to a raster asset.
 func (r *RastersFilesService) Insert(id string, filename string) *RastersFilesInsertCall {
-	c := &RastersFilesInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersFilesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
-	c.filename = filename
+	c.urlParams_.Set("filename", filename)
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *RastersFilesInsertCall) Media(r io.Reader) *RastersFilesInsertCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *RastersFilesInsertCall) Media(r io.Reader, options ...googleapi.MediaOption) *RastersFilesInsertCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *RastersFilesInsertCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *RastersFilesInsertCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *RastersFilesInsertCall) ProgressUpdater(pu googleapi.ProgressUpdater) *RastersFilesInsertCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersFilesInsertCall) Fields(s ...googleapi.Field) *RastersFilesInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersFilesInsertCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *RastersFilesInsertCall) Context(ctx context.Context) *RastersFilesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersFilesInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("filename", fmt.Sprintf("%v", c.filename))
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/{id}/files")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
+		}
+		c.urlParams_.Set("uploadType", protocol)
 	}
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	body = new(bytes.Buffer)
 	ctype := "application/json"
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
-		}
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.files.insert" call.
+func (c *RastersFilesInsertCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
 	if err != nil {
 		return err
 	}
@@ -7802,21 +11299,32 @@ func (c *RastersFilesInsertCall) Do() error {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return err
+		}
 	}
 	return nil
 	// {
@@ -7869,14 +11377,16 @@ func (c *RastersFilesInsertCall) Do() error {
 // method id "mapsengine.rasters.parents.list":
 
 type RastersParentsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all parent ids of the specified rasters.
 func (r *RastersParentsService) List(id string) *RastersParentsListCall {
-	c := &RastersParentsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersParentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -7885,7 +11395,7 @@ func (r *RastersParentsService) List(id string) *RastersParentsListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 50.
 func (c *RastersParentsListCall) MaxResults(maxResults int64) *RastersParentsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -7894,39 +11404,74 @@ func (c *RastersParentsListCall) MaxResults(maxResults int64) *RastersParentsLis
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *RastersParentsListCall) PageToken(pageToken string) *RastersParentsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersParentsListCall) Fields(s ...googleapi.Field) *RastersParentsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersParentsListCall) Do() (*ParentsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RastersParentsListCall) IfNoneMatch(entityTag string) *RastersParentsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersParentsListCall) Context(ctx context.Context) *RastersParentsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersParentsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/{id}/parents")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.parents.list" call.
+// Exactly one of *ParentsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ParentsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RastersParentsListCall) Do(opts ...googleapi.CallOption) (*ParentsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7934,7 +11479,12 @@ func (c *RastersParentsListCall) Do() (*ParentsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ParentsListResponse
+	ret := &ParentsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7977,53 +11527,103 @@ func (c *RastersParentsListCall) Do() (*ParentsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *RastersParentsListCall) Pages(ctx context.Context, f func(*ParentsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.rasters.permissions.batchDelete":
 
 type RastersPermissionsBatchDeleteCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchdeleterequest *PermissionsBatchDeleteRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchDelete: Remove permission entries from an already existing
 // asset.
 func (r *RastersPermissionsService) BatchDelete(id string, permissionsbatchdeleterequest *PermissionsBatchDeleteRequest) *RastersPermissionsBatchDeleteCall {
-	c := &RastersPermissionsBatchDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersPermissionsBatchDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchdeleterequest = permissionsbatchdeleterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersPermissionsBatchDeleteCall) Fields(s ...googleapi.Field) *RastersPermissionsBatchDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersPermissionsBatchDeleteCall) Do() (*PermissionsBatchDeleteResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersPermissionsBatchDeleteCall) Context(ctx context.Context) *RastersPermissionsBatchDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersPermissionsBatchDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchdeleterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/{id}/permissions/batchDelete")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.permissions.batchDelete" call.
+// Exactly one of *PermissionsBatchDeleteResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchDeleteResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RastersPermissionsBatchDeleteCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchDeleteResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8031,7 +11631,12 @@ func (c *RastersPermissionsBatchDeleteCall) Do() (*PermissionsBatchDeleteRespons
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchDeleteResponse
+	ret := &PermissionsBatchDeleteResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8071,7 +11676,8 @@ type RastersPermissionsBatchUpdateCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchupdaterequest *PermissionsBatchUpdateRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchUpdate: Add or update permission entries to an already existing
@@ -8080,41 +11686,69 @@ type RastersPermissionsBatchUpdateCall struct {
 // An asset can hold up to 20 different permission entries. Each
 // batchInsert request is atomic.
 func (r *RastersPermissionsService) BatchUpdate(id string, permissionsbatchupdaterequest *PermissionsBatchUpdateRequest) *RastersPermissionsBatchUpdateCall {
-	c := &RastersPermissionsBatchUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersPermissionsBatchUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchupdaterequest = permissionsbatchupdaterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersPermissionsBatchUpdateCall) Fields(s ...googleapi.Field) *RastersPermissionsBatchUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersPermissionsBatchUpdateCall) Context(ctx context.Context) *RastersPermissionsBatchUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersPermissionsBatchUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchupdaterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/{id}/permissions/batchUpdate")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.permissions.batchUpdate" call.
+// Exactly one of *PermissionsBatchUpdateResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchUpdateResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RastersPermissionsBatchUpdateCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchUpdateResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8122,7 +11756,12 @@ func (c *RastersPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateRespons
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchUpdateResponse
+	ret := &PermissionsBatchUpdateResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8159,41 +11798,84 @@ func (c *RastersPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateRespons
 // method id "mapsengine.rasters.permissions.list":
 
 type RastersPermissionsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all of the permissions for the specified asset.
 func (r *RastersPermissionsService) List(id string) *RastersPermissionsListCall {
-	c := &RastersPermissionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RastersPermissionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RastersPermissionsListCall) Fields(s ...googleapi.Field) *RastersPermissionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RastersPermissionsListCall) Do() (*PermissionsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RastersPermissionsListCall) IfNoneMatch(entityTag string) *RastersPermissionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RastersPermissionsListCall) Context(ctx context.Context) *RastersPermissionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RastersPermissionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rasters/{id}/permissions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.rasters.permissions.list" call.
+// Exactly one of *PermissionsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PermissionsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RastersPermissionsListCall) Do(opts ...googleapi.CallOption) (*PermissionsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8201,7 +11883,12 @@ func (c *RastersPermissionsListCall) Do() (*PermissionsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsListResponse
+	ret := &PermissionsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8236,45 +11923,74 @@ func (c *RastersPermissionsListCall) Do() (*PermissionsListResponse, error) {
 // method id "mapsengine.tables.create":
 
 type TablesCreateCall struct {
-	s     *Service
-	table *Table
-	opt_  map[string]interface{}
+	s          *Service
+	table      *Table
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Create: Create a table asset.
 func (r *TablesService) Create(table *Table) *TablesCreateCall {
-	c := &TablesCreateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.table = table
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesCreateCall) Fields(s ...googleapi.Field) *TablesCreateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesCreateCall) Do() (*Table, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesCreateCall) Context(ctx context.Context) *TablesCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesCreateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.table)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.create" call.
+// Exactly one of *Table or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Table.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *TablesCreateCall) Do(opts ...googleapi.CallOption) (*Table, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8282,7 +11998,12 @@ func (c *TablesCreateCall) Do() (*Table, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Table
+	ret := &Table{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8308,41 +12029,55 @@ func (c *TablesCreateCall) Do() (*Table, error) {
 // method id "mapsengine.tables.delete":
 
 type TablesDeleteCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Delete a table.
 func (r *TablesService) Delete(id string) *TablesDeleteCall {
-	c := &TablesDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesDeleteCall) Fields(s ...googleapi.Field) *TablesDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesDeleteCall) Context(ctx context.Context) *TablesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.delete" call.
+func (c *TablesDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -8377,50 +12112,94 @@ func (c *TablesDeleteCall) Do() error {
 // method id "mapsengine.tables.get":
 
 type TablesGetCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Return metadata for a particular table, including the schema.
 func (r *TablesService) Get(id string) *TablesGetCall {
-	c := &TablesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
 // Version sets the optional parameter "version":
+//
+// Possible values:
+//   "draft" - The draft version.
+//   "published" - The published version.
 func (c *TablesGetCall) Version(version string) *TablesGetCall {
-	c.opt_["version"] = version
+	c.urlParams_.Set("version", version)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesGetCall) Fields(s ...googleapi.Field) *TablesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesGetCall) Do() (*Table, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *TablesGetCall) IfNoneMatch(entityTag string) *TablesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesGetCall) Context(ctx context.Context) *TablesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["version"]; ok {
-		params.Set("version", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.get" call.
+// Exactly one of *Table or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Table.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *TablesGetCall) Do(opts ...googleapi.CallOption) (*Table, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8428,7 +12207,12 @@ func (c *TablesGetCall) Do() (*Table, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Table
+	ret := &Table{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8475,13 +12259,15 @@ func (c *TablesGetCall) Do() (*Table, error) {
 // method id "mapsengine.tables.list":
 
 type TablesListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all tables readable by the current user.
 func (r *TablesService) List() *TablesListCall {
-	c := &TablesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -8489,7 +12275,7 @@ func (r *TablesService) List() *TablesListCall {
 // "west,south,east,north". If set, only assets which intersect this
 // bounding box will be returned.
 func (c *TablesListCall) Bbox(bbox string) *TablesListCall {
-	c.opt_["bbox"] = bbox
+	c.urlParams_.Set("bbox", bbox)
 	return c
 }
 
@@ -8497,7 +12283,7 @@ func (c *TablesListCall) Bbox(bbox string) *TablesListCall {
 // formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or after this time.
 func (c *TablesListCall) CreatedAfter(createdAfter string) *TablesListCall {
-	c.opt_["createdAfter"] = createdAfter
+	c.urlParams_.Set("createdAfter", createdAfter)
 	return c
 }
 
@@ -8505,7 +12291,7 @@ func (c *TablesListCall) CreatedAfter(createdAfter string) *TablesListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been created at or before this time.
 func (c *TablesListCall) CreatedBefore(createdBefore string) *TablesListCall {
-	c.opt_["createdBefore"] = createdBefore
+	c.urlParams_.Set("createdBefore", createdBefore)
 	return c
 }
 
@@ -8513,7 +12299,7 @@ func (c *TablesListCall) CreatedBefore(createdBefore string) *TablesListCall {
 // address representing a user. Returned assets that have been created
 // by the user associated with the provided email address.
 func (c *TablesListCall) CreatorEmail(creatorEmail string) *TablesListCall {
-	c.opt_["creatorEmail"] = creatorEmail
+	c.urlParams_.Set("creatorEmail", creatorEmail)
 	return c
 }
 
@@ -8521,7 +12307,7 @@ func (c *TablesListCall) CreatorEmail(creatorEmail string) *TablesListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 100.
 func (c *TablesListCall) MaxResults(maxResults int64) *TablesListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -8529,7 +12315,7 @@ func (c *TablesListCall) MaxResults(maxResults int64) *TablesListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or after this time.
 func (c *TablesListCall) ModifiedAfter(modifiedAfter string) *TablesListCall {
-	c.opt_["modifiedAfter"] = modifiedAfter
+	c.urlParams_.Set("modifiedAfter", modifiedAfter)
 	return c
 }
 
@@ -8537,7 +12323,7 @@ func (c *TablesListCall) ModifiedAfter(modifiedAfter string) *TablesListCall {
 // 3339 formatted date-time value (e.g. 1970-01-01T00:00:00Z). Returned
 // assets will have been modified at or before this time.
 func (c *TablesListCall) ModifiedBefore(modifiedBefore string) *TablesListCall {
-	c.opt_["modifiedBefore"] = modifiedBefore
+	c.urlParams_.Set("modifiedBefore", modifiedBefore)
 	return c
 }
 
@@ -8546,13 +12332,20 @@ func (c *TablesListCall) ModifiedBefore(modifiedBefore string) *TablesListCall {
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *TablesListCall) PageToken(pageToken string) *TablesListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // ProcessingStatus sets the optional parameter "processingStatus":
+//
+// Possible values:
+//   "complete" - The table has completed processing.
+//   "failed" - The table has failed processing.
+//   "notReady" - The table is not ready for processing.
+//   "processing" - The table is processing.
+//   "ready" - The table is ready for processing.
 func (c *TablesListCall) ProcessingStatus(processingStatus string) *TablesListCall {
-	c.opt_["processingStatus"] = processingStatus
+	c.urlParams_.Set("processingStatus", processingStatus)
 	return c
 }
 
@@ -8562,92 +12355,99 @@ func (c *TablesListCall) ProcessingStatus(processingStatus string) *TablesListCa
 // find your project ID as the value of the DashboardPlace:cid URL
 // parameter when signed in to mapsengine.google.com.
 func (c *TablesListCall) ProjectId(projectId string) *TablesListCall {
-	c.opt_["projectId"] = projectId
+	c.urlParams_.Set("projectId", projectId)
 	return c
 }
 
 // Role sets the optional parameter "role": The role parameter indicates
 // that the response should only contain assets where the current user
 // has the specified level of access.
+//
+// Possible values:
+//   "owner" - The user can read, write and administer the asset.
+//   "reader" - The user can read the asset.
+//   "writer" - The user can read and write the asset.
 func (c *TablesListCall) Role(role string) *TablesListCall {
-	c.opt_["role"] = role
+	c.urlParams_.Set("role", role)
 	return c
 }
 
 // Search sets the optional parameter "search": An unstructured search
 // string used to filter the set of results based on asset metadata.
 func (c *TablesListCall) Search(search string) *TablesListCall {
-	c.opt_["search"] = search
+	c.urlParams_.Set("search", search)
 	return c
 }
 
 // Tags sets the optional parameter "tags": A comma separated list of
 // tags. Returned assets will contain all the tags from the list.
 func (c *TablesListCall) Tags(tags string) *TablesListCall {
-	c.opt_["tags"] = tags
+	c.urlParams_.Set("tags", tags)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesListCall) Fields(s ...googleapi.Field) *TablesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesListCall) Do() (*TablesListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *TablesListCall) IfNoneMatch(entityTag string) *TablesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesListCall) Context(ctx context.Context) *TablesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["bbox"]; ok {
-		params.Set("bbox", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdAfter"]; ok {
-		params.Set("createdAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["createdBefore"]; ok {
-		params.Set("createdBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["creatorEmail"]; ok {
-		params.Set("creatorEmail", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedAfter"]; ok {
-		params.Set("modifiedAfter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedBefore"]; ok {
-		params.Set("modifiedBefore", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["processingStatus"]; ok {
-		params.Set("processingStatus", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projectId"]; ok {
-		params.Set("projectId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["role"]; ok {
-		params.Set("role", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["search"]; ok {
-		params.Set("search", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["tags"]; ok {
-		params.Set("tags", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.list" call.
+// Exactly one of *TablesListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *TablesListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *TablesListCall) Do(opts ...googleapi.CallOption) (*TablesListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8655,7 +12455,12 @@ func (c *TablesListCall) Do() (*TablesListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *TablesListResponse
+	ret := &TablesListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8771,52 +12576,87 @@ func (c *TablesListCall) Do() (*TablesListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *TablesListCall) Pages(ctx context.Context, f func(*TablesListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.tables.patch":
 
 type TablesPatchCall struct {
-	s     *Service
-	id    string
-	table *Table
-	opt_  map[string]interface{}
+	s          *Service
+	id         string
+	table      *Table
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Mutate a table asset.
 func (r *TablesService) Patch(id string, table *Table) *TablesPatchCall {
-	c := &TablesPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.table = table
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesPatchCall) Fields(s ...googleapi.Field) *TablesPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesPatchCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesPatchCall) Context(ctx context.Context) *TablesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.table)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.patch" call.
+func (c *TablesPatchCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -8854,41 +12694,70 @@ func (c *TablesPatchCall) Do() error {
 // method id "mapsengine.tables.process":
 
 type TablesProcessCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s          *Service
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Process: Process a table asset.
 func (r *TablesService) Process(id string) *TablesProcessCall {
-	c := &TablesProcessCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesProcessCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesProcessCall) Fields(s ...googleapi.Field) *TablesProcessCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesProcessCall) Do() (*ProcessResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesProcessCall) Context(ctx context.Context) *TablesProcessCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesProcessCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/process")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.process" call.
+// Exactly one of *ProcessResponse or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ProcessResponse.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *TablesProcessCall) Do(opts ...googleapi.CallOption) (*ProcessResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8896,7 +12765,12 @@ func (c *TablesProcessCall) Do() (*ProcessResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProcessResponse
+	ret := &ProcessResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8930,52 +12804,80 @@ func (c *TablesProcessCall) Do() (*ProcessResponse, error) {
 // method id "mapsengine.tables.upload":
 
 type TablesUploadCall struct {
-	s     *Service
-	table *Table
-	opt_  map[string]interface{}
+	s          *Service
+	table      *Table
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Upload: Create a placeholder table asset to which table files can be
 // uploaded.
-// Once the placeholder has been created, files are uploaded
-// to the
+// Once the placeholder has been created, files are uploaded to the
 // https://www.googleapis.com/upload/mapsengine/v1/tables/table_id/files
 // endpoint.
-// See Table Upload in the Developer's Guide or Table.files:
-// insert in the reference documentation for more information.
+// See Table Upload in the Developer's Guide or Table.files: insert in
+// the reference documentation for more information.
 func (r *TablesService) Upload(table *Table) *TablesUploadCall {
-	c := &TablesUploadCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesUploadCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.table = table
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesUploadCall) Fields(s ...googleapi.Field) *TablesUploadCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesUploadCall) Do() (*Table, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesUploadCall) Context(ctx context.Context) *TablesUploadCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesUploadCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.table)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/upload")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.upload" call.
+// Exactly one of *Table or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Table.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *TablesUploadCall) Do(opts ...googleapi.CallOption) (*Table, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8983,7 +12885,12 @@ func (c *TablesUploadCall) Do() (*Table, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Table
+	ret := &Table{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9012,46 +12919,60 @@ type TablesFeaturesBatchDeleteCall struct {
 	s                          *Service
 	id                         string
 	featuresbatchdeleterequest *FeaturesBatchDeleteRequest
-	opt_                       map[string]interface{}
+	urlParams_                 gensupport.URLParams
+	ctx_                       context.Context
 }
 
 // BatchDelete: Delete all features matching the given IDs.
 func (r *TablesFeaturesService) BatchDelete(id string, featuresbatchdeleterequest *FeaturesBatchDeleteRequest) *TablesFeaturesBatchDeleteCall {
-	c := &TablesFeaturesBatchDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesFeaturesBatchDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.featuresbatchdeleterequest = featuresbatchdeleterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesFeaturesBatchDeleteCall) Fields(s ...googleapi.Field) *TablesFeaturesBatchDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesFeaturesBatchDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesFeaturesBatchDeleteCall) Context(ctx context.Context) *TablesFeaturesBatchDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesFeaturesBatchDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.featuresbatchdeleterequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/features/batchDelete")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.features.batchDelete" call.
+func (c *TablesFeaturesBatchDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -9092,60 +13013,71 @@ type TablesFeaturesBatchInsertCall struct {
 	s                          *Service
 	id                         string
 	featuresbatchinsertrequest *FeaturesBatchInsertRequest
-	opt_                       map[string]interface{}
+	urlParams_                 gensupport.URLParams
+	ctx_                       context.Context
 }
 
 // BatchInsert: Append features to an existing table.
 //
-// A single
-// batchInsert request can create:
+// A single batchInsert request can create:
 //
 // - Up to 50 features.
-// - A combined
-// total of 10 000 vertices.
-// Feature limits are documented in the
-// Supported data formats and limits article of the Google Maps Engine
-// help center. Note that free and paid accounts have different
-// limits.
+// - A combined total of 10 000 vertices.
+// Feature limits are documented in the Supported data formats and
+// limits article of the Google Maps Engine help center. Note that free
+// and paid accounts have different limits.
 //
-// For more information about inserting features, read Creating
-// features in the Google Maps Engine developer's guide.
+// For more information about inserting features, read Creating features
+// in the Google Maps Engine developer's guide.
 func (r *TablesFeaturesService) BatchInsert(id string, featuresbatchinsertrequest *FeaturesBatchInsertRequest) *TablesFeaturesBatchInsertCall {
-	c := &TablesFeaturesBatchInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesFeaturesBatchInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.featuresbatchinsertrequest = featuresbatchinsertrequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesFeaturesBatchInsertCall) Fields(s ...googleapi.Field) *TablesFeaturesBatchInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesFeaturesBatchInsertCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesFeaturesBatchInsertCall) Context(ctx context.Context) *TablesFeaturesBatchInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesFeaturesBatchInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.featuresbatchinsertrequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/features/batchInsert")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.features.batchInsert" call.
+func (c *TablesFeaturesBatchInsertCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -9186,73 +13118,81 @@ type TablesFeaturesBatchPatchCall struct {
 	s                         *Service
 	id                        string
 	featuresbatchpatchrequest *FeaturesBatchPatchRequest
-	opt_                      map[string]interface{}
+	urlParams_                gensupport.URLParams
+	ctx_                      context.Context
 }
 
 // BatchPatch: Update the supplied features.
 //
-// A single batchPatch
-// request can update:
+// A single batchPatch request can update:
 //
 // - Up to 50 features.
-// - A combined total of
-// 10 000 vertices.
-// Feature limits are documented in the Supported
-// data formats and limits article of the Google Maps Engine help
-// center. Note that free and paid accounts have different
-// limits.
+// - A combined total of 10 000 vertices.
+// Feature limits are documented in the Supported data formats and
+// limits article of the Google Maps Engine help center. Note that free
+// and paid accounts have different limits.
 //
 // Feature updates use HTTP PATCH semantics:
 //
-// - A supplied
-// value replaces an existing value (if any) in that field.
-// - Omitted
-// fields remain unchanged.
-// - Complex values in geometries and
-// properties must be replaced as atomic units. For example, providing
-// just the coordinates of a geometry is not allowed; the complete
-// geometry, including type, must be supplied.
-// - Setting a property's
-// value to null deletes that property.
-// For more information about
-// updating features, read Updating features in the Google Maps Engine
-// developer's guide.
+// - A supplied value replaces an existing value (if any) in that
+// field.
+// - Omitted fields remain unchanged.
+// - Complex values in geometries and properties must be replaced as
+// atomic units. For example, providing just the coordinates of a
+// geometry is not allowed; the complete geometry, including type, must
+// be supplied.
+// - Setting a property's value to null deletes that property.
+// For more information about updating features, read Updating features
+// in the Google Maps Engine developer's guide.
 func (r *TablesFeaturesService) BatchPatch(id string, featuresbatchpatchrequest *FeaturesBatchPatchRequest) *TablesFeaturesBatchPatchCall {
-	c := &TablesFeaturesBatchPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesFeaturesBatchPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.featuresbatchpatchrequest = featuresbatchpatchrequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesFeaturesBatchPatchCall) Fields(s ...googleapi.Field) *TablesFeaturesBatchPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesFeaturesBatchPatchCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesFeaturesBatchPatchCall) Context(ctx context.Context) *TablesFeaturesBatchPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesFeaturesBatchPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.featuresbatchpatchrequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/features/batchPatch")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.features.batchPatch" call.
+func (c *TablesFeaturesBatchPatchCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -9290,15 +13230,17 @@ func (c *TablesFeaturesBatchPatchCall) Do() error {
 // method id "mapsengine.tables.features.get":
 
 type TablesFeaturesGetCall struct {
-	s       *Service
-	tableId string
-	id      string
-	opt_    map[string]interface{}
+	s            *Service
+	tableId      string
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Return a single feature, given its ID.
 func (r *TablesFeaturesService) Get(tableId string, id string) *TablesFeaturesGetCall {
-	c := &TablesFeaturesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesFeaturesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.tableId = tableId
 	c.id = id
 	return c
@@ -9308,47 +13250,86 @@ func (r *TablesFeaturesService) Get(tableId string, id string) *TablesFeaturesGe
 // clause used to specify returned properties. If this parameter is not
 // included, all properties are returned.
 func (c *TablesFeaturesGetCall) Select(select_ string) *TablesFeaturesGetCall {
-	c.opt_["select"] = select_
+	c.urlParams_.Set("select", select_)
 	return c
 }
 
 // Version sets the optional parameter "version": The table version to
 // access. See Accessing Public Data for information.
+//
+// Possible values:
+//   "draft" - The draft version.
+//   "published" - The published version.
 func (c *TablesFeaturesGetCall) Version(version string) *TablesFeaturesGetCall {
-	c.opt_["version"] = version
+	c.urlParams_.Set("version", version)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesFeaturesGetCall) Fields(s ...googleapi.Field) *TablesFeaturesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesFeaturesGetCall) Do() (*Feature, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *TablesFeaturesGetCall) IfNoneMatch(entityTag string) *TablesFeaturesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesFeaturesGetCall) Context(ctx context.Context) *TablesFeaturesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesFeaturesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["select"]; ok {
-		params.Set("select", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["version"]; ok {
-		params.Set("version", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{tableId}/features/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"tableId": c.tableId,
 		"id":      c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.features.get" call.
+// Exactly one of *Feature or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Feature.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *TablesFeaturesGetCall) Do(opts ...googleapi.CallOption) (*Feature, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9356,7 +13337,12 @@ func (c *TablesFeaturesGetCall) Do() (*Feature, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Feature
+	ret := &Feature{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9416,14 +13402,16 @@ func (c *TablesFeaturesGetCall) Do() (*Feature, error) {
 // method id "mapsengine.tables.features.list":
 
 type TablesFeaturesListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all features readable by the current user.
 func (r *TablesFeaturesService) List(id string) *TablesFeaturesListCall {
-	c := &TablesFeaturesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesFeaturesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -9431,14 +13419,14 @@ func (r *TablesFeaturesService) List(id string) *TablesFeaturesListCall {
 // Include sets the optional parameter "include": A comma separated list
 // of optional data to include. Optional data available: schema.
 func (c *TablesFeaturesListCall) Include(include string) *TablesFeaturesListCall {
-	c.opt_["include"] = include
+	c.urlParams_.Set("include", include)
 	return c
 }
 
 // Intersects sets the optional parameter "intersects": A geometry
 // literal that specifies the spatial restriction of the query.
 func (c *TablesFeaturesListCall) Intersects(intersects string) *TablesFeaturesListCall {
-	c.opt_["intersects"] = intersects
+	c.urlParams_.Set("intersects", intersects)
 	return c
 }
 
@@ -9446,7 +13434,7 @@ func (c *TablesFeaturesListCall) Intersects(intersects string) *TablesFeaturesLi
 // features to return from the query, irrespective of the number of
 // pages.
 func (c *TablesFeaturesListCall) Limit(limit int64) *TablesFeaturesListCall {
-	c.opt_["limit"] = limit
+	c.urlParams_.Set("limit", fmt.Sprint(limit))
 	return c
 }
 
@@ -9454,7 +13442,7 @@ func (c *TablesFeaturesListCall) Limit(limit int64) *TablesFeaturesListCall {
 // number of items to include in the response, used for paging. The
 // maximum supported value is 1000.
 func (c *TablesFeaturesListCall) MaxResults(maxResults int64) *TablesFeaturesListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -9462,7 +13450,7 @@ func (c *TablesFeaturesListCall) MaxResults(maxResults int64) *TablesFeaturesLis
 // clause used to sort results. If this parameter is not included, the
 // order of features is undefined.
 func (c *TablesFeaturesListCall) OrderBy(orderBy string) *TablesFeaturesListCall {
-	c.opt_["orderBy"] = orderBy
+	c.urlParams_.Set("orderBy", orderBy)
 	return c
 }
 
@@ -9471,7 +13459,7 @@ func (c *TablesFeaturesListCall) OrderBy(orderBy string) *TablesFeaturesListCall
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *TablesFeaturesListCall) PageToken(pageToken string) *TablesFeaturesListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
@@ -9479,74 +13467,92 @@ func (c *TablesFeaturesListCall) PageToken(pageToken string) *TablesFeaturesList
 // clause used to specify returned properties. If this parameter is not
 // included, all properties are returned.
 func (c *TablesFeaturesListCall) Select(select_ string) *TablesFeaturesListCall {
-	c.opt_["select"] = select_
+	c.urlParams_.Set("select", select_)
 	return c
 }
 
 // Version sets the optional parameter "version": The table version to
 // access. See Accessing Public Data for information.
+//
+// Possible values:
+//   "draft" - The draft version.
+//   "published" - The published version.
 func (c *TablesFeaturesListCall) Version(version string) *TablesFeaturesListCall {
-	c.opt_["version"] = version
+	c.urlParams_.Set("version", version)
 	return c
 }
 
 // Where sets the optional parameter "where": An SQL-like predicate used
 // to filter results.
 func (c *TablesFeaturesListCall) Where(where string) *TablesFeaturesListCall {
-	c.opt_["where"] = where
+	c.urlParams_.Set("where", where)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesFeaturesListCall) Fields(s ...googleapi.Field) *TablesFeaturesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesFeaturesListCall) Do() (*FeaturesListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *TablesFeaturesListCall) IfNoneMatch(entityTag string) *TablesFeaturesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesFeaturesListCall) Context(ctx context.Context) *TablesFeaturesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesFeaturesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["include"]; ok {
-		params.Set("include", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["intersects"]; ok {
-		params.Set("intersects", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["limit"]; ok {
-		params.Set("limit", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["orderBy"]; ok {
-		params.Set("orderBy", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["select"]; ok {
-		params.Set("select", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["version"]; ok {
-		params.Set("version", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["where"]; ok {
-		params.Set("where", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/features")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.features.list" call.
+// Exactly one of *FeaturesListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *FeaturesListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *TablesFeaturesListCall) Do(opts ...googleapi.CallOption) (*FeaturesListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9554,7 +13560,12 @@ func (c *TablesFeaturesListCall) Do() (*FeaturesListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *FeaturesListResponse
+	ret := &FeaturesListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9641,113 +13652,158 @@ func (c *TablesFeaturesListCall) Do() (*FeaturesListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *TablesFeaturesListCall) Pages(ctx context.Context, f func(*FeaturesListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.tables.files.insert":
 
 type TablesFilesInsertCall struct {
-	s          *Service
-	id         string
-	filename   string
-	opt_       map[string]interface{}
-	media_     io.Reader
-	resumable_ googleapi.SizeReaderAt
-	mediaType_ string
-	ctx_       context.Context
-	protocol_  string
+	s                *Service
+	id               string
+	urlParams_       gensupport.URLParams
+	media_           io.Reader
+	resumableBuffer_ *gensupport.ResumableBuffer
+	mediaType_       string
+	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_ googleapi.ProgressUpdater
+	ctx_             context.Context
 }
 
 // Insert: Upload a file to a placeholder table asset. See Table Upload
 // in the Developer's Guide for more information.
-// Supported file types
-// are listed in the Supported data formats and limits article of the
-// Google Maps Engine help center.
+// Supported file types are listed in the Supported data formats and
+// limits article of the Google Maps Engine help center.
 func (r *TablesFilesService) Insert(id string, filename string) *TablesFilesInsertCall {
-	c := &TablesFilesInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesFilesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
-	c.filename = filename
+	c.urlParams_.Set("filename", filename)
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *TablesFilesInsertCall) Media(r io.Reader) *TablesFilesInsertCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *TablesFilesInsertCall) Media(r io.Reader, options ...googleapi.MediaOption) *TablesFilesInsertCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *TablesFilesInsertCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *TablesFilesInsertCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *TablesFilesInsertCall) ProgressUpdater(pu googleapi.ProgressUpdater) *TablesFilesInsertCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesFilesInsertCall) Fields(s ...googleapi.Field) *TablesFilesInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesFilesInsertCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *TablesFilesInsertCall) Context(ctx context.Context) *TablesFilesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesFilesInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("filename", fmt.Sprintf("%v", c.filename))
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/files")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
+		}
+		c.urlParams_.Set("uploadType", protocol)
 	}
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	body = new(bytes.Buffer)
 	ctype := "application/json"
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
-		}
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.files.insert" call.
+func (c *TablesFilesInsertCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
 	if err != nil {
 		return err
 	}
@@ -9755,21 +13811,32 @@ func (c *TablesFilesInsertCall) Do() error {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return err
+		}
 	}
 	return nil
 	// {
@@ -9822,14 +13889,16 @@ func (c *TablesFilesInsertCall) Do() error {
 // method id "mapsengine.tables.parents.list":
 
 type TablesParentsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all parent ids of the specified table.
 func (r *TablesParentsService) List(id string) *TablesParentsListCall {
-	c := &TablesParentsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesParentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
@@ -9838,7 +13907,7 @@ func (r *TablesParentsService) List(id string) *TablesParentsListCall {
 // number of items to include in a single response page. The maximum
 // supported value is 50.
 func (c *TablesParentsListCall) MaxResults(maxResults int64) *TablesParentsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -9847,39 +13916,74 @@ func (c *TablesParentsListCall) MaxResults(maxResults int64) *TablesParentsListC
 // of results, set this parameter to the value of nextPageToken from the
 // previous response.
 func (c *TablesParentsListCall) PageToken(pageToken string) *TablesParentsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesParentsListCall) Fields(s ...googleapi.Field) *TablesParentsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesParentsListCall) Do() (*ParentsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *TablesParentsListCall) IfNoneMatch(entityTag string) *TablesParentsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesParentsListCall) Context(ctx context.Context) *TablesParentsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesParentsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/parents")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.parents.list" call.
+// Exactly one of *ParentsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ParentsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *TablesParentsListCall) Do(opts ...googleapi.CallOption) (*ParentsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9887,7 +13991,12 @@ func (c *TablesParentsListCall) Do() (*ParentsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ParentsListResponse
+	ret := &ParentsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -9930,53 +14039,103 @@ func (c *TablesParentsListCall) Do() (*ParentsListResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *TablesParentsListCall) Pages(ctx context.Context, f func(*ParentsListResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "mapsengine.tables.permissions.batchDelete":
 
 type TablesPermissionsBatchDeleteCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchdeleterequest *PermissionsBatchDeleteRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchDelete: Remove permission entries from an already existing
 // asset.
 func (r *TablesPermissionsService) BatchDelete(id string, permissionsbatchdeleterequest *PermissionsBatchDeleteRequest) *TablesPermissionsBatchDeleteCall {
-	c := &TablesPermissionsBatchDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesPermissionsBatchDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchdeleterequest = permissionsbatchdeleterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesPermissionsBatchDeleteCall) Fields(s ...googleapi.Field) *TablesPermissionsBatchDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesPermissionsBatchDeleteCall) Do() (*PermissionsBatchDeleteResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesPermissionsBatchDeleteCall) Context(ctx context.Context) *TablesPermissionsBatchDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesPermissionsBatchDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchdeleterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/permissions/batchDelete")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.permissions.batchDelete" call.
+// Exactly one of *PermissionsBatchDeleteResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchDeleteResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *TablesPermissionsBatchDeleteCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchDeleteResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -9984,7 +14143,12 @@ func (c *TablesPermissionsBatchDeleteCall) Do() (*PermissionsBatchDeleteResponse
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchDeleteResponse
+	ret := &PermissionsBatchDeleteResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -10024,7 +14188,8 @@ type TablesPermissionsBatchUpdateCall struct {
 	s                             *Service
 	id                            string
 	permissionsbatchupdaterequest *PermissionsBatchUpdateRequest
-	opt_                          map[string]interface{}
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
 }
 
 // BatchUpdate: Add or update permission entries to an already existing
@@ -10033,41 +14198,69 @@ type TablesPermissionsBatchUpdateCall struct {
 // An asset can hold up to 20 different permission entries. Each
 // batchInsert request is atomic.
 func (r *TablesPermissionsService) BatchUpdate(id string, permissionsbatchupdaterequest *PermissionsBatchUpdateRequest) *TablesPermissionsBatchUpdateCall {
-	c := &TablesPermissionsBatchUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesPermissionsBatchUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.permissionsbatchupdaterequest = permissionsbatchupdaterequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesPermissionsBatchUpdateCall) Fields(s ...googleapi.Field) *TablesPermissionsBatchUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesPermissionsBatchUpdateCall) Context(ctx context.Context) *TablesPermissionsBatchUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesPermissionsBatchUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permissionsbatchupdaterequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/permissions/batchUpdate")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.permissions.batchUpdate" call.
+// Exactly one of *PermissionsBatchUpdateResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *PermissionsBatchUpdateResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *TablesPermissionsBatchUpdateCall) Do(opts ...googleapi.CallOption) (*PermissionsBatchUpdateResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -10075,7 +14268,12 @@ func (c *TablesPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsBatchUpdateResponse
+	ret := &PermissionsBatchUpdateResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -10112,41 +14310,84 @@ func (c *TablesPermissionsBatchUpdateCall) Do() (*PermissionsBatchUpdateResponse
 // method id "mapsengine.tables.permissions.list":
 
 type TablesPermissionsListCall struct {
-	s    *Service
-	id   string
-	opt_ map[string]interface{}
+	s            *Service
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Return all of the permissions for the specified asset.
 func (r *TablesPermissionsService) List(id string) *TablesPermissionsListCall {
-	c := &TablesPermissionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TablesPermissionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TablesPermissionsListCall) Fields(s ...googleapi.Field) *TablesPermissionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TablesPermissionsListCall) Do() (*PermissionsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *TablesPermissionsListCall) IfNoneMatch(entityTag string) *TablesPermissionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TablesPermissionsListCall) Context(ctx context.Context) *TablesPermissionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TablesPermissionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "tables/{id}/permissions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "mapsengine.tables.permissions.list" call.
+// Exactly one of *PermissionsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PermissionsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *TablesPermissionsListCall) Do(opts ...googleapi.CallOption) (*PermissionsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -10154,7 +14395,12 @@ func (c *TablesPermissionsListCall) Do() (*PermissionsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionsListResponse
+	ret := &PermissionsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

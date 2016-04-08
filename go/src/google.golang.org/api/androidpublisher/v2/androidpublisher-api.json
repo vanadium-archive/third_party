@@ -1,13 +1,13 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/O3fRjUE0KKE4hPeemkWoVGSVyAY\"",
+ "etag": "\"bRFOOrZKfO9LweMbPqu0kcu6De8/cxP0mtBkWIA4ZdoBuvl7SgC3-Gc\"",
  "discoveryVersion": "v1",
  "id": "androidpublisher:v2",
  "name": "androidpublisher",
  "canonicalName": "Android Publisher",
  "version": "v2",
- "revision": "20150128",
- "title": "Google Play Android Developer API",
+ "revision": "20160111",
+ "title": "Google Play Developer API",
  "description": "Lets Android application developers access their Google Play accounts.",
  "ownerDomain": "google.com",
  "ownerName": "Google",
@@ -71,7 +71,7 @@
   "oauth2": {
    "scopes": {
     "https://www.googleapis.com/auth/androidpublisher": {
-     "description": "View and manage your Google Play Android Developer account"
+     "description": "View and manage your Google Play Developer account"
     }
    }
   }
@@ -208,6 +208,48 @@
     }
    }
   },
+  "Entitlement": {
+   "id": "Entitlement",
+   "type": "object",
+   "description": "An Entitlement resource indicates a user's current entitlement to an inapp item or subscription.",
+   "properties": {
+    "kind": {
+     "type": "string",
+     "description": "This kind represents an entitlement object in the androidpublisher service.",
+     "default": "androidpublisher#entitlement"
+    },
+    "productId": {
+     "type": "string",
+     "description": "The SKU of the product."
+    },
+    "productType": {
+     "type": "string",
+     "description": "The type of the inapp product. Possible values are:  \n- In-app item: \"inapp\" \n- Subscription: \"subs\""
+    },
+    "token": {
+     "type": "string",
+     "description": "The token which can be verified using the subscriptions or products API."
+    }
+   }
+  },
+  "EntitlementsListResponse": {
+   "id": "EntitlementsListResponse",
+   "type": "object",
+   "properties": {
+    "pageInfo": {
+     "$ref": "PageInfo"
+    },
+    "resources": {
+     "type": "array",
+     "items": {
+      "$ref": "Entitlement"
+     }
+    },
+    "tokenPagination": {
+     "$ref": "TokenPagination"
+    }
+   }
+  },
   "ExpansionFile": {
    "id": "ExpansionFile",
    "type": "object",
@@ -236,7 +278,7 @@
   "ExternallyHostedApk": {
    "id": "ExternallyHostedApk",
    "type": "object",
-   "description": "Defines an APK available for this application that is hosted externally and not uploaded to Google Play. This function is only available to enterprises who are using Android for Work, and whos application is restricted to the enterprise private channel",
+   "description": "Defines an APK available for this application that is hosted externally and not uploaded to Google Play. This function is only available to enterprises who are using Google Play for Work, and whos application is restricted to the enterprise private channel",
    "properties": {
     "applicationLabel": {
      "type": "string",
@@ -432,7 +474,7 @@
     },
     "subscriptionPeriod": {
      "type": "string",
-     "description": "The period of the subscription (if any), i.e. period at which payments must happen. Defined as ISO 8601 duration, i.e. \"P1M\" for 1 month period."
+     "description": "Subscription period, specified in ISO 8601 format. Acceptable values are \"P1W\" (one week), \"P1M\" (one month), \"P3M\" (three months), \"P6M\" (six months), and \"P1Y\" (one year)."
     },
     "trialPeriod": {
      "type": "string",
@@ -697,6 +739,20 @@
     }
    }
   },
+  "Prorate": {
+   "id": "Prorate",
+   "type": "object",
+   "properties": {
+    "defaultPrice": {
+     "$ref": "Price",
+     "description": "Default price cannot be zero and must be less than the full subscription price. Default price is always in the developer's Checkout merchant currency. Targeted countries have their prices set automatically based on the default_price."
+    },
+    "start": {
+     "$ref": "MonthDay",
+     "description": "Defines the first day on which the price takes effect."
+    }
+   }
+  },
   "Season": {
    "id": "Season",
    "type": "object",
@@ -704,6 +760,13 @@
     "end": {
      "$ref": "MonthDay",
      "description": "Inclusive end date of the recurrence period."
+    },
+    "prorations": {
+     "type": "array",
+     "description": "Optionally present list of prorations for the season. Each proration is a one-off discounted entry into a subscription. Each proration contains the first date on which the discount is available and the new pricing information.",
+     "items": {
+      "$ref": "Prorate"
+     }
     },
     "start": {
      "$ref": "MonthDay",
@@ -1257,7 +1320,7 @@
        "id": "androidpublisher.edits.apks.addexternallyhosted",
        "path": "{packageName}/edits/{editId}/apks/externallyHosted",
        "httpMethod": "POST",
-       "description": "Creates a new APK without uploading the APK itself to Google Play, instead hosting the APK at a specified URL. This function is only available to enterprises using Google Play for work whose application is configured to restrict distribution to the enterprise domain.",
+       "description": "Creates a new APK without uploading the APK itself to Google Play, instead hosting the APK at a specified URL. This function is only available to enterprises using Google Play for Work whose application is configured to restrict distribution to the enterprise domain.",
        "parameters": {
         "editId": {
          "type": "string",
@@ -1730,9 +1793,11 @@
           "sevenInchScreenshots",
           "tenInchScreenshots",
           "tvBanner",
-          "tvScreenshots"
+          "tvScreenshots",
+          "wearScreenshots"
          ],
          "enumDescriptions": [
+          "",
           "",
           "",
           "",
@@ -1791,9 +1856,11 @@
           "sevenInchScreenshots",
           "tenInchScreenshots",
           "tvBanner",
-          "tvScreenshots"
+          "tvScreenshots",
+          "wearScreenshots"
          ],
          "enumDescriptions": [
+          "",
           "",
           "",
           "",
@@ -1854,9 +1921,11 @@
           "sevenInchScreenshots",
           "tenInchScreenshots",
           "tvBanner",
-          "tvScreenshots"
+          "tvScreenshots",
+          "wearScreenshots"
          ],
          "enumDescriptions": [
+          "",
           "",
           "",
           "",
@@ -1917,9 +1986,11 @@
           "sevenInchScreenshots",
           "tenInchScreenshots",
           "tvBanner",
-          "tvScreenshots"
+          "tvScreenshots",
+          "wearScreenshots"
          ],
          "enumDescriptions": [
+          "",
           "",
           "",
           "",
@@ -2524,6 +2595,49 @@
         "https://www.googleapis.com/auth/androidpublisher"
        ]
       }
+     }
+    }
+   }
+  },
+  "entitlements": {
+   "methods": {
+    "list": {
+     "id": "androidpublisher.entitlements.list",
+     "path": "{packageName}/entitlements",
+     "httpMethod": "GET",
+     "description": "Lists the user's current inapp item or subscription entitlements",
+     "parameters": {
+      "maxResults": {
+       "type": "integer",
+       "format": "uint32",
+       "location": "query"
+      },
+      "packageName": {
+       "type": "string",
+       "description": "The package name of the application the inapp product was sold in (for example, 'com.some.thing').",
+       "required": true,
+       "location": "path"
+      },
+      "productId": {
+       "type": "string",
+       "description": "The product id of the inapp product (for example, 'sku1'). This can be used to restrict the result set.",
+       "location": "query"
+      },
+      "startIndex": {
+       "type": "integer",
+       "format": "uint32",
+       "location": "query"
+      },
+      "token": {
+       "type": "string",
+       "location": "query"
+      }
+     },
+     "parameterOrder": [
+      "packageName"
+     ],
+     "response": {
+      "$ref": "EntitlementsListResponse"
      }
     }
    }

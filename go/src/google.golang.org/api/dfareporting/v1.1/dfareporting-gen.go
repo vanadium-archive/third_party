@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/dfareporting/v1.1"
 //   ...
 //   dfareportingService, err := dfareporting.New(oauthHttpClient)
-package dfareporting
+package dfareporting // import "google.golang.org/api/dfareporting/v1.1"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "dfareporting:v1.1"
 const apiName = "dfareporting"
@@ -60,8 +64,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	DimensionValues *DimensionValuesService
 
@@ -70,6 +75,13 @@ type Service struct {
 	Reports *ReportsService
 
 	UserProfiles *UserProfilesService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewDimensionValuesService(s *Service) *DimensionValuesService {
@@ -120,6 +132,7 @@ type UserProfilesService struct {
 	s *Service
 }
 
+// Activities: Represents an activity group.
 type Activities struct {
 	// Filters: List of activity filters. The dimension values need to be
 	// all either of type "dfa:activity" or "dfa:activityGroup".
@@ -131,8 +144,23 @@ type Activities struct {
 
 	// MetricNames: List of names of floodlight activity metrics.
 	MetricNames []string `json:"metricNames,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Filters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Activities) MarshalJSON() ([]byte, error) {
+	type noMethod Activities
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CustomRichMediaEvents: Represents a Custom Rich Media Events group.
 type CustomRichMediaEvents struct {
 	// FilteredEventIds: List of custom rich media event IDs. Dimension
 	// values must be all of type dfa:richMediaEventTypeIdAndName.
@@ -141,8 +169,23 @@ type CustomRichMediaEvents struct {
 	// Kind: The kind of resource this is, in this case
 	// dfareporting#customRichMediaEvents.
 	Kind string `json:"kind,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FilteredEventIds") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CustomRichMediaEvents) MarshalJSON() ([]byte, error) {
+	type noMethod CustomRichMediaEvents
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DateRange: Represents a date range.
 type DateRange struct {
 	// EndDate: The end date of the date range, inclusive. A string of the
 	// format: "yyyy-MM-dd".
@@ -157,20 +200,16 @@ type DateRange struct {
 	// - "TODAY"
 	// - "YESTERDAY"
 	// - "WEEK_TO_DATE"
-	//
 	// - "MONTH_TO_DATE"
 	// - "QUARTER_TO_DATE"
 	// - "YEAR_TO_DATE"
-	// -
-	// "PREVIOUS_WEEK"
+	// - "PREVIOUS_WEEK"
 	// - "PREVIOUS_MONTH"
 	// - "PREVIOUS_QUARTER"
-	// -
-	// "PREVIOUS_YEAR"
+	// - "PREVIOUS_YEAR"
 	// - "LAST_7_DAYS"
 	// - "LAST_30_DAYS"
 	// - "LAST_90_DAYS"
-	//
 	// - "LAST_365_DAYS"
 	// - "LAST_24_MONTHS"
 	RelativeDateRange string `json:"relativeDateRange,omitempty"`
@@ -178,8 +217,23 @@ type DateRange struct {
 	// StartDate: The start date of the date range, inclusive. A string of
 	// the format: "yyyy-MM-dd".
 	StartDate string `json:"startDate,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "EndDate") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DateRange) MarshalJSON() ([]byte, error) {
+	type noMethod DateRange
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DimensionFilter: Represents a dimension filter.
 type DimensionFilter struct {
 	// DimensionName: The name of the dimension to filter.
 	DimensionName string `json:"dimensionName,omitempty"`
@@ -190,8 +244,23 @@ type DimensionFilter struct {
 
 	// Value: The value of the dimension to filter.
 	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DimensionName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DimensionFilter) MarshalJSON() ([]byte, error) {
+	type noMethod DimensionFilter
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DimensionValue: Represents a DimensionValue resource.
 type DimensionValue struct {
 	// DimensionName: The name of the dimension.
 	DimensionName string `json:"dimensionName,omitempty"`
@@ -208,8 +277,23 @@ type DimensionValue struct {
 
 	// Value: The value of the dimension.
 	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DimensionName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DimensionValue) MarshalJSON() ([]byte, error) {
+	type noMethod DimensionValue
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DimensionValueList: Represents the list of DimensionValue resources.
 type DimensionValueList struct {
 	// Etag: The eTag of this response for caching purposes.
 	Etag string `json:"etag,omitempty"`
@@ -226,8 +310,27 @@ type DimensionValueList struct {
 	// "pageToken" to the value of this field. The page token is only valid
 	// for a limited amount of time and should not be persisted.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DimensionValueList) MarshalJSON() ([]byte, error) {
+	type noMethod DimensionValueList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DimensionValueRequest: Represents a DimensionValuesRequest.
 type DimensionValueRequest struct {
 	// DimensionName: The name of the dimension for which values should be
 	// requested.
@@ -248,8 +351,26 @@ type DimensionValueRequest struct {
 	// StartDate: The start date of the date range for which to retrieve
 	// dimension values. A string of the format: "yyyy-MM-dd".
 	StartDate string `json:"startDate,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DimensionName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DimensionValueRequest) MarshalJSON() ([]byte, error) {
+	type noMethod DimensionValueRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// File: Represents a File resource. A File contains the meta-data for a
+// report run. It shows the status of the run and holds the urls to the
+// generated report data if the run is finished and the status is
+// "REPORT_AVAILABLE".
 type File struct {
 	// DateRange: The date range for which the file has report data. The
 	// date range will always be the absolute date range for which the
@@ -281,16 +402,34 @@ type File struct {
 
 	// Status: The status of the report file, one of:
 	// - "PROCESSING"
-	// -
-	// "REPORT_AVAILABLE"
+	// - "REPORT_AVAILABLE"
 	// - "FAILED"
 	// - "CANCELLED"
 	Status string `json:"status,omitempty"`
 
 	// Urls: The urls where the completed report file can be downloaded.
 	Urls *FileUrls `json:"urls,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DateRange") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *File) MarshalJSON() ([]byte, error) {
+	type noMethod File
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FileUrls: The urls where the completed report file can be downloaded.
 type FileUrls struct {
 	// ApiUrl: The url for downloading the report data through the API.
 	ApiUrl string `json:"apiUrl,omitempty"`
@@ -298,8 +437,23 @@ type FileUrls struct {
 	// BrowserUrl: The url for downloading the report data through a
 	// browser.
 	BrowserUrl string `json:"browserUrl,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ApiUrl") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FileUrls) MarshalJSON() ([]byte, error) {
+	type noMethod FileUrls
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FileList: Represents the list of File resources.
 type FileList struct {
 	// Etag: The eTag of this response for caching purposes.
 	Etag string `json:"etag,omitempty"`
@@ -315,12 +469,30 @@ type FileList struct {
 	// to the value of this field. The page token is only valid for a
 	// limited amount of time and should not be persisted.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FileList) MarshalJSON() ([]byte, error) {
+	type noMethod FileList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Recipient: Represents a recipient.
 type Recipient struct {
 	// DeliveryType: The delivery type for the recipient, one of:
-	// -
-	// "ATTACHMENT"
+	// - "ATTACHMENT"
 	// - "LINK"
 	DeliveryType string `json:"deliveryType,omitempty"`
 
@@ -330,8 +502,23 @@ type Recipient struct {
 	// Kind: The kind of resource this is, in this case
 	// dfareporting#recipient.
 	Kind string `json:"kind,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DeliveryType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Recipient) MarshalJSON() ([]byte, error) {
+	type noMethod Recipient
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Report: Represents a Report resource.
 type Report struct {
 	// AccountId: The account ID to which this report belongs.
 	AccountId int64 `json:"accountId,omitempty,string"`
@@ -363,11 +550,10 @@ type Report struct {
 
 	// Format: The output format of the report, one of:
 	// - "CSV"
-	// - "EXCEL"
-	//  If not specified, default format is "CSV". Note that the actual
-	// format in the completed report file might differ if for instance the
-	// report's size exceeds the format's capabilities. "CSV" will then be
-	// the fallback format.
+	// - "EXCEL"  If not specified, default format is "CSV". Note that the
+	// actual format in the completed report file might differ if for
+	// instance the report's size exceeds the format's capabilities. "CSV"
+	// will then be the fallback format.
 	Format string `json:"format,omitempty"`
 
 	// Id: The unique ID identifying this report resource.
@@ -405,26 +591,44 @@ type Report struct {
 	// Type: The type of the report, one of:
 	// - STANDARD
 	// - REACH
-	// -
-	// ACTIVE_GRP
+	// - ACTIVE_GRP
 	// - PATH_TO_CONVERSION
 	// - FLOODLIGHT
-	// -
-	// CROSS_DIMENSION_REACH
+	// - CROSS_DIMENSION_REACH
 	Type string `json:"type,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Report) MarshalJSON() ([]byte, error) {
+	type noMethod Report
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportActiveGrpCriteria: The report criteria for a report of type
+// "ACTIVE_GRP".
 type ReportActiveGrpCriteria struct {
 	// DateRange: The date range this report should be run for.
 	DateRange *DateRange `json:"dateRange,omitempty"`
 
 	// DimensionFilters: The list of filters on which dimensions are
 	// filtered.
-	// Filters for different dimensions are ANDed, filters for the
-	// same dimension are grouped together and ORed.
-	// A valid active GRP
-	// report needs to have exactly one DimensionValue for the United States
-	// in addition to any advertiser or campaign dimension values.
+	// Filters for different dimensions are ANDed, filters for the same
+	// dimension are grouped together and ORed.
+	// A valid active GRP report needs to have exactly one DimensionValue
+	// for the United States in addition to any advertiser or campaign
+	// dimension values.
 	DimensionFilters []*DimensionValue `json:"dimensionFilters,omitempty"`
 
 	// Dimensions: The list of dimensions the report should include.
@@ -432,8 +636,23 @@ type ReportActiveGrpCriteria struct {
 
 	// MetricNames: The list of names of metrics the report should include.
 	MetricNames []string `json:"metricNames,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DateRange") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportActiveGrpCriteria) MarshalJSON() ([]byte, error) {
+	type noMethod ReportActiveGrpCriteria
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportCriteria: The report criteria for a report of type "STANDARD".
 type ReportCriteria struct {
 	// Activities: Activity group.
 	Activities *Activities `json:"activities,omitempty"`
@@ -446,8 +665,8 @@ type ReportCriteria struct {
 
 	// DimensionFilters: The list of filters on which dimensions are
 	// filtered.
-	// Filters for different dimensions are ANDed, filters for the
-	// same dimension are grouped together and ORed.
+	// Filters for different dimensions are ANDed, filters for the same
+	// dimension are grouped together and ORed.
 	DimensionFilters []*DimensionValue `json:"dimensionFilters,omitempty"`
 
 	// Dimensions: The list of standard dimensions the report should
@@ -456,8 +675,24 @@ type ReportCriteria struct {
 
 	// MetricNames: The list of names of metrics the report should include.
 	MetricNames []string `json:"metricNames,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Activities") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportCriteria) MarshalJSON() ([]byte, error) {
+	type noMethod ReportCriteria
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportCrossDimensionReachCriteria: The report criteria for a report
+// of type "CROSS_DIMENSION_REACH".
 type ReportCrossDimensionReachCriteria struct {
 	// Breakdown: The list of dimensions the report should include.
 	Breakdown []*SortedDimension `json:"breakdown,omitempty"`
@@ -467,8 +702,7 @@ type ReportCrossDimensionReachCriteria struct {
 
 	// Dimension: The dimension option, one of:
 	// - "ADVERTISER"
-	// -
-	// "CAMPAIGN"
+	// - "CAMPAIGN"
 	// - "SITE_BY_ADVERTISER"
 	// - "SITE_BY_CAMPAIGN"
 	Dimension string `json:"dimension,omitempty"`
@@ -486,8 +720,23 @@ type ReportCrossDimensionReachCriteria struct {
 
 	// Pivoted: Whether the report is pivoted or not. Defaults to true.
 	Pivoted bool `json:"pivoted,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Breakdown") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportCrossDimensionReachCriteria) MarshalJSON() ([]byte, error) {
+	type noMethod ReportCrossDimensionReachCriteria
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportDelivery: The report's email delivery settings.
 type ReportDelivery struct {
 	// EmailOwner: Whether the report should be emailed to the report owner.
 	EmailOwner bool `json:"emailOwner,omitempty"`
@@ -503,16 +752,32 @@ type ReportDelivery struct {
 
 	// Recipients: The list of recipients to which to email the report.
 	Recipients []*Recipient `json:"recipients,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "EmailOwner") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportDelivery) MarshalJSON() ([]byte, error) {
+	type noMethod ReportDelivery
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportFloodlightCriteria: The report criteria for a report of type
+// "FLOODLIGHT".
 type ReportFloodlightCriteria struct {
 	// DateRange: The date range this report should be run for.
 	DateRange *DateRange `json:"dateRange,omitempty"`
 
 	// DimensionFilters: The list of filters on which dimensions are
 	// filtered.
-	// Filters for different dimensions are ANDed, filters for the
-	// same dimension are grouped together and ORed.
+	// Filters for different dimensions are ANDed, filters for the same
+	// dimension are grouped together and ORed.
 	DimensionFilters []*DimensionValue `json:"dimensionFilters,omitempty"`
 
 	// Dimensions: The list of dimensions the report should include.
@@ -529,8 +794,24 @@ type ReportFloodlightCriteria struct {
 
 	// ReportProperties: The properties of the report.
 	ReportProperties *ReportFloodlightCriteriaReportProperties `json:"reportProperties,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DateRange") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportFloodlightCriteria) MarshalJSON() ([]byte, error) {
+	type noMethod ReportFloodlightCriteria
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportFloodlightCriteriaReportProperties: The properties of the
+// report.
 type ReportFloodlightCriteriaReportProperties struct {
 	// IncludeAttributedIPConversions: Include conversions that have no
 	// cookie, but do have an exposure path.
@@ -548,8 +829,25 @@ type ReportFloodlightCriteriaReportProperties struct {
 	// know how the user was exposed to your ads during the lookback window
 	// prior to a conversion.
 	IncludeUnattributedIPConversions bool `json:"includeUnattributedIPConversions,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "IncludeAttributedIPConversions") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportFloodlightCriteriaReportProperties) MarshalJSON() ([]byte, error) {
+	type noMethod ReportFloodlightCriteriaReportProperties
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportPathToConversionCriteria: The report criteria for a report of
+// type "PATH_TO_CONVERSION".
 type ReportPathToConversionCriteria struct {
 	// ActivityFilters: The list of 'dfa:activity' values to filter on.
 	ActivityFilters []*DimensionValue `json:"activityFilters,omitempty"`
@@ -580,8 +878,24 @@ type ReportPathToConversionCriteria struct {
 
 	// ReportProperties: The properties of the report.
 	ReportProperties *ReportPathToConversionCriteriaReportProperties `json:"reportProperties,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ActivityFilters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportPathToConversionCriteria) MarshalJSON() ([]byte, error) {
+	type noMethod ReportPathToConversionCriteria
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportPathToConversionCriteriaReportProperties: The properties of the
+// report.
 type ReportPathToConversionCriteriaReportProperties struct {
 	// ClicksLookbackWindow: DFA checks to see if a click interaction
 	// occurred within the specified period of time before a conversion. By
@@ -633,8 +947,25 @@ type ReportPathToConversionCriteriaReportProperties struct {
 
 	// PivotOnInteractionPath: Enable pivoting on interaction path.
 	PivotOnInteractionPath bool `json:"pivotOnInteractionPath,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "ClicksLookbackWindow") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportPathToConversionCriteriaReportProperties) MarshalJSON() ([]byte, error) {
+	type noMethod ReportPathToConversionCriteriaReportProperties
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportReachCriteria: The report criteria for a report of type
+// "REACH".
 type ReportReachCriteria struct {
 	// Activities: Activity group.
 	Activities *Activities `json:"activities,omitempty"`
@@ -647,8 +978,8 @@ type ReportReachCriteria struct {
 
 	// DimensionFilters: The list of filters on which dimensions are
 	// filtered.
-	// Filters for different dimensions are ANDed, filters for the
-	// same dimension are grouped together and ORed.
+	// Filters for different dimensions are ANDed, filters for the same
+	// dimension are grouped together and ORed.
 	DimensionFilters []*DimensionValue `json:"dimensionFilters,omitempty"`
 
 	// Dimensions: The list of dimensions the report should include.
@@ -660,8 +991,25 @@ type ReportReachCriteria struct {
 	// ReachByFrequencyMetricNames: The list of names of  Reach By Frequency
 	// metrics the report should include.
 	ReachByFrequencyMetricNames []string `json:"reachByFrequencyMetricNames,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Activities") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportReachCriteria) MarshalJSON() ([]byte, error) {
+	type noMethod ReportReachCriteria
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportSchedule: The report's schedule. Can only be set if the
+// report's 'dateRange' is a relative date range and the relative date
+// range is not "TODAY".
 type ReportSchedule struct {
 	// Active: Whether the schedule is active or not. Must be set to either
 	// true or false.
@@ -677,14 +1025,12 @@ type ReportSchedule struct {
 	ExpirationDate string `json:"expirationDate,omitempty"`
 
 	// Repeats: The interval for which the report is repeated, one of:
-	// -
-	// "DAILY", also requires field "every" to be set.
-	// - "WEEKLY", also
-	// requires fields "every" and "repeatsOnWeekDays" to be set.
-	// -
-	// "TWICE_A_MONTH"
-	// - "MONTHLY", also requires fields "every" and
-	// "runsOnDayOfMonth" to be set.
+	// - "DAILY", also requires field "every" to be set.
+	// - "WEEKLY", also requires fields "every" and "repeatsOnWeekDays" to
+	// be set.
+	// - "TWICE_A_MONTH"
+	// - "MONTHLY", also requires fields "every" and "runsOnDayOfMonth" to
+	// be set.
 	// - "QUARTERLY"
 	// - "YEARLY"
 	Repeats string `json:"repeats,omitempty"`
@@ -699,17 +1045,32 @@ type ReportSchedule struct {
 	// are:
 	// - DAY_OF_MONTH
 	// - WEEK_OF_MONTH
-	// Example: If 'startDate' is
-	// Monday, April 2nd 2012 (2012-04-02), "DAY_OF_MONTH" would run
-	// subsequent reports on the 2nd of every Month, and "WEEK_OF_MONTH"
-	// would run subsequent reports on the first Monday of the month.
+	// Example: If 'startDate' is Monday, April 2nd 2012 (2012-04-02),
+	// "DAY_OF_MONTH" would run subsequent reports on the 2nd of every
+	// Month, and "WEEK_OF_MONTH" would run subsequent reports on the first
+	// Monday of the month.
 	RunsOnDayOfMonth string `json:"runsOnDayOfMonth,omitempty"`
 
 	// StartDate: Start date of date range for which scheduled reports
 	// should be run.
 	StartDate string `json:"startDate,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Active") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportSchedule) MarshalJSON() ([]byte, error) {
+	type noMethod ReportSchedule
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ReportList: Represents the list of reports.
 type ReportList struct {
 	// Etag: The eTag of this response for caching purposes.
 	Etag string `json:"etag,omitempty"`
@@ -725,8 +1086,27 @@ type ReportList struct {
 	// to the value of this field. The page token is only valid for a
 	// limited amount of time and should not be persisted.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ReportList) MarshalJSON() ([]byte, error) {
+	type noMethod ReportList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SortedDimension: Represents a sorted dimension.
 type SortedDimension struct {
 	// Kind: The kind of resource this is, in this case
 	// dfareporting#sortedDimension.
@@ -740,8 +1120,23 @@ type SortedDimension struct {
 	// - "ASCENDING"
 	// - "DESCENDING"
 	SortOrder string `json:"sortOrder,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SortedDimension) MarshalJSON() ([]byte, error) {
+	type noMethod SortedDimension
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// UserProfile: Represents a UserProfile resource.
 type UserProfile struct {
 	// AccountId: The account ID to which this profile belongs.
 	AccountId int64 `json:"accountId,omitempty,string"`
@@ -769,8 +1164,27 @@ type UserProfile struct {
 
 	// UserName: The user name.
 	UserName string `json:"userName,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *UserProfile) MarshalJSON() ([]byte, error) {
+	type noMethod UserProfile
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// UserProfileList: Represents the list of user profiles.
 type UserProfileList struct {
 	// Etag: The eTag of this response for caching purposes.
 	Etag string `json:"etag,omitempty"`
@@ -781,6 +1195,24 @@ type UserProfileList struct {
 	// Kind: The kind of list this is, in this case
 	// dfareporting#userProfileList.
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *UserProfileList) MarshalJSON() ([]byte, error) {
+	type noMethod UserProfileList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "dfareporting.dimensionValues.query":
@@ -789,13 +1221,14 @@ type DimensionValuesQueryCall struct {
 	s                     *Service
 	profileId             int64
 	dimensionvaluerequest *DimensionValueRequest
-	opt_                  map[string]interface{}
+	urlParams_            gensupport.URLParams
+	ctx_                  context.Context
 }
 
 // Query: Retrieves list of report dimension values for a list of
 // filters.
 func (r *DimensionValuesService) Query(profileId int64, dimensionvaluerequest *DimensionValueRequest) *DimensionValuesQueryCall {
-	c := &DimensionValuesQueryCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &DimensionValuesQueryCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	c.dimensionvaluerequest = dimensionvaluerequest
 	return c
@@ -804,52 +1237,74 @@ func (r *DimensionValuesService) Query(profileId int64, dimensionvaluerequest *D
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of results to return.
 func (c *DimensionValuesQueryCall) MaxResults(maxResults int64) *DimensionValuesQueryCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": The value of the
 // nextToken from the previous result page.
 func (c *DimensionValuesQueryCall) PageToken(pageToken string) *DimensionValuesQueryCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *DimensionValuesQueryCall) Fields(s ...googleapi.Field) *DimensionValuesQueryCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *DimensionValuesQueryCall) Do() (*DimensionValueList, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DimensionValuesQueryCall) Context(ctx context.Context) *DimensionValuesQueryCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *DimensionValuesQueryCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.dimensionvaluerequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/dimensionvalues/query")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.dimensionValues.query" call.
+// Exactly one of *DimensionValueList or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *DimensionValueList.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *DimensionValuesQueryCall) Do(opts ...googleapi.CallOption) (*DimensionValueList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -857,7 +1312,12 @@ func (c *DimensionValuesQueryCall) Do() (*DimensionValueList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *DimensionValueList
+	ret := &DimensionValueList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -908,14 +1368,16 @@ func (c *DimensionValuesQueryCall) Do() (*DimensionValueList, error) {
 // method id "dfareporting.files.list":
 
 type FilesListCall struct {
-	s         *Service
-	profileId int64
-	opt_      map[string]interface{}
+	s            *Service
+	profileId    int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists files for a user profile.
 func (r *FilesService) List(profileId int64) *FilesListCall {
-	c := &FilesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	return c
 }
@@ -923,66 +1385,103 @@ func (r *FilesService) List(profileId int64) *FilesListCall {
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of results to return.
 func (c *FilesListCall) MaxResults(maxResults int64) *FilesListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": The value of the
 // nextToken from the previous result page.
 func (c *FilesListCall) PageToken(pageToken string) *FilesListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // SortField sets the optional parameter "sortField": The field by which
 // to sort the list.
+//
+// Possible values:
+//   "ID" - Sort by file ID.
+//   "LAST_MODIFIED_TIME" (default) - Sort by 'lastmodifiedAt' field.
 func (c *FilesListCall) SortField(sortField string) *FilesListCall {
-	c.opt_["sortField"] = sortField
+	c.urlParams_.Set("sortField", sortField)
 	return c
 }
 
 // SortOrder sets the optional parameter "sortOrder": Order of sorted
 // results, default is 'DESCENDING'.
+//
+// Possible values:
+//   "ASCENDING" - Ascending order.
+//   "DESCENDING" (default) - Descending order.
 func (c *FilesListCall) SortOrder(sortOrder string) *FilesListCall {
-	c.opt_["sortOrder"] = sortOrder
+	c.urlParams_.Set("sortOrder", sortOrder)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesListCall) Fields(s ...googleapi.Field) *FilesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesListCall) Do() (*FileList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *FilesListCall) IfNoneMatch(entityTag string) *FilesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesListCall) Context(ctx context.Context) *FilesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sortField"]; ok {
-		params.Set("sortField", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sortOrder"]; ok {
-		params.Set("sortOrder", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/files")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.files.list" call.
+// Exactly one of *FileList or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *FileList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *FilesListCall) Do(opts ...googleapi.CallOption) (*FileList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -990,7 +1489,12 @@ func (c *FilesListCall) Do() (*FileList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *FileList
+	ret := &FileList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1063,47 +1567,82 @@ func (c *FilesListCall) Do() (*FileList, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *FilesListCall) Pages(ctx context.Context, f func(*FileList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "dfareporting.reports.delete":
 
 type ReportsDeleteCall struct {
-	s         *Service
-	profileId int64
-	reportId  int64
-	opt_      map[string]interface{}
+	s          *Service
+	profileId  int64
+	reportId   int64
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Deletes a report by its ID.
 func (r *ReportsService) Delete(profileId int64, reportId int64) *ReportsDeleteCall {
-	c := &ReportsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReportsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	c.reportId = reportId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReportsDeleteCall) Fields(s ...googleapi.Field) *ReportsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReportsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReportsDeleteCall) Context(ctx context.Context) *ReportsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReportsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/reports/{reportId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 		"reportId":  strconv.FormatInt(c.reportId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.reports.delete" call.
+func (c *ReportsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -1147,44 +1686,87 @@ func (c *ReportsDeleteCall) Do() error {
 // method id "dfareporting.reports.get":
 
 type ReportsGetCall struct {
-	s         *Service
-	profileId int64
-	reportId  int64
-	opt_      map[string]interface{}
+	s            *Service
+	profileId    int64
+	reportId     int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Retrieves a report by its ID.
 func (r *ReportsService) Get(profileId int64, reportId int64) *ReportsGetCall {
-	c := &ReportsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReportsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	c.reportId = reportId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReportsGetCall) Fields(s ...googleapi.Field) *ReportsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReportsGetCall) Do() (*Report, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ReportsGetCall) IfNoneMatch(entityTag string) *ReportsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReportsGetCall) Context(ctx context.Context) *ReportsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReportsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/reports/{reportId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 		"reportId":  strconv.FormatInt(c.reportId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.reports.get" call.
+// Exactly one of *Report or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Report.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ReportsGetCall) Do(opts ...googleapi.CallOption) (*Report, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1192,7 +1774,12 @@ func (c *ReportsGetCall) Do() (*Report, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Report
+	ret := &Report{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1235,49 +1822,78 @@ func (c *ReportsGetCall) Do() (*Report, error) {
 // method id "dfareporting.reports.insert":
 
 type ReportsInsertCall struct {
-	s         *Service
-	profileId int64
-	report    *Report
-	opt_      map[string]interface{}
+	s          *Service
+	profileId  int64
+	report     *Report
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Insert: Creates a report.
 func (r *ReportsService) Insert(profileId int64, report *Report) *ReportsInsertCall {
-	c := &ReportsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReportsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	c.report = report
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReportsInsertCall) Fields(s ...googleapi.Field) *ReportsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReportsInsertCall) Do() (*Report, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReportsInsertCall) Context(ctx context.Context) *ReportsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReportsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.report)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/reports")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.reports.insert" call.
+// Exactly one of *Report or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Report.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ReportsInsertCall) Do(opts ...googleapi.CallOption) (*Report, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1285,7 +1901,12 @@ func (c *ReportsInsertCall) Do() (*Report, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Report
+	ret := &Report{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1323,14 +1944,16 @@ func (c *ReportsInsertCall) Do() (*Report, error) {
 // method id "dfareporting.reports.list":
 
 type ReportsListCall struct {
-	s         *Service
-	profileId int64
-	opt_      map[string]interface{}
+	s            *Service
+	profileId    int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Retrieves list of reports.
 func (r *ReportsService) List(profileId int64) *ReportsListCall {
-	c := &ReportsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReportsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	return c
 }
@@ -1338,66 +1961,104 @@ func (r *ReportsService) List(profileId int64) *ReportsListCall {
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of results to return.
 func (c *ReportsListCall) MaxResults(maxResults int64) *ReportsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": The value of the
 // nextToken from the previous result page.
 func (c *ReportsListCall) PageToken(pageToken string) *ReportsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // SortField sets the optional parameter "sortField": The field by which
 // to sort the list.
+//
+// Possible values:
+//   "ID" - Sort by report ID.
+//   "LAST_MODIFIED_TIME" (default) - Sort by 'lastModifiedTime' field.
+//   "NAME" - Sort by name of reports.
 func (c *ReportsListCall) SortField(sortField string) *ReportsListCall {
-	c.opt_["sortField"] = sortField
+	c.urlParams_.Set("sortField", sortField)
 	return c
 }
 
 // SortOrder sets the optional parameter "sortOrder": Order of sorted
 // results, default is 'DESCENDING'.
+//
+// Possible values:
+//   "ASCENDING" - Ascending order.
+//   "DESCENDING" (default) - Descending order.
 func (c *ReportsListCall) SortOrder(sortOrder string) *ReportsListCall {
-	c.opt_["sortOrder"] = sortOrder
+	c.urlParams_.Set("sortOrder", sortOrder)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReportsListCall) Fields(s ...googleapi.Field) *ReportsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReportsListCall) Do() (*ReportList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ReportsListCall) IfNoneMatch(entityTag string) *ReportsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReportsListCall) Context(ctx context.Context) *ReportsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReportsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sortField"]; ok {
-		params.Set("sortField", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sortOrder"]; ok {
-		params.Set("sortOrder", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/reports")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.reports.list" call.
+// Exactly one of *ReportList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ReportList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ReportsListCall) Do(opts ...googleapi.CallOption) (*ReportList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1405,7 +2066,12 @@ func (c *ReportsListCall) Do() (*ReportList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ReportList
+	ret := &ReportList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1480,55 +2146,105 @@ func (c *ReportsListCall) Do() (*ReportList, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ReportsListCall) Pages(ctx context.Context, f func(*ReportList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "dfareporting.reports.patch":
 
 type ReportsPatchCall struct {
-	s         *Service
-	profileId int64
-	reportId  int64
-	report    *Report
-	opt_      map[string]interface{}
+	s          *Service
+	profileId  int64
+	reportId   int64
+	report     *Report
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Updates a report. This method supports patch semantics.
 func (r *ReportsService) Patch(profileId int64, reportId int64, report *Report) *ReportsPatchCall {
-	c := &ReportsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReportsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	c.reportId = reportId
 	c.report = report
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReportsPatchCall) Fields(s ...googleapi.Field) *ReportsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReportsPatchCall) Do() (*Report, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReportsPatchCall) Context(ctx context.Context) *ReportsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReportsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.report)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/reports/{reportId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 		"reportId":  strconv.FormatInt(c.reportId, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.reports.patch" call.
+// Exactly one of *Report or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Report.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ReportsPatchCall) Do(opts ...googleapi.CallOption) (*Report, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1536,7 +2252,12 @@ func (c *ReportsPatchCall) Do() (*Report, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Report
+	ret := &Report{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1582,15 +2303,16 @@ func (c *ReportsPatchCall) Do() (*Report, error) {
 // method id "dfareporting.reports.run":
 
 type ReportsRunCall struct {
-	s         *Service
-	profileId int64
-	reportId  int64
-	opt_      map[string]interface{}
+	s          *Service
+	profileId  int64
+	reportId   int64
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Run: Runs a report.
 func (r *ReportsService) Run(profileId int64, reportId int64) *ReportsRunCall {
-	c := &ReportsRunCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReportsRunCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	c.reportId = reportId
 	return c
@@ -1599,37 +2321,62 @@ func (r *ReportsService) Run(profileId int64, reportId int64) *ReportsRunCall {
 // Synchronous sets the optional parameter "synchronous": If set and
 // true, tries to run the report synchronously.
 func (c *ReportsRunCall) Synchronous(synchronous bool) *ReportsRunCall {
-	c.opt_["synchronous"] = synchronous
+	c.urlParams_.Set("synchronous", fmt.Sprint(synchronous))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReportsRunCall) Fields(s ...googleapi.Field) *ReportsRunCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReportsRunCall) Do() (*File, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReportsRunCall) Context(ctx context.Context) *ReportsRunCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReportsRunCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["synchronous"]; ok {
-		params.Set("synchronous", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/reports/{reportId}/run")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 		"reportId":  strconv.FormatInt(c.reportId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.reports.run" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ReportsRunCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1637,7 +2384,12 @@ func (c *ReportsRunCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1685,52 +2437,81 @@ func (c *ReportsRunCall) Do() (*File, error) {
 // method id "dfareporting.reports.update":
 
 type ReportsUpdateCall struct {
-	s         *Service
-	profileId int64
-	reportId  int64
-	report    *Report
-	opt_      map[string]interface{}
+	s          *Service
+	profileId  int64
+	reportId   int64
+	report     *Report
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Update: Updates a report.
 func (r *ReportsService) Update(profileId int64, reportId int64, report *Report) *ReportsUpdateCall {
-	c := &ReportsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReportsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	c.reportId = reportId
 	c.report = report
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReportsUpdateCall) Fields(s ...googleapi.Field) *ReportsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReportsUpdateCall) Do() (*Report, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReportsUpdateCall) Context(ctx context.Context) *ReportsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReportsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.report)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/reports/{reportId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 		"reportId":  strconv.FormatInt(c.reportId, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.reports.update" call.
+// Exactly one of *Report or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Report.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ReportsUpdateCall) Do(opts ...googleapi.CallOption) (*Report, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1738,7 +2519,12 @@ func (c *ReportsUpdateCall) Do() (*Report, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Report
+	ret := &Report{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1784,47 +2570,90 @@ func (c *ReportsUpdateCall) Do() (*Report, error) {
 // method id "dfareporting.reports.files.get":
 
 type ReportsFilesGetCall struct {
-	s         *Service
-	profileId int64
-	reportId  int64
-	fileId    int64
-	opt_      map[string]interface{}
+	s            *Service
+	profileId    int64
+	reportId     int64
+	fileId       int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Retrieves a report file.
 func (r *ReportsFilesService) Get(profileId int64, reportId int64, fileId int64) *ReportsFilesGetCall {
-	c := &ReportsFilesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReportsFilesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	c.reportId = reportId
 	c.fileId = fileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReportsFilesGetCall) Fields(s ...googleapi.Field) *ReportsFilesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReportsFilesGetCall) Do() (*File, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ReportsFilesGetCall) IfNoneMatch(entityTag string) *ReportsFilesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReportsFilesGetCall) Context(ctx context.Context) *ReportsFilesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReportsFilesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/reports/{reportId}/files/{fileId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 		"reportId":  strconv.FormatInt(c.reportId, 10),
 		"fileId":    strconv.FormatInt(c.fileId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.reports.files.get" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ReportsFilesGetCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1832,7 +2661,12 @@ func (c *ReportsFilesGetCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1883,15 +2717,17 @@ func (c *ReportsFilesGetCall) Do() (*File, error) {
 // method id "dfareporting.reports.files.list":
 
 type ReportsFilesListCall struct {
-	s         *Service
-	profileId int64
-	reportId  int64
-	opt_      map[string]interface{}
+	s            *Service
+	profileId    int64
+	reportId     int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists files for a report.
 func (r *ReportsFilesService) List(profileId int64, reportId int64) *ReportsFilesListCall {
-	c := &ReportsFilesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ReportsFilesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	c.reportId = reportId
 	return c
@@ -1900,67 +2736,104 @@ func (r *ReportsFilesService) List(profileId int64, reportId int64) *ReportsFile
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of results to return.
 func (c *ReportsFilesListCall) MaxResults(maxResults int64) *ReportsFilesListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": The value of the
 // nextToken from the previous result page.
 func (c *ReportsFilesListCall) PageToken(pageToken string) *ReportsFilesListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // SortField sets the optional parameter "sortField": The field by which
 // to sort the list.
+//
+// Possible values:
+//   "ID" - Sort by file ID.
+//   "LAST_MODIFIED_TIME" (default) - Sort by 'lastmodifiedAt' field.
 func (c *ReportsFilesListCall) SortField(sortField string) *ReportsFilesListCall {
-	c.opt_["sortField"] = sortField
+	c.urlParams_.Set("sortField", sortField)
 	return c
 }
 
 // SortOrder sets the optional parameter "sortOrder": Order of sorted
 // results, default is 'DESCENDING'.
+//
+// Possible values:
+//   "ASCENDING" - Ascending order.
+//   "DESCENDING" (default) - Descending order.
 func (c *ReportsFilesListCall) SortOrder(sortOrder string) *ReportsFilesListCall {
-	c.opt_["sortOrder"] = sortOrder
+	c.urlParams_.Set("sortOrder", sortOrder)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ReportsFilesListCall) Fields(s ...googleapi.Field) *ReportsFilesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ReportsFilesListCall) Do() (*FileList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ReportsFilesListCall) IfNoneMatch(entityTag string) *ReportsFilesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ReportsFilesListCall) Context(ctx context.Context) *ReportsFilesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ReportsFilesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sortField"]; ok {
-		params.Set("sortField", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sortOrder"]; ok {
-		params.Set("sortOrder", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}/reports/{reportId}/files")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 		"reportId":  strconv.FormatInt(c.reportId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.reports.files.list" call.
+// Exactly one of *FileList or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *FileList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ReportsFilesListCall) Do(opts ...googleapi.CallOption) (*FileList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1968,7 +2841,12 @@ func (c *ReportsFilesListCall) Do() (*FileList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *FileList
+	ret := &FileList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2049,44 +2927,108 @@ func (c *ReportsFilesListCall) Do() (*FileList, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ReportsFilesListCall) Pages(ctx context.Context, f func(*FileList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "dfareporting.userProfiles.get":
 
 type UserProfilesGetCall struct {
-	s         *Service
-	profileId int64
-	opt_      map[string]interface{}
+	s            *Service
+	profileId    int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets one user profile by ID.
 func (r *UserProfilesService) Get(profileId int64) *UserProfilesGetCall {
-	c := &UserProfilesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UserProfilesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.profileId = profileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UserProfilesGetCall) Fields(s ...googleapi.Field) *UserProfilesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UserProfilesGetCall) Do() (*UserProfile, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *UserProfilesGetCall) IfNoneMatch(entityTag string) *UserProfilesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UserProfilesGetCall) Context(ctx context.Context) *UserProfilesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UserProfilesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles/{profileId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"profileId": strconv.FormatInt(c.profileId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.userProfiles.get" call.
+// Exactly one of *UserProfile or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *UserProfile.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *UserProfilesGetCall) Do(opts ...googleapi.CallOption) (*UserProfile, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2094,7 +3036,12 @@ func (c *UserProfilesGetCall) Do() (*UserProfile, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *UserProfile
+	ret := &UserProfile{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2129,37 +3076,80 @@ func (c *UserProfilesGetCall) Do() (*UserProfile, error) {
 // method id "dfareporting.userProfiles.list":
 
 type UserProfilesListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Retrieves list of user profiles for a user.
 func (r *UserProfilesService) List() *UserProfilesListCall {
-	c := &UserProfilesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UserProfilesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UserProfilesListCall) Fields(s ...googleapi.Field) *UserProfilesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UserProfilesListCall) Do() (*UserProfileList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *UserProfilesListCall) IfNoneMatch(entityTag string) *UserProfilesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UserProfilesListCall) Context(ctx context.Context) *UserProfilesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UserProfilesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "userprofiles")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "dfareporting.userProfiles.list" call.
+// Exactly one of *UserProfileList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *UserProfileList.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *UserProfilesListCall) Do(opts ...googleapi.CallOption) (*UserProfileList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2167,7 +3157,12 @@ func (c *UserProfilesListCall) Do() (*UserProfileList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *UserProfileList
+	ret := &UserProfileList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

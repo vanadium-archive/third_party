@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/x7FThRC1OZmHwbkYbDOWKsWuUA8\"",
+ "etag": "\"bRFOOrZKfO9LweMbPqu0kcu6De8/41xzEr7Raz2twp-5wqtU1brxM4E\"",
  "discoveryVersion": "v1",
  "id": "oauth2:v2",
  "name": "oauth2",
  "version": "v2",
- "revision": "20150120",
+ "revision": "20160122",
  "title": "Google OAuth2 API",
  "description": "Lets you access OAuth2 protocol related APIs.",
  "ownerDomain": "google.com",
@@ -70,7 +70,7 @@
   "oauth2": {
    "scopes": {
     "https://www.googleapis.com/auth/plus.login": {
-     "description": "Know your basic profile info and list of people in your circles."
+     "description": "Know the list of people in your circles, your age range, and language"
     },
     "https://www.googleapis.com/auth/plus.me": {
      "description": "Know who you are on Google"
@@ -149,9 +149,13 @@
      "type": "string",
      "description": "The space separated list of scopes granted to this token."
     },
+    "token_handle": {
+     "type": "string",
+     "description": "The token handle associated with this token."
+    },
     "user_id": {
      "type": "string",
-     "description": "The Gaia obfuscated user id."
+     "description": "The obfuscated user id."
     },
     "verified_email": {
      "type": "boolean",
@@ -185,7 +189,7 @@
     },
     "id": {
      "type": "string",
-     "description": "The focus obfuscated gaia id of the user."
+     "description": "The obfuscated ID of the user."
     },
     "link": {
      "type": "string",
@@ -230,6 +234,10 @@
      "location": "query"
     },
     "id_token": {
+     "type": "string",
+     "location": "query"
+    },
+    "token_handle": {
      "type": "string",
      "location": "query"
     }

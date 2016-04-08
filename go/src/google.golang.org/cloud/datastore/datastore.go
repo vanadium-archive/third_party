@@ -13,33 +13,94 @@
 // limitations under the License.
 
 // Package datastore contains a Google Cloud Datastore client.
+//
+// This package is experimental and may make backwards-incompatible changes.
 package datastore // import "google.golang.org/cloud/datastore"
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"log"
+	"os"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
-	"google.golang.org/cloud/internal"
-	pb "google.golang.org/cloud/internal/datastore"
+	"google.golang.org/cloud"
+	pb "google.golang.org/cloud/datastore/internal/proto"
+	"google.golang.org/cloud/internal/transport"
+	"google.golang.org/grpc"
 )
-
-// ContextKey represents a context key specific to the datastore
-type ContextKey string
 
 const (
-	// ScopeDatastore grants permissions to view and/or manage datastore entities
-	ScopeDatastore = "https://www.googleapis.com/auth/datastore"
-
-	// ScopeUserEmail grants permission to view the user's email address.
-	// It is required to access the datastore
-	ScopeUserEmail = "https://www.googleapis.com/auth/userinfo.email"
+	prodAddr  = "datastore.googleapis.com:443"
+	userAgent = "gcloud-golang-datastore/20160401"
 )
+
+// ScopeDatastore grants permissions to view and/or manage datastore entities
+const ScopeDatastore = "https://www.googleapis.com/auth/datastore"
+
+// protoClient is an interface for *transport.ProtoClient to support injecting
+// fake clients in tests.
+type protoClient interface {
+	Call(context.Context, string, proto.Message, proto.Message) error
+}
+
+// Client is a client for reading and writing data in a datastore dataset.
+type Client struct {
+	conn     *grpc.ClientConn
+	client   pb.DatastoreClient
+	endpoint string
+	dataset  string // Called dataset by the datastore API, synonym for project ID.
+}
+
+// NewClient creates a new Client for a given dataset.
+// If the project ID is empty, it is derived from the DATASTORE_PROJECT_ID environment variable.
+// If the DATASTORE_EMULATOR_HOST environment variable is set, client will use its value
+// to connect to a locally-running datastore emulator.
+func NewClient(ctx context.Context, projectID string, opts ...cloud.ClientOption) (*Client, error) {
+	var o []cloud.ClientOption
+	// Environment variables for gcd emulator:
+	// https://cloud.google.com/datastore/docs/tools/datastore-emulator
+	// If the emulator is available, dial it directly (and don't pass any credentials).
+	if addr := os.Getenv("DATASTORE_EMULATOR_HOST"); addr != "" {
+		conn, err := grpc.Dial(addr, grpc.WithInsecure())
+		if err != nil {
+			return nil, fmt.Errorf("grpc.Dial: %v", err)
+		}
+		o = []cloud.ClientOption{cloud.WithBaseGRPC(conn)}
+	} else {
+		o = []cloud.ClientOption{
+			cloud.WithEndpoint(prodAddr),
+			cloud.WithScopes(ScopeDatastore),
+			cloud.WithUserAgent(userAgent),
+		}
+	}
+	// Warn if we see the legacy emulator environment variables.
+	if os.Getenv("DATASTORE_HOST") != "" && os.Getenv("DATASTORE_EMULATOR_HOST") == "" {
+		log.Print("WARNING: legacy environment variable DATASTORE_HOST is ignored. Use DATASTORE_EMULATOR_HOST instead.")
+	}
+	if os.Getenv("DATASTORE_DATASET") != "" && os.Getenv("DATASTORE_PROJECT_ID") == "" {
+		log.Print("WARNING: legacy environment variable DATASTORE_DATASET is ignored. Use DATASTORE_PROJECT_ID instead.")
+	}
+	if projectID == "" {
+		projectID = os.Getenv("DATASTORE_PROJECT_ID")
+	}
+	if projectID == "" {
+		return nil, errors.New("datastore: missing project/dataset id")
+	}
+	o = append(o, opts...)
+	conn, err := transport.DialGRPC(ctx, o...)
+	if err != nil {
+		return nil, fmt.Errorf("dialing: %v", err)
+	}
+	return &Client{
+		conn:    conn,
+		client:  pb.NewDatastoreClient(conn),
+		dataset: projectID,
+	}, nil
+
+}
 
 var (
 	// ErrInvalidEntityType is returned when functions like Get or Next are
@@ -89,65 +150,9 @@ type ErrFieldMismatch struct {
 	Reason     string
 }
 
-// errHTTP is returned when responds is a non-200 HTTP response.
-type errHTTP struct {
-	StatusCode int
-	Body       string
-	err        error
-}
-
-func (e *errHTTP) Error() string {
-	if e.err == nil {
-		return fmt.Sprintf("error during call, http status code: %v %s", e.StatusCode, e.Body)
-	}
-	return e.err.Error()
-}
-
 func (e *ErrFieldMismatch) Error() string {
 	return fmt.Sprintf("datastore: cannot load field %q into a %q: %s",
 		e.FieldName, e.StructType, e.Reason)
-}
-
-// baseUrl gets the base url active for the datastore service
-// defaults to "https://www.googleapis.com/datastore/v1beta2/datasets/" if none was specified
-func baseUrl(ctx context.Context) string {
-	v := ctx.Value(ContextKey("base_url"))
-	if v == nil {
-		return "https://www.googleapis.com/datastore/v1beta2/datasets/"
-	} else {
-		return v.(string)
-	}
-}
-
-func call(ctx context.Context, method string, req proto.Message, resp proto.Message) error {
-	payload, err := proto.Marshal(req)
-	if err != nil {
-		return err
-	}
-	url := baseUrl(ctx) + internal.ProjID(ctx) + "/" + method
-	r, err := internal.HTTPClient(ctx).Post(url, "application/x-protobuf", bytes.NewReader(payload))
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
-	all, err := ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
-		e := &errHTTP{
-			StatusCode: r.StatusCode,
-			err:        err,
-		}
-		if err == nil {
-			e.Body = string(all)
-		}
-		return e
-	}
-	if err != nil {
-		return err
-	}
-	if err = proto.Unmarshal(all, resp); err != nil {
-		return err
-	}
-	return nil
 }
 
 func keyToProto(k *Key) *pb.Key {
@@ -156,16 +161,13 @@ func keyToProto(k *Key) *pb.Key {
 	}
 
 	// TODO(jbd): Eliminate unrequired allocations.
-	path := []*pb.Key_PathElement(nil)
+	var path []*pb.Key_PathElement
 	for {
-		el := &pb.Key_PathElement{
-			Kind: proto.String(k.kind),
-		}
+		el := &pb.Key_PathElement{Kind: k.kind}
 		if k.id != 0 {
-			el.Id = proto.Int64(k.id)
-		}
-		if k.name != "" {
-			el.Name = proto.String(k.name)
+			el.IdType = &pb.Key_PathElement_Id{k.id}
+		} else if k.name != "" {
+			el.IdType = &pb.Key_PathElement_Name{k.name}
 		}
 		path = append([]*pb.Key_PathElement{el}, path...)
 		if k.parent == nil {
@@ -173,31 +175,36 @@ func keyToProto(k *Key) *pb.Key {
 		}
 		k = k.parent
 	}
-	key := &pb.Key{
-		PathElement: path,
-	}
+	key := &pb.Key{Path: path}
 	if k.namespace != "" {
 		key.PartitionId = &pb.PartitionId{
-			Namespace: proto.String(k.namespace),
+			NamespaceId: k.namespace,
 		}
 	}
 	return key
 }
 
-func protoToKey(p *pb.Key) *Key {
-	keys := make([]*Key, len(p.GetPathElement()))
-	for i, el := range p.GetPathElement() {
-		keys[i] = &Key{
-			namespace: p.GetPartitionId().GetNamespace(),
-			kind:      el.GetKind(),
+// protoToKey decodes a protocol buffer representation of a key into an
+// equivalent *Key object.
+func protoToKey(p *pb.Key) (*Key, error) {
+	var key *Key
+	var namespace string
+	if partition := p.PartitionId; partition != nil {
+		namespace = partition.NamespaceId
+	}
+	for _, el := range p.Path {
+		key = &Key{
+			namespace: namespace,
+			kind:      el.Kind,
 			id:        el.GetId(),
 			name:      el.GetName(),
+			parent:    key,
 		}
 	}
-	for i := 0; i < len(keys)-1; i++ {
-		keys[i+1].parent = keys[i]
+	if !key.valid() { // Also detects key == nil.
+		return nil, ErrInvalidKey
 	}
-	return keys[len(keys)-1]
+	return key, nil
 }
 
 // multiKeyToProto is a batch version of keyToProto.
@@ -210,12 +217,20 @@ func multiKeyToProto(keys []*Key) []*pb.Key {
 }
 
 // multiKeyToProto is a batch version of keyToProto.
-func multiProtoToKey(keys []*pb.Key) []*Key {
+func multiProtoToKey(keys []*pb.Key) ([]*Key, error) {
+	hasErr := false
 	ret := make([]*Key, len(keys))
+	err := make(MultiError, len(keys))
 	for i, k := range keys {
-		ret[i] = protoToKey(k)
+		ret[i], err[i] = protoToKey(k)
+		if err[i] != nil {
+			hasErr = true
+		}
 	}
-	return ret
+	if hasErr {
+		return nil, err
+	}
+	return ret, nil
 }
 
 // multiValid is a batch version of Key.valid. It returns an error, not a
@@ -248,6 +263,9 @@ func multiValid(key []*Key) error {
 // that represents S, I or P.
 //
 // As a special case, PropertyList is an invalid type for v.
+//
+// TODO(djd): multiArg is very confusing. Fold this logic into the
+// relevant Put/Get methods to make the logic less opaque.
 func checkMultiArg(v reflect.Value) (m multiArgType, elemType reflect.Type) {
 	if v.Kind() != reflect.Slice {
 		return multiArgTypeInvalid, nil
@@ -273,7 +291,12 @@ func checkMultiArg(v reflect.Value) (m multiArgType, elemType reflect.Type) {
 	return multiArgTypeInvalid, nil
 }
 
-// Get loads the entity stored for k into dst, which must be a struct pointer
+// Close closes the Client.
+func (c *Client) Close() {
+	c.conn.Close()
+}
+
+// Get loads the entity stored for key into dst, which must be a struct pointer
 // or implement PropertyLoadSaver. If there is no such entity for the key, Get
 // returns ErrNoSuchEntity.
 //
@@ -285,8 +308,11 @@ func checkMultiArg(v reflect.Value) (m multiArgType, elemType reflect.Type) {
 // type than the one it was stored from, or when a field is missing or
 // unexported in the destination struct. ErrFieldMismatch is only returned if
 // dst is a struct pointer.
-func Get(ctx context.Context, key *Key, dst interface{}) error {
-	err := get(ctx, []*Key{key}, []interface{}{dst}, nil)
+func (c *Client) Get(ctx context.Context, key *Key, dst interface{}) error {
+	if dst == nil { // get catches nil interfaces; we need to catch nil ptr here
+		return ErrInvalidEntityType
+	}
+	err := c.get(ctx, []*Key{key}, []interface{}{dst}, nil)
 	if me, ok := err.(MultiError); ok {
 		return me[0]
 	}
@@ -303,11 +329,11 @@ func Get(ctx context.Context, key *Key, dst interface{}) error {
 // As a special case, PropertyList is an invalid type for dst, even though a
 // PropertyList is a slice of structs. It is treated as invalid to avoid being
 // mistakenly passed when []PropertyList was intended.
-func GetMulti(ctx context.Context, keys []*Key, dst interface{}) error {
-	return get(ctx, keys, dst, nil)
+func (c *Client) GetMulti(ctx context.Context, keys []*Key, dst interface{}) error {
+	return c.get(ctx, keys, dst, nil)
 }
 
-func get(ctx context.Context, keys []*Key, dst interface{}, opts *pb.ReadOptions) error {
+func (c *Client) get(ctx context.Context, keys []*Key, dst interface{}, opts *pb.ReadOptions) error {
 	v := reflect.ValueOf(dst)
 	multiArgType, _ := checkMultiArg(v)
 
@@ -339,11 +365,12 @@ func get(ctx context.Context, keys []*Key, dst interface{}, opts *pb.ReadOptions
 		return multiErr
 	}
 	req := &pb.LookupRequest{
-		Key:         pbKeys,
+		ProjectId:   c.dataset,
+		Keys:        pbKeys,
 		ReadOptions: opts,
 	}
-	resp := &pb.LookupResponse{}
-	if err := call(ctx, "lookup", req, resp); err != nil {
+	resp, err := c.client.Lookup(ctx, req)
+	if err != nil {
 		return err
 	}
 	if len(resp.Deferred) > 0 {
@@ -354,20 +381,28 @@ func get(ctx context.Context, keys []*Key, dst interface{}, opts *pb.ReadOptions
 		return errors.New("datastore: internal error: server returned the wrong number of entities")
 	}
 	for _, e := range resp.Found {
-		k := protoToKey(e.Entity.Key)
+		k, err := protoToKey(e.Entity.Key)
+		if err != nil {
+			return errors.New("datastore: internal error: server returned an invalid key")
+		}
 		index := keyMap[k.String()]
 		elem := v.Index(index)
 		if multiArgType == multiArgTypePropertyLoadSaver || multiArgType == multiArgTypeStruct {
 			elem = elem.Addr()
 		}
-		err := loadEntity(elem.Interface(), e.Entity)
-		if err != nil {
+		if multiArgType == multiArgTypeStructPtr && elem.IsNil() {
+			elem.Set(reflect.New(elem.Type().Elem()))
+		}
+		if err := loadEntity(elem.Interface(), e.Entity); err != nil {
 			multiErr[index] = err
 			any = true
 		}
 	}
 	for _, e := range resp.Missing {
-		k := protoToKey(e.Entity.Key)
+		k, err := protoToKey(e.Entity.Key)
+		if err != nil {
+			return errors.New("datastore: internal error: server returned an invalid key")
+		}
 		multiErr[keyMap[k.String()]] = ErrNoSuchEntity
 		any = true
 	}
@@ -381,8 +416,8 @@ func get(ctx context.Context, keys []*Key, dst interface{}, opts *pb.ReadOptions
 // pointer or implement PropertyLoadSaver; if a struct pointer then any
 // unexported fields of that struct will be skipped. If k is an incomplete key,
 // the returned key will be a unique key generated by the datastore.
-func Put(ctx context.Context, key *Key, src interface{}) (*Key, error) {
-	k, err := PutMulti(ctx, []*Key{key}, []interface{}{src})
+func (c *Client) Put(ctx context.Context, key *Key, src interface{}) (*Key, error) {
+	k, err := c.PutMulti(ctx, []*Key{key}, []interface{}{src})
 	if err != nil {
 		if me, ok := err.(MultiError); ok {
 			return nil, me[0]
@@ -395,45 +430,40 @@ func Put(ctx context.Context, key *Key, src interface{}) (*Key, error) {
 // PutMulti is a batch version of Put.
 //
 // src must satisfy the same conditions as the dst argument to GetMulti.
-func PutMulti(ctx context.Context, keys []*Key, src interface{}) ([]*Key, error) {
-	mutation, err := putMutation(keys, src)
+func (c *Client) PutMulti(ctx context.Context, keys []*Key, src interface{}) ([]*Key, error) {
+	mutations, err := putMutations(keys, src)
 	if err != nil {
 		return nil, err
 	}
 
 	// Make the request.
 	req := &pb.CommitRequest{
-		Mutation: mutation,
-		Mode:     pb.CommitRequest_NON_TRANSACTIONAL.Enum(),
+		ProjectId: c.dataset,
+		Mutations: mutations,
+		Mode:      pb.CommitRequest_NON_TRANSACTIONAL,
 	}
-	resp := &pb.CommitResponse{}
-	if err := call(ctx, "commit", req, resp); err != nil {
+	resp, err := c.client.Commit(ctx, req)
+	if err != nil {
 		return nil, err
 	}
 
 	// Copy any newly minted keys into the returned keys.
-	newKeys := make(map[int]int) // Map of index in returned slice to index in response.
 	ret := make([]*Key, len(keys))
-	var idx int
 	for i, key := range keys {
 		if key.Incomplete() {
-			// This key will be in the mutation result.
-			newKeys[i] = idx
-			idx++
+			// This key is in the mutation results.
+			ret[i], err = protoToKey(resp.MutationResults[i].Key)
+			if err != nil {
+				return nil, errors.New("datastore: internal error: server returned an invalid key")
+			}
 		} else {
 			ret[i] = key
 		}
 	}
-	if len(newKeys) != len(resp.MutationResult.InsertAutoIdKey) {
-		return nil, errors.New("datastore: internal error: server returned the wrong number of keys")
-	}
-	for retI, respI := range newKeys {
-		ret[retI] = protoToKey(resp.MutationResult.InsertAutoIdKey[respI])
-	}
 	return ret, nil
 }
 
-func putMutation(keys []*Key, src interface{}) (*pb.Mutation, error) {
+func putMutations(keys []*Key, src interface{}) ([]*pb.Mutation, error) {
 	v := reflect.ValueOf(src)
 	multiArgType, _ := checkMultiArg(v)
 	if multiArgType == multiArgTypeInvalid {
@@ -448,37 +478,33 @@ func putMutation(keys []*Key, src interface{}) (*pb.Mutation, error) {
 	if err := multiValid(keys); err != nil {
 		return nil, err
 	}
-	var upsert, insert []*pb.Entity
+	mutations := make([]*pb.Mutation, 0, len(keys))
 	for i, k := range keys {
-		val := reflect.ValueOf(src).Index(i)
-		// If src is an interface slice []interface{}{ent1, ent2}
-		if val.Kind() == reflect.Interface && val.Elem().Kind() == reflect.Slice {
-			val = val.Elem()
+		elem := v.Index(i)
+		// Two cases where we need to take the address:
+		// 1) multiArgTypePropertyLoadSaver => &elem implements PLS
+		// 2) multiArgTypeStruct => saveEntity needs *struct
+		if multiArgType == multiArgTypePropertyLoadSaver || multiArgType == multiArgTypeStruct {
+			elem = elem.Addr()
 		}
-		// If src is a slice of ptrs []*T{ent1, ent2}
-		if val.Kind() == reflect.Ptr && val.Elem().Kind() == reflect.Slice {
-			val = val.Elem()
-		}
-		p, err := saveEntity(k, val.Interface())
+		p, err := saveEntity(k, elem.Interface())
 		if err != nil {
 			return nil, fmt.Errorf("datastore: Error while saving %v: %v", k.String(), err)
 		}
+		var mut *pb.Mutation
 		if k.Incomplete() {
-			insert = append(insert, p)
+			mut = &pb.Mutation{Operation: &pb.Mutation_Insert{p}}
 		} else {
-			upsert = append(upsert, p)
+			mut = &pb.Mutation{Operation: &pb.Mutation_Upsert{p}}
 		}
+		mutations = append(mutations, mut)
 	}
-
-	return &pb.Mutation{
-		InsertAutoId: insert,
-		Upsert:       upsert,
-	}, nil
+	return mutations, nil
 }
 
 // Delete deletes the entity for the given key.
-func Delete(ctx context.Context, key *Key) error {
-	err := DeleteMulti(ctx, []*Key{key})
+func (c *Client) Delete(ctx context.Context, key *Key) error {
+	err := c.DeleteMulti(ctx, []*Key{key})
 	if me, ok := err.(MultiError); ok {
 		return me[0]
 	}
@@ -486,30 +512,30 @@ func Delete(ctx context.Context, key *Key) error {
 }
 
 // DeleteMulti is a batch version of Delete.
-func DeleteMulti(ctx context.Context, keys []*Key) error {
-	mutation, err := deleteMutation(keys)
+func (c *Client) DeleteMulti(ctx context.Context, keys []*Key) error {
+	mutations, err := deleteMutations(keys)
 	if err != nil {
 		return err
 	}
 
 	req := &pb.CommitRequest{
-		Mutation: mutation,
-		Mode:     pb.CommitRequest_NON_TRANSACTIONAL.Enum(),
+		ProjectId: c.dataset,
+		Mutations: mutations,
+		Mode:      pb.CommitRequest_NON_TRANSACTIONAL,
 	}
-	resp := &pb.CommitResponse{}
-	return call(ctx, "commit", req, resp)
+	_, err = c.client.Commit(ctx, req)
+	return err
 }
 
-func deleteMutation(keys []*Key) (*pb.Mutation, error) {
-	protoKeys := make([]*pb.Key, len(keys))
-	for i, k := range keys {
+func deleteMutations(keys []*Key) ([]*pb.Mutation, error) {
+	mutations := make([]*pb.Mutation, 0, len(keys))
+	for _, k := range keys {
 		if k.Incomplete() {
 			return nil, fmt.Errorf("datastore: can't delete the incomplete key: %v", k)
 		}
-		protoKeys[i] = keyToProto(k)
+		mutations = append(mutations, &pb.Mutation{
+			Operation: &pb.Mutation_Delete{keyToProto(k)},
+		})
 	}
-
-	return &pb.Mutation{
-		Delete: protoKeys,
-	}, nil
+	return mutations, nil
 }

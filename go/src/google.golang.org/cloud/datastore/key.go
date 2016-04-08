@@ -24,7 +24,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
-	pb "google.golang.org/cloud/internal/datastore"
+	pb "google.golang.org/cloud/datastore/internal/proto"
 )
 
 // Key represents the datastore key for a stored entity, and is immutable.
@@ -235,8 +235,7 @@ func DecodeKey(encoded string) (*Key, error) {
 	if err := proto.Unmarshal(b, pKey); err != nil {
 		return nil, err
 	}
-
-	return protoToKey(pKey), nil
+	return protoToKey(pKey)
 }
 
 // NewIncompleteKey creates a new incomplete key.
@@ -247,8 +246,8 @@ func NewIncompleteKey(ctx context.Context, kind string, parent *Key) *Key {
 
 // NewKey creates a new key.
 // kind cannot be empty.
-// Either one or both of stringID and intID must be zero. If both are zero,
-// the key returned is incomplete.
+// At least one of name and id must be zero. If both are zero, the key returned
+// is incomplete.
 // parent must either be a complete key or nil.
 func NewKey(ctx context.Context, kind, name string, id int64, parent *Key) *Key {
 	return &Key{
@@ -262,16 +261,19 @@ func NewKey(ctx context.Context, kind, name string, id int64, parent *Key) *Key 
 
 // AllocateIDs accepts a slice of incomplete keys and returns a
 // slice of complete keys that are guaranteed to be valid in the datastore
-func AllocateIDs(ctx context.Context, keys []*Key) ([]*Key, error) {
+func (c *Client) AllocateIDs(ctx context.Context, keys []*Key) ([]*Key, error) {
 	if keys == nil {
 		return nil, nil
 	}
 
-	req := &pb.AllocateIdsRequest{Key: multiKeyToProto(keys)}
-	res := &pb.AllocateIdsResponse{}
-	if err := call(ctx, "allocateIds", req, res); err != nil {
+	req := &pb.AllocateIdsRequest{
+		ProjectId: c.dataset,
+		Keys:      multiKeyToProto(keys),
+	}
+	resp, err := c.client.AllocateIds(ctx, req)
+	if err != nil {
 		return nil, err
 	}
 
-	return multiProtoToKey(res.Key), nil
+	return multiProtoToKey(resp.Keys)
 }

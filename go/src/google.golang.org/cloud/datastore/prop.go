@@ -93,7 +93,7 @@ func (l *PropertyList) Load(p []Property) error {
 	return nil
 }
 
-// Save saves all of l's properties as a slice or Properties.
+// Save saves all of l's properties as a slice of Properties.
 func (l *PropertyList) Save() ([]Property, error) {
 	return *l, nil
 }
@@ -268,7 +268,7 @@ type structPLS struct {
 // newStructPLS returns a PropertyLoadSaver for the struct pointer p.
 func newStructPLS(p interface{}) (PropertyLoadSaver, error) {
 	v := reflect.ValueOf(p)
-	if v.Kind() != reflect.Ptr || v.IsNil() || v.Elem().Kind() != reflect.Struct {
+	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
 		return nil, ErrInvalidEntityType
 	}
 	v = v.Elem()

@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/prediction/v1.6"
 //   ...
 //   predictionService, err := prediction.New(oauthHttpClient)
-package prediction
+package prediction // import "google.golang.org/api/prediction/v1.6"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "prediction:v1.6"
 const apiName = "prediction"
@@ -44,13 +48,13 @@ const basePath = "https://www.googleapis.com/prediction/v1.6/projects/"
 // OAuth2 scopes used by this API.
 const (
 	// Manage your data and permissions in Google Cloud Storage
-	DevstorageFull_controlScope = "https://www.googleapis.com/auth/devstorage.full_control"
+	DevstorageFullControlScope = "https://www.googleapis.com/auth/devstorage.full_control"
 
 	// View your data in Google Cloud Storage
-	DevstorageRead_onlyScope = "https://www.googleapis.com/auth/devstorage.read_only"
+	DevstorageReadOnlyScope = "https://www.googleapis.com/auth/devstorage.read_only"
 
 	// Manage your data in Google Cloud Storage
-	DevstorageRead_writeScope = "https://www.googleapis.com/auth/devstorage.read_write"
+	DevstorageReadWriteScope = "https://www.googleapis.com/auth/devstorage.read_write"
 
 	// Manage your data in the Google Prediction API
 	PredictionScope = "https://www.googleapis.com/auth/prediction"
@@ -67,12 +71,20 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Hostedmodels *HostedmodelsService
 
 	Trainedmodels *TrainedmodelsService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewHostedmodelsService(s *Service) *HostedmodelsService {
@@ -111,14 +123,48 @@ type Analyze struct {
 
 	// SelfLink: A URL to re-request this resource.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DataDescription") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Analyze) MarshalJSON() ([]byte, error) {
+	type noMethod Analyze
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AnalyzeDataDescription: Description of the data the model was trained
+// on.
 type AnalyzeDataDescription struct {
 	// Features: Description of the input features in the data set.
 	Features []*AnalyzeDataDescriptionFeatures `json:"features,omitempty"`
 
 	// OutputFeature: Description of the output value or label.
 	OutputFeature *AnalyzeDataDescriptionOutputFeature `json:"outputFeature,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Features") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AnalyzeDataDescription) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeDataDescription
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AnalyzeDataDescriptionFeatures struct {
@@ -133,14 +179,44 @@ type AnalyzeDataDescriptionFeatures struct {
 
 	// Text: Description of multiple-word text values of this feature.
 	Text *AnalyzeDataDescriptionFeaturesText `json:"text,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Categorical") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AnalyzeDataDescriptionFeatures) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeDataDescriptionFeatures
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AnalyzeDataDescriptionFeaturesCategorical: Description of the
+// categorical values of this feature.
 type AnalyzeDataDescriptionFeaturesCategorical struct {
 	// Count: Number of categorical values for this feature in the data.
 	Count int64 `json:"count,omitempty,string"`
 
 	// Values: List of all the categories for this feature in the data set.
 	Values []*AnalyzeDataDescriptionFeaturesCategoricalValues `json:"values,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Count") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AnalyzeDataDescriptionFeaturesCategorical) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeDataDescriptionFeaturesCategorical
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AnalyzeDataDescriptionFeaturesCategoricalValues struct {
@@ -149,8 +225,24 @@ type AnalyzeDataDescriptionFeaturesCategoricalValues struct {
 
 	// Value: The category name.
 	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Count") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AnalyzeDataDescriptionFeaturesCategoricalValues) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeDataDescriptionFeaturesCategoricalValues
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AnalyzeDataDescriptionFeaturesNumeric: Description of the numeric
+// values of this feature.
 type AnalyzeDataDescriptionFeaturesNumeric struct {
 	// Count: Number of numeric values for this feature in the data set.
 	Count int64 `json:"count,omitempty,string"`
@@ -161,21 +253,69 @@ type AnalyzeDataDescriptionFeaturesNumeric struct {
 	// Variance: Variance of the numeric values of this feature in the data
 	// set.
 	Variance string `json:"variance,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Count") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AnalyzeDataDescriptionFeaturesNumeric) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeDataDescriptionFeaturesNumeric
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AnalyzeDataDescriptionFeaturesText: Description of multiple-word text
+// values of this feature.
 type AnalyzeDataDescriptionFeaturesText struct {
 	// Count: Number of multiple-word text values for this feature.
 	Count int64 `json:"count,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "Count") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AnalyzeDataDescriptionFeaturesText) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeDataDescriptionFeaturesText
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AnalyzeDataDescriptionOutputFeature: Description of the output value
+// or label.
 type AnalyzeDataDescriptionOutputFeature struct {
 	// Numeric: Description of the output values in the data set.
 	Numeric *AnalyzeDataDescriptionOutputFeatureNumeric `json:"numeric,omitempty"`
 
 	// Text: Description of the output labels in the data set.
 	Text []*AnalyzeDataDescriptionOutputFeatureText `json:"text,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Numeric") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AnalyzeDataDescriptionOutputFeature) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeDataDescriptionOutputFeature
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AnalyzeDataDescriptionOutputFeatureNumeric: Description of the output
+// values in the data set.
 type AnalyzeDataDescriptionOutputFeatureNumeric struct {
 	// Count: Number of numeric output values in the data set.
 	Count int64 `json:"count,omitempty,string"`
@@ -185,6 +325,20 @@ type AnalyzeDataDescriptionOutputFeatureNumeric struct {
 
 	// Variance: Variance of the output values in the data set.
 	Variance string `json:"variance,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Count") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AnalyzeDataDescriptionOutputFeatureNumeric) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeDataDescriptionOutputFeatureNumeric
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AnalyzeDataDescriptionOutputFeatureText struct {
@@ -193,8 +347,23 @@ type AnalyzeDataDescriptionOutputFeatureText struct {
 
 	// Value: The output label.
 	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Count") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AnalyzeDataDescriptionOutputFeatureText) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeDataDescriptionOutputFeatureText
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AnalyzeModelDescription: Description of the model.
 type AnalyzeModelDescription struct {
 	// ConfusionMatrix: An output confusion matrix. This shows an estimate
 	// for how this model will do in predictions. This is first indexed by
@@ -210,20 +379,70 @@ type AnalyzeModelDescription struct {
 
 	// Modelinfo: Basic information about the model.
 	Modelinfo *Insert2 `json:"modelinfo,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ConfusionMatrix") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AnalyzeModelDescription) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeModelDescription
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AnalyzeModelDescriptionConfusionMatrix: An output confusion matrix.
+// This shows an estimate for how this model will do in predictions.
+// This is first indexed by the true class label. For each true class
+// label, this provides a pair {predicted_label, count}, where count is
+// the estimated number of times the model will predict the predicted
+// label given the true label. Will not output if more then 100 classes
+// (Categorical models only).
 type AnalyzeModelDescriptionConfusionMatrix struct {
 }
 
 type Input struct {
 	// Input: Input to the model for a prediction.
 	Input *InputInput `json:"input,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Input") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Input) MarshalJSON() ([]byte, error) {
+	type noMethod Input
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// InputInput: Input to the model for a prediction.
 type InputInput struct {
 	// CsvInstance: A list of input features, these can be strings or
 	// doubles.
 	CsvInstance []interface{} `json:"csvInstance,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CsvInstance") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InputInput) MarshalJSON() ([]byte, error) {
+	type noMethod InputInput
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Insert struct {
@@ -254,6 +473,20 @@ type Insert struct {
 	// Utility: A class weighting function, which allows the importance
 	// weights for class labels to be specified (Categorical models only).
 	Utility []*InsertUtility `json:"utility,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Insert) MarshalJSON() ([]byte, error) {
+	type noMethod Insert
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InsertTrainingInstances struct {
@@ -263,8 +496,23 @@ type InsertTrainingInstances struct {
 	// Output: The generic output value - could be regression or class
 	// label.
 	Output string `json:"output,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CsvInstance") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *InsertTrainingInstances) MarshalJSON() ([]byte, error) {
+	type noMethod InsertTrainingInstances
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// InsertUtility: Class label (string).
 type InsertUtility struct {
 }
 
@@ -305,8 +553,27 @@ type Insert2 struct {
 	// TrainingStatus: The current status of the training job. This can be
 	// one of following: RUNNING; DONE; ERROR; ERROR: TRAINING JOB NOT FOUND
 	TrainingStatus string `json:"trainingStatus,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Created") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Insert2) MarshalJSON() ([]byte, error) {
+	type noMethod Insert2
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Insert2ModelInfo: Model metadata.
 type Insert2ModelInfo struct {
 	// ClassWeightedAccuracy: Estimated accuracy of model taking utility
 	// weights into account (Categorical models only).
@@ -335,6 +602,21 @@ type Insert2ModelInfo struct {
 	// NumberLabels: Number of class labels in the trained model
 	// (Categorical models only).
 	NumberLabels int64 `json:"numberLabels,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "ClassWeightedAccuracy") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Insert2ModelInfo) MarshalJSON() ([]byte, error) {
+	type noMethod Insert2ModelInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type List struct {
@@ -350,6 +632,24 @@ type List struct {
 
 	// SelfLink: A URL to re-request this resource.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *List) MarshalJSON() ([]byte, error) {
+	type noMethod List
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Output struct {
@@ -371,6 +671,24 @@ type Output struct {
 
 	// SelfLink: A URL to re-request this resource.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Output) MarshalJSON() ([]byte, error) {
+	type noMethod Output
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type OutputOutputMulti struct {
@@ -379,6 +697,20 @@ type OutputOutputMulti struct {
 
 	// Score: The probability of the class label.
 	Score string `json:"score,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Label") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *OutputOutputMulti) MarshalJSON() ([]byte, error) {
+	type noMethod OutputOutputMulti
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Update struct {
@@ -388,6 +720,20 @@ type Update struct {
 	// Output: The generic output value - could be regression or class
 	// label.
 	Output string `json:"output,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CsvInstance") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Update) MarshalJSON() ([]byte, error) {
+	type noMethod Update
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "prediction.hostedmodels.predict":
@@ -397,48 +743,77 @@ type HostedmodelsPredictCall struct {
 	project         string
 	hostedModelName string
 	input           *Input
-	opt_            map[string]interface{}
+	urlParams_      gensupport.URLParams
+	ctx_            context.Context
 }
 
 // Predict: Submit input and request an output against a hosted model.
 func (r *HostedmodelsService) Predict(project string, hostedModelName string, input *Input) *HostedmodelsPredictCall {
-	c := &HostedmodelsPredictCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &HostedmodelsPredictCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.hostedModelName = hostedModelName
 	c.input = input
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *HostedmodelsPredictCall) Fields(s ...googleapi.Field) *HostedmodelsPredictCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *HostedmodelsPredictCall) Do() (*Output, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *HostedmodelsPredictCall) Context(ctx context.Context) *HostedmodelsPredictCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *HostedmodelsPredictCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.input)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/hostedmodels/{hostedModelName}/predict")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project":         c.project,
 		"hostedModelName": c.hostedModelName,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "prediction.hostedmodels.predict" call.
+// Exactly one of *Output or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Output.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *HostedmodelsPredictCall) Do(opts ...googleapi.CallOption) (*Output, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -446,7 +821,12 @@ func (c *HostedmodelsPredictCall) Do() (*Output, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Output
+	ret := &Output{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -490,45 +870,88 @@ func (c *HostedmodelsPredictCall) Do() (*Output, error) {
 // method id "prediction.trainedmodels.analyze":
 
 type TrainedmodelsAnalyzeCall struct {
-	s       *Service
-	project string
-	id      string
-	opt_    map[string]interface{}
+	s            *Service
+	project      string
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Analyze: Get analysis of the model and the data the model was trained
 // on.
 func (r *TrainedmodelsService) Analyze(project string, id string) *TrainedmodelsAnalyzeCall {
-	c := &TrainedmodelsAnalyzeCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TrainedmodelsAnalyzeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TrainedmodelsAnalyzeCall) Fields(s ...googleapi.Field) *TrainedmodelsAnalyzeCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TrainedmodelsAnalyzeCall) Do() (*Analyze, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *TrainedmodelsAnalyzeCall) IfNoneMatch(entityTag string) *TrainedmodelsAnalyzeCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TrainedmodelsAnalyzeCall) Context(ctx context.Context) *TrainedmodelsAnalyzeCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TrainedmodelsAnalyzeCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/trainedmodels/{id}/analyze")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 		"id":      c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "prediction.trainedmodels.analyze" call.
+// Exactly one of *Analyze or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Analyze.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *TrainedmodelsAnalyzeCall) Do(opts ...googleapi.CallOption) (*Analyze, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -536,7 +959,12 @@ func (c *TrainedmodelsAnalyzeCall) Do() (*Analyze, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Analyze
+	ret := &Analyze{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -577,44 +1005,58 @@ func (c *TrainedmodelsAnalyzeCall) Do() (*Analyze, error) {
 // method id "prediction.trainedmodels.delete":
 
 type TrainedmodelsDeleteCall struct {
-	s       *Service
-	project string
-	id      string
-	opt_    map[string]interface{}
+	s          *Service
+	project    string
+	id         string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Delete a trained model.
 func (r *TrainedmodelsService) Delete(project string, id string) *TrainedmodelsDeleteCall {
-	c := &TrainedmodelsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TrainedmodelsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TrainedmodelsDeleteCall) Fields(s ...googleapi.Field) *TrainedmodelsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TrainedmodelsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TrainedmodelsDeleteCall) Context(ctx context.Context) *TrainedmodelsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TrainedmodelsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/trainedmodels/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 		"id":      c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "prediction.trainedmodels.delete" call.
+func (c *TrainedmodelsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -656,44 +1098,87 @@ func (c *TrainedmodelsDeleteCall) Do() error {
 // method id "prediction.trainedmodels.get":
 
 type TrainedmodelsGetCall struct {
-	s       *Service
-	project string
-	id      string
-	opt_    map[string]interface{}
+	s            *Service
+	project      string
+	id           string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Check training status of your model.
 func (r *TrainedmodelsService) Get(project string, id string) *TrainedmodelsGetCall {
-	c := &TrainedmodelsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TrainedmodelsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TrainedmodelsGetCall) Fields(s ...googleapi.Field) *TrainedmodelsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TrainedmodelsGetCall) Do() (*Insert2, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *TrainedmodelsGetCall) IfNoneMatch(entityTag string) *TrainedmodelsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TrainedmodelsGetCall) Context(ctx context.Context) *TrainedmodelsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TrainedmodelsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/trainedmodels/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 		"id":      c.id,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "prediction.trainedmodels.get" call.
+// Exactly one of *Insert2 or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Insert2.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *TrainedmodelsGetCall) Do(opts ...googleapi.CallOption) (*Insert2, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -701,7 +1186,12 @@ func (c *TrainedmodelsGetCall) Do() (*Insert2, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Insert2
+	ret := &Insert2{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -742,49 +1232,78 @@ func (c *TrainedmodelsGetCall) Do() (*Insert2, error) {
 // method id "prediction.trainedmodels.insert":
 
 type TrainedmodelsInsertCall struct {
-	s       *Service
-	project string
-	insert  *Insert
-	opt_    map[string]interface{}
+	s          *Service
+	project    string
+	insert     *Insert
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Insert: Train a Prediction API model.
 func (r *TrainedmodelsService) Insert(project string, insert *Insert) *TrainedmodelsInsertCall {
-	c := &TrainedmodelsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TrainedmodelsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.insert = insert
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TrainedmodelsInsertCall) Fields(s ...googleapi.Field) *TrainedmodelsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TrainedmodelsInsertCall) Do() (*Insert2, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TrainedmodelsInsertCall) Context(ctx context.Context) *TrainedmodelsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TrainedmodelsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.insert)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/trainedmodels")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "prediction.trainedmodels.insert" call.
+// Exactly one of *Insert2 or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Insert2.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *TrainedmodelsInsertCall) Do(opts ...googleapi.CallOption) (*Insert2, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -792,7 +1311,12 @@ func (c *TrainedmodelsInsertCall) Do() (*Insert2, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Insert2
+	ret := &Insert2{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -832,14 +1356,16 @@ func (c *TrainedmodelsInsertCall) Do() (*Insert2, error) {
 // method id "prediction.trainedmodels.list":
 
 type TrainedmodelsListCall struct {
-	s       *Service
-	project string
-	opt_    map[string]interface{}
+	s            *Service
+	project      string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: List available models.
 func (r *TrainedmodelsService) List(project string) *TrainedmodelsListCall {
-	c := &TrainedmodelsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TrainedmodelsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	return c
 }
@@ -847,45 +1373,80 @@ func (r *TrainedmodelsService) List(project string) *TrainedmodelsListCall {
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of results to return.
 func (c *TrainedmodelsListCall) MaxResults(maxResults int64) *TrainedmodelsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": Pagination token.
 func (c *TrainedmodelsListCall) PageToken(pageToken string) *TrainedmodelsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TrainedmodelsListCall) Fields(s ...googleapi.Field) *TrainedmodelsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TrainedmodelsListCall) Do() (*List, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *TrainedmodelsListCall) IfNoneMatch(entityTag string) *TrainedmodelsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TrainedmodelsListCall) Context(ctx context.Context) *TrainedmodelsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TrainedmodelsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/trainedmodels/list")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "prediction.trainedmodels.list" call.
+// Exactly one of *List or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *List.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *TrainedmodelsListCall) Do(opts ...googleapi.CallOption) (*List, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -893,7 +1454,12 @@ func (c *TrainedmodelsListCall) Do() (*List, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *List
+	ret := &List{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -936,55 +1502,105 @@ func (c *TrainedmodelsListCall) Do() (*List, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *TrainedmodelsListCall) Pages(ctx context.Context, f func(*List) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "prediction.trainedmodels.predict":
 
 type TrainedmodelsPredictCall struct {
-	s       *Service
-	project string
-	id      string
-	input   *Input
-	opt_    map[string]interface{}
+	s          *Service
+	project    string
+	id         string
+	input      *Input
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Predict: Submit model id and request a prediction.
 func (r *TrainedmodelsService) Predict(project string, id string, input *Input) *TrainedmodelsPredictCall {
-	c := &TrainedmodelsPredictCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TrainedmodelsPredictCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.id = id
 	c.input = input
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TrainedmodelsPredictCall) Fields(s ...googleapi.Field) *TrainedmodelsPredictCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TrainedmodelsPredictCall) Do() (*Output, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TrainedmodelsPredictCall) Context(ctx context.Context) *TrainedmodelsPredictCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TrainedmodelsPredictCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.input)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/trainedmodels/{id}/predict")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 		"id":      c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "prediction.trainedmodels.predict" call.
+// Exactly one of *Output or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Output.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *TrainedmodelsPredictCall) Do(opts ...googleapi.CallOption) (*Output, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -992,7 +1608,12 @@ func (c *TrainedmodelsPredictCall) Do() (*Output, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Output
+	ret := &Output{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1036,52 +1657,81 @@ func (c *TrainedmodelsPredictCall) Do() (*Output, error) {
 // method id "prediction.trainedmodels.update":
 
 type TrainedmodelsUpdateCall struct {
-	s       *Service
-	project string
-	id      string
-	update  *Update
-	opt_    map[string]interface{}
+	s          *Service
+	project    string
+	id         string
+	update     *Update
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Update: Add new data to a trained model.
 func (r *TrainedmodelsService) Update(project string, id string, update *Update) *TrainedmodelsUpdateCall {
-	c := &TrainedmodelsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &TrainedmodelsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
 	c.id = id
 	c.update = update
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *TrainedmodelsUpdateCall) Fields(s ...googleapi.Field) *TrainedmodelsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *TrainedmodelsUpdateCall) Do() (*Insert2, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TrainedmodelsUpdateCall) Context(ctx context.Context) *TrainedmodelsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *TrainedmodelsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.update)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/trainedmodels/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 		"id":      c.id,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "prediction.trainedmodels.update" call.
+// Exactly one of *Insert2 or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Insert2.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *TrainedmodelsUpdateCall) Do(opts ...googleapi.CallOption) (*Insert2, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1089,7 +1739,12 @@ func (c *TrainedmodelsUpdateCall) Do() (*Insert2, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Insert2
+	ret := &Insert2{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-// Package androidpublisher provides access to the Google Play Android Developer API.
+// Package androidpublisher provides access to the Google Play Developer API.
 //
 // See https://developers.google.com/android-publisher
 //
@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/androidpublisher/v2"
 //   ...
 //   androidpublisherService, err := androidpublisher.New(oauthHttpClient)
-package androidpublisher
+package androidpublisher // import "google.golang.org/api/androidpublisher/v2"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "androidpublisher:v2"
 const apiName = "androidpublisher"
@@ -43,7 +47,7 @@ const basePath = "https://www.googleapis.com/androidpublisher/v2/applications/"
 
 // OAuth2 scopes used by this API.
 const (
-	// View and manage your Google Play Android Developer account
+	// View and manage your Google Play Developer account
 	AndroidpublisherScope = "https://www.googleapis.com/auth/androidpublisher"
 )
 
@@ -53,20 +57,31 @@ func New(client *http.Client) (*Service, error) {
 	}
 	s := &Service{client: client, BasePath: basePath}
 	s.Edits = NewEditsService(s)
+	s.Entitlements = NewEntitlementsService(s)
 	s.Inappproducts = NewInappproductsService(s)
 	s.Purchases = NewPurchasesService(s)
 	return s, nil
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Edits *EditsService
+
+	Entitlements *EntitlementsService
 
 	Inappproducts *InappproductsService
 
 	Purchases *PurchasesService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewEditsService(s *Service) *EditsService {
@@ -174,6 +189,15 @@ type EditsTracksService struct {
 	s *Service
 }
 
+func NewEntitlementsService(s *Service) *EntitlementsService {
+	rs := &EntitlementsService{s: s}
+	return rs
+}
+
+type EntitlementsService struct {
+	s *Service
+}
+
 func NewInappproductsService(s *Service) *InappproductsService {
 	rs := &InappproductsService{s: s}
 	return rs
@@ -223,12 +247,45 @@ type Apk struct {
 	// VersionCode: The version code of the APK, as specified in the APK's
 	// manifest file.
 	VersionCode int64 `json:"versionCode,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Binary") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Apk) MarshalJSON() ([]byte, error) {
+	type noMethod Apk
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ApkBinary: Represents the binary payload of an APK.
 type ApkBinary struct {
 	// Sha1: A sha1 hash of the APK payload, encoded as a hex string and
 	// matching the output of the sha1sum command.
 	Sha1 string `json:"sha1,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Sha1") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ApkBinary) MarshalJSON() ([]byte, error) {
+	type noMethod ApkBinary
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ApkListing struct {
@@ -237,6 +294,24 @@ type ApkListing struct {
 
 	// RecentChanges: Describe what's new in your APK.
 	RecentChanges string `json:"recentChanges,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Language") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ApkListing) MarshalJSON() ([]byte, error) {
+	type noMethod ApkListing
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ApkListingsListResponse struct {
@@ -245,18 +320,68 @@ type ApkListingsListResponse struct {
 	Kind string `json:"kind,omitempty"`
 
 	Listings []*ApkListing `json:"listings,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ApkListingsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ApkListingsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ApksAddExternallyHostedRequest struct {
 	// ExternallyHostedApk: The definition of the externally-hosted APK and
 	// where it is located.
 	ExternallyHostedApk *ExternallyHostedApk `json:"externallyHostedApk,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ExternallyHostedApk")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ApksAddExternallyHostedRequest) MarshalJSON() ([]byte, error) {
+	type noMethod ApksAddExternallyHostedRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ApksAddExternallyHostedResponse struct {
 	// ExternallyHostedApk: The definition of the externally-hosted APK and
 	// where it is located.
 	ExternallyHostedApk *ExternallyHostedApk `json:"externallyHostedApk,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ExternallyHostedApk")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ApksAddExternallyHostedResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ApksAddExternallyHostedResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ApksListResponse struct {
@@ -265,6 +390,24 @@ type ApksListResponse struct {
 	// Kind: Identifies what kind of resource this is. Value: the fixed
 	// string "androidpublisher#apksListResponse".
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Apks") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ApksListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ApksListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AppDetails struct {
@@ -280,8 +423,28 @@ type AppDetails struct {
 	// DefaultLanguage: Default language code, in BCP 47 format (eg
 	// "en-US").
 	DefaultLanguage string `json:"defaultLanguage,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ContactEmail") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AppDetails) MarshalJSON() ([]byte, error) {
+	type noMethod AppDetails
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AppEdit: Represents an edit of an app. An edit allows clients to make
+// multiple changes before committing them in one operation.
 type AppEdit struct {
 	// ExpiryTimeSeconds: The time at which the edit will expire and will be
 	// no longer valid for use in any subsequent API calls (encoded as
@@ -290,6 +453,84 @@ type AppEdit struct {
 
 	// Id: The ID of the edit that can be used in subsequent API calls.
 	Id string `json:"id,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ExpiryTimeSeconds")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AppEdit) MarshalJSON() ([]byte, error) {
+	type noMethod AppEdit
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Entitlement: An Entitlement resource indicates a user's current
+// entitlement to an inapp item or subscription.
+type Entitlement struct {
+	// Kind: This kind represents an entitlement object in the
+	// androidpublisher service.
+	Kind string `json:"kind,omitempty"`
+
+	// ProductId: The SKU of the product.
+	ProductId string `json:"productId,omitempty"`
+
+	// ProductType: The type of the inapp product. Possible values are:
+	// - In-app item: "inapp"
+	// - Subscription: "subs"
+	ProductType string `json:"productType,omitempty"`
+
+	// Token: The token which can be verified using the subscriptions or
+	// products API.
+	Token string `json:"token,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Entitlement) MarshalJSON() ([]byte, error) {
+	type noMethod Entitlement
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+type EntitlementsListResponse struct {
+	PageInfo *PageInfo `json:"pageInfo,omitempty"`
+
+	Resources []*Entitlement `json:"resources,omitempty"`
+
+	TokenPagination *TokenPagination `json:"tokenPagination,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "PageInfo") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *EntitlementsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod EntitlementsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ExpansionFile struct {
@@ -302,12 +543,53 @@ type ExpansionFile struct {
 	// ReferencesVersion: If set this APK's Expansion File references
 	// another APK's Expansion File. The file_size field will not be set.
 	ReferencesVersion int64 `json:"referencesVersion,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "FileSize") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ExpansionFile) MarshalJSON() ([]byte, error) {
+	type noMethod ExpansionFile
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ExpansionFilesUploadResponse struct {
 	ExpansionFile *ExpansionFile `json:"expansionFile,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ExpansionFile") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ExpansionFilesUploadResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ExpansionFilesUploadResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ExternallyHostedApk: Defines an APK available for this application
+// that is hosted externally and not uploaded to Google Play. This
+// function is only available to enterprises who are using Google Play
+// for Work, and whos application is restricted to the enterprise
+// private channel
 type ExternallyHostedApk struct {
 	// ApplicationLabel: The application label.
 	ApplicationLabel string `json:"applicationLabel,omitempty"`
@@ -360,8 +642,23 @@ type ExternallyHostedApk struct {
 
 	// VersionName: The version name of this APK.
 	VersionName string `json:"versionName,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ApplicationLabel") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ExternallyHostedApk) MarshalJSON() ([]byte, error) {
+	type noMethod ExternallyHostedApk
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ExternallyHostedApkUsesPermission: A permission used by this APK.
 type ExternallyHostedApkUsesPermission struct {
 	// MaxSdkVersion: Optionally, the maximum SDK version for which the
 	// permission is required.
@@ -369,6 +666,20 @@ type ExternallyHostedApkUsesPermission struct {
 
 	// Name: The name of the permission requested.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "MaxSdkVersion") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ExternallyHostedApkUsesPermission) MarshalJSON() ([]byte, error) {
+	type noMethod ExternallyHostedApkUsesPermission
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Image struct {
@@ -380,18 +691,86 @@ type Image struct {
 
 	// Url: A URL that will serve a preview of the image.
 	Url string `json:"url,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Image) MarshalJSON() ([]byte, error) {
+	type noMethod Image
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ImagesDeleteAllResponse struct {
 	Deleted []*Image `json:"deleted,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Deleted") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ImagesDeleteAllResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ImagesDeleteAllResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ImagesListResponse struct {
 	Images []*Image `json:"images,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Images") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ImagesListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ImagesListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ImagesUploadResponse struct {
 	Image *Image `json:"image,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Image") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ImagesUploadResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ImagesUploadResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InAppProduct struct {
@@ -427,25 +806,71 @@ type InAppProduct struct {
 
 	Status string `json:"status,omitempty"`
 
-	// SubscriptionPeriod: The period of the subscription (if any), i.e.
-	// period at which payments must happen. Defined as ISO 8601 duration,
-	// i.e. "P1M" for 1 month period.
+	// SubscriptionPeriod: Subscription period, specified in ISO 8601
+	// format. Acceptable values are "P1W" (one week), "P1M" (one month),
+	// "P3M" (three months), "P6M" (six months), and "P1Y" (one year).
 	SubscriptionPeriod string `json:"subscriptionPeriod,omitempty"`
 
 	// TrialPeriod: Trial period, specified in ISO 8601 format. Acceptable
 	// values are anything between "P7D" (seven days) and "P999D" (999
 	// days). Seasonal subscriptions cannot have a trial period.
 	TrialPeriod string `json:"trialPeriod,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DefaultLanguage") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InAppProduct) MarshalJSON() ([]byte, error) {
+	type noMethod InAppProduct
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InAppProductListing struct {
 	Description string `json:"description,omitempty"`
 
 	Title string `json:"title,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Description") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InAppProductListing) MarshalJSON() ([]byte, error) {
+	type noMethod InAppProductListing
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InappproductsBatchRequest struct {
 	Entrys []*InappproductsBatchRequestEntry `json:"entrys,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Entrys") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InappproductsBatchRequest) MarshalJSON() ([]byte, error) {
+	type noMethod InappproductsBatchRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InappproductsBatchRequestEntry struct {
@@ -456,6 +881,20 @@ type InappproductsBatchRequestEntry struct {
 	Inappproductsupdaterequest *InappproductsUpdateRequest `json:"inappproductsupdaterequest,omitempty"`
 
 	MethodName string `json:"methodName,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BatchId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InappproductsBatchRequestEntry) MarshalJSON() ([]byte, error) {
+	type noMethod InappproductsBatchRequestEntry
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InappproductsBatchResponse struct {
@@ -464,6 +903,24 @@ type InappproductsBatchResponse struct {
 	// Kind: Identifies what kind of resource this is. Value: the fixed
 	// string "androidpublisher#inappproductsBatchResponse".
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Entrys") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InappproductsBatchResponse) MarshalJSON() ([]byte, error) {
+	type noMethod InappproductsBatchResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InappproductsBatchResponseEntry struct {
@@ -472,14 +929,56 @@ type InappproductsBatchResponseEntry struct {
 	Inappproductsinsertresponse *InappproductsInsertResponse `json:"inappproductsinsertresponse,omitempty"`
 
 	Inappproductsupdateresponse *InappproductsUpdateResponse `json:"inappproductsupdateresponse,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BatchId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InappproductsBatchResponseEntry) MarshalJSON() ([]byte, error) {
+	type noMethod InappproductsBatchResponseEntry
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InappproductsInsertRequest struct {
 	Inappproduct *InAppProduct `json:"inappproduct,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Inappproduct") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InappproductsInsertRequest) MarshalJSON() ([]byte, error) {
+	type noMethod InappproductsInsertRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InappproductsInsertResponse struct {
 	Inappproduct *InAppProduct `json:"inappproduct,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Inappproduct") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InappproductsInsertResponse) MarshalJSON() ([]byte, error) {
+	type noMethod InappproductsInsertResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InappproductsListResponse struct {
@@ -492,14 +991,60 @@ type InappproductsListResponse struct {
 	PageInfo *PageInfo `json:"pageInfo,omitempty"`
 
 	TokenPagination *TokenPagination `json:"tokenPagination,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Inappproduct") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InappproductsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod InappproductsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InappproductsUpdateRequest struct {
 	Inappproduct *InAppProduct `json:"inappproduct,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Inappproduct") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InappproductsUpdateRequest) MarshalJSON() ([]byte, error) {
+	type noMethod InappproductsUpdateRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type InappproductsUpdateResponse struct {
 	Inappproduct *InAppProduct `json:"inappproduct,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Inappproduct") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *InappproductsUpdateResponse) MarshalJSON() ([]byte, error) {
+	type noMethod InappproductsUpdateResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Listing struct {
@@ -520,6 +1065,24 @@ type Listing struct {
 
 	// Video: URL of a promotional YouTube video for the app.
 	Video string `json:"video,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "FullDescription") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Listing) MarshalJSON() ([]byte, error) {
+	type noMethod Listing
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ListingsListResponse struct {
@@ -528,6 +1091,24 @@ type ListingsListResponse struct {
 	Kind string `json:"kind,omitempty"`
 
 	Listings []*Listing `json:"listings,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ListingsListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ListingsListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type MonthDay struct {
@@ -537,6 +1118,20 @@ type MonthDay struct {
 
 	// Month: Month of a year. e.g. 1 = JAN, 2 = FEB etc.
 	Month int64 `json:"month,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Day") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *MonthDay) MarshalJSON() ([]byte, error) {
+	type noMethod MonthDay
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type PageInfo struct {
@@ -545,6 +1140,20 @@ type PageInfo struct {
 	StartIndex int64 `json:"startIndex,omitempty"`
 
 	TotalResults int64 `json:"totalResults,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ResultPerPage") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *PageInfo) MarshalJSON() ([]byte, error) {
+	type noMethod PageInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Price struct {
@@ -554,8 +1163,24 @@ type Price struct {
 	// PriceMicros: The price in millionths of the currency base unit
 	// represented as a string.
 	PriceMicros string `json:"priceMicros,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Currency") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Price) MarshalJSON() ([]byte, error) {
+	type noMethod Price
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ProductPurchase: A ProductPurchase resource indicates the status of a
+// user's inapp product purchase.
 type ProductPurchase struct {
 	// ConsumptionState: The consumption state of the inapp product.
 	// Possible values are:
@@ -580,16 +1205,81 @@ type ProductPurchase struct {
 	// PurchaseTimeMillis: The time the product was purchased, in
 	// milliseconds since the epoch (Jan 1, 1970).
 	PurchaseTimeMillis int64 `json:"purchaseTimeMillis,omitempty,string"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ConsumptionState") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ProductPurchase) MarshalJSON() ([]byte, error) {
+	type noMethod ProductPurchase
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+type Prorate struct {
+	// DefaultPrice: Default price cannot be zero and must be less than the
+	// full subscription price. Default price is always in the developer's
+	// Checkout merchant currency. Targeted countries have their prices set
+	// automatically based on the default_price.
+	DefaultPrice *Price `json:"defaultPrice,omitempty"`
+
+	// Start: Defines the first day on which the price takes effect.
+	Start *MonthDay `json:"start,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DefaultPrice") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Prorate) MarshalJSON() ([]byte, error) {
+	type noMethod Prorate
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Season struct {
 	// End: Inclusive end date of the recurrence period.
 	End *MonthDay `json:"end,omitempty"`
 
+	// Prorations: Optionally present list of prorations for the season.
+	// Each proration is a one-off discounted entry into a subscription.
+	// Each proration contains the first date on which the discount is
+	// available and the new pricing information.
+	Prorations []*Prorate `json:"prorations,omitempty"`
+
 	// Start: Inclusive start date of the recurrence period.
 	Start *MonthDay `json:"start,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "End") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Season) MarshalJSON() ([]byte, error) {
+	type noMethod Season
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SubscriptionDeferralInfo: A SubscriptionDeferralInfo contains the
+// data needed to defer a subscription purchase to a future expiry time.
 type SubscriptionDeferralInfo struct {
 	// DesiredExpiryTimeMillis: The desired next expiry time for the
 	// subscription in milliseconds since Epoch. The given time must be
@@ -600,8 +1290,25 @@ type SubscriptionDeferralInfo struct {
 	// subscription. If the current expiry time for the subscription is not
 	// the value specified here, the deferral will not occur.
 	ExpectedExpiryTimeMillis int64 `json:"expectedExpiryTimeMillis,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "DesiredExpiryTimeMillis") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *SubscriptionDeferralInfo) MarshalJSON() ([]byte, error) {
+	type noMethod SubscriptionDeferralInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SubscriptionPurchase: A SubscriptionPurchase resource indicates the
+// status of a user's subscription purchase.
 type SubscriptionPurchase struct {
 	// AutoRenewing: Whether the subscription will automatically be renewed
 	// when it reaches its current expiry time.
@@ -618,30 +1325,112 @@ type SubscriptionPurchase struct {
 	// StartTimeMillis: Time at which the subscription was granted, in
 	// milliseconds since Epoch.
 	StartTimeMillis int64 `json:"startTimeMillis,omitempty,string"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AutoRenewing") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *SubscriptionPurchase) MarshalJSON() ([]byte, error) {
+	type noMethod SubscriptionPurchase
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type SubscriptionPurchasesDeferRequest struct {
 	// DeferralInfo: The information about the new desired expiry time for
 	// the subscription.
 	DeferralInfo *SubscriptionDeferralInfo `json:"deferralInfo,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DeferralInfo") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *SubscriptionPurchasesDeferRequest) MarshalJSON() ([]byte, error) {
+	type noMethod SubscriptionPurchasesDeferRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type SubscriptionPurchasesDeferResponse struct {
 	// NewExpiryTimeMillis: The new expiry time for the subscription in
 	// milliseconds since the Epoch.
 	NewExpiryTimeMillis int64 `json:"newExpiryTimeMillis,omitempty,string"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "NewExpiryTimeMillis")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *SubscriptionPurchasesDeferResponse) MarshalJSON() ([]byte, error) {
+	type noMethod SubscriptionPurchasesDeferResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Testers struct {
 	GoogleGroups []string `json:"googleGroups,omitempty"`
 
 	GooglePlusCommunities []string `json:"googlePlusCommunities,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "GoogleGroups") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Testers) MarshalJSON() ([]byte, error) {
+	type noMethod Testers
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type TokenPagination struct {
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	PreviousPageToken string `json:"previousPageToken,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *TokenPagination) MarshalJSON() ([]byte, error) {
+	type noMethod TokenPagination
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type Track struct {
@@ -650,6 +1439,24 @@ type Track struct {
 	UserFraction float64 `json:"userFraction,omitempty"`
 
 	VersionCodes []int64 `json:"versionCodes,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Track") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Track) MarshalJSON() ([]byte, error) {
+	type noMethod Track
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type TracksListResponse struct {
@@ -658,6 +1465,24 @@ type TracksListResponse struct {
 	Kind string `json:"kind,omitempty"`
 
 	Tracks []*Track `json:"tracks,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *TracksListResponse) MarshalJSON() ([]byte, error) {
+	type noMethod TracksListResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "androidpublisher.edits.commit":
@@ -666,42 +1491,71 @@ type EditsCommitCall struct {
 	s             *Service
 	packageNameid string
 	editId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Commit: Commits/applies the changes made in this edit back to the
 // app.
 func (r *EditsService) Commit(packageNameid string, editId string) *EditsCommitCall {
-	c := &EditsCommitCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsCommitCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsCommitCall) Fields(s ...googleapi.Field) *EditsCommitCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsCommitCall) Do() (*AppEdit, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsCommitCall) Context(ctx context.Context) *EditsCommitCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsCommitCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}:commit")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.commit" call.
+// Exactly one of *AppEdit or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *AppEdit.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsCommitCall) Do(opts ...googleapi.CallOption) (*AppEdit, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -709,7 +1563,12 @@ func (c *EditsCommitCall) Do() (*AppEdit, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AppEdit
+	ret := &AppEdit{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -753,43 +1612,57 @@ type EditsDeleteCall struct {
 	s             *Service
 	packageNameid string
 	editId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Delete: Deletes an edit for an app. Creating a new edit will
 // automatically delete any of your previous edits so this method need
 // only be called if you want to preemptively abandon an edit.
 func (r *EditsService) Delete(packageNameid string, editId string) *EditsDeleteCall {
-	c := &EditsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsDeleteCall) Fields(s ...googleapi.Field) *EditsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsDeleteCall) Context(ctx context.Context) *EditsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.delete" call.
+func (c *EditsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -834,43 +1707,86 @@ type EditsGetCall struct {
 	s             *Service
 	packageNameid string
 	editId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get: Returns information about the edit specified. Calls will fail if
 // the edit is no long active (e.g. has been deleted, superseded or
 // expired).
 func (r *EditsService) Get(packageNameid string, editId string) *EditsGetCall {
-	c := &EditsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsGetCall) Fields(s ...googleapi.Field) *EditsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsGetCall) Do() (*AppEdit, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsGetCall) IfNoneMatch(entityTag string) *EditsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsGetCall) Context(ctx context.Context) *EditsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.get" call.
+// Exactly one of *AppEdit or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *AppEdit.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsGetCall) Do(opts ...googleapi.CallOption) (*AppEdit, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -878,7 +1794,12 @@ func (c *EditsGetCall) Do() (*AppEdit, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AppEdit
+	ret := &AppEdit{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -922,47 +1843,76 @@ type EditsInsertCall struct {
 	s             *Service
 	packageNameid string
 	appedit       *AppEdit
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Insert: Creates a new edit for an app, populated with the app's
 // current state.
 func (r *EditsService) Insert(packageNameid string, appedit *AppEdit) *EditsInsertCall {
-	c := &EditsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.appedit = appedit
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsInsertCall) Fields(s ...googleapi.Field) *EditsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsInsertCall) Do() (*AppEdit, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsInsertCall) Context(ctx context.Context) *EditsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.appedit)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.insert" call.
+// Exactly one of *AppEdit or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *AppEdit.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsInsertCall) Do(opts ...googleapi.CallOption) (*AppEdit, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -970,7 +1920,12 @@ func (c *EditsInsertCall) Do() (*AppEdit, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AppEdit
+	ret := &AppEdit{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1010,42 +1965,71 @@ type EditsValidateCall struct {
 	s             *Service
 	packageNameid string
 	editId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Validate: Checks that the edit can be successfully committed. The
 // edit's changes are not applied to the live app.
 func (r *EditsService) Validate(packageNameid string, editId string) *EditsValidateCall {
-	c := &EditsValidateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsValidateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsValidateCall) Fields(s ...googleapi.Field) *EditsValidateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsValidateCall) Do() (*AppEdit, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsValidateCall) Context(ctx context.Context) *EditsValidateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsValidateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}:validate")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.validate" call.
+// Exactly one of *AppEdit or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *AppEdit.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsValidateCall) Do(opts ...googleapi.CallOption) (*AppEdit, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1053,7 +2037,12 @@ func (c *EditsValidateCall) Do() (*AppEdit, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AppEdit
+	ret := &AppEdit{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1099,13 +2088,14 @@ type EditsApklistingsDeleteCall struct {
 	editId         string
 	apkVersionCode int64
 	language       string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Delete: Deletes the APK-specific localized listing for a specified
 // APK and language code.
 func (r *EditsApklistingsService) Delete(packageNameid string, editId string, apkVersionCode int64, language string) *EditsApklistingsDeleteCall {
-	c := &EditsApklistingsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsApklistingsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
@@ -1113,23 +2103,27 @@ func (r *EditsApklistingsService) Delete(packageNameid string, editId string, ap
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsApklistingsDeleteCall) Fields(s ...googleapi.Field) *EditsApklistingsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsApklistingsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsApklistingsDeleteCall) Context(ctx context.Context) *EditsApklistingsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsApklistingsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/listings/{language}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageNameid,
@@ -1137,8 +2131,17 @@ func (c *EditsApklistingsDeleteCall) Do() error {
 		"apkVersionCode": strconv.FormatInt(c.apkVersionCode, 10),
 		"language":       c.language,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.apklistings.delete" call.
+func (c *EditsApklistingsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -1199,44 +2202,58 @@ type EditsApklistingsDeleteallCall struct {
 	packageNameid  string
 	editId         string
 	apkVersionCode int64
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Deleteall: Deletes all the APK-specific localized listings for a
 // specified APK.
 func (r *EditsApklistingsService) Deleteall(packageNameid string, editId string, apkVersionCode int64) *EditsApklistingsDeleteallCall {
-	c := &EditsApklistingsDeleteallCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsApklistingsDeleteallCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsApklistingsDeleteallCall) Fields(s ...googleapi.Field) *EditsApklistingsDeleteallCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsApklistingsDeleteallCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsApklistingsDeleteallCall) Context(ctx context.Context) *EditsApklistingsDeleteallCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsApklistingsDeleteallCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/listings")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageNameid,
 		"editId":         c.editId,
 		"apkVersionCode": strconv.FormatInt(c.apkVersionCode, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.apklistings.deleteall" call.
+func (c *EditsApklistingsDeleteallCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -1291,13 +2308,15 @@ type EditsApklistingsGetCall struct {
 	editId         string
 	apkVersionCode int64
 	language       string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ifNoneMatch_   string
+	ctx_           context.Context
 }
 
 // Get: Fetches the APK-specific localized listing for a specified APK
 // and language code.
 func (r *EditsApklistingsService) Get(packageNameid string, editId string, apkVersionCode int64, language string) *EditsApklistingsGetCall {
-	c := &EditsApklistingsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsApklistingsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
@@ -1305,23 +2324,37 @@ func (r *EditsApklistingsService) Get(packageNameid string, editId string, apkVe
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsApklistingsGetCall) Fields(s ...googleapi.Field) *EditsApklistingsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsApklistingsGetCall) Do() (*ApkListing, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsApklistingsGetCall) IfNoneMatch(entityTag string) *EditsApklistingsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsApklistingsGetCall) Context(ctx context.Context) *EditsApklistingsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsApklistingsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/listings/{language}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageNameid,
@@ -1329,8 +2362,35 @@ func (c *EditsApklistingsGetCall) Do() (*ApkListing, error) {
 		"apkVersionCode": strconv.FormatInt(c.apkVersionCode, 10),
 		"language":       c.language,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.apklistings.get" call.
+// Exactly one of *ApkListing or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ApkListing.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *EditsApklistingsGetCall) Do(opts ...googleapi.CallOption) (*ApkListing, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1338,7 +2398,12 @@ func (c *EditsApklistingsGetCall) Do() (*ApkListing, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ApkListing
+	ret := &ApkListing{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1398,44 +2463,87 @@ type EditsApklistingsListCall struct {
 	packageNameid  string
 	editId         string
 	apkVersionCode int64
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ifNoneMatch_   string
+	ctx_           context.Context
 }
 
 // List: Lists all the APK-specific localized listings for a specified
 // APK.
 func (r *EditsApklistingsService) List(packageNameid string, editId string, apkVersionCode int64) *EditsApklistingsListCall {
-	c := &EditsApklistingsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsApklistingsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsApklistingsListCall) Fields(s ...googleapi.Field) *EditsApklistingsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsApklistingsListCall) Do() (*ApkListingsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsApklistingsListCall) IfNoneMatch(entityTag string) *EditsApklistingsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsApklistingsListCall) Context(ctx context.Context) *EditsApklistingsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsApklistingsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/listings")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageNameid,
 		"editId":         c.editId,
 		"apkVersionCode": strconv.FormatInt(c.apkVersionCode, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.apklistings.list" call.
+// Exactly one of *ApkListingsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ApkListingsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsApklistingsListCall) Do(opts ...googleapi.CallOption) (*ApkListingsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1443,7 +2551,12 @@ func (c *EditsApklistingsListCall) Do() (*ApkListingsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ApkListingsListResponse
+	ret := &ApkListingsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1498,14 +2611,15 @@ type EditsApklistingsPatchCall struct {
 	apkVersionCode int64
 	language       string
 	apklisting     *ApkListing
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Patch: Updates or creates the APK-specific localized listing for a
 // specified APK and language code. This method supports patch
 // semantics.
 func (r *EditsApklistingsService) Patch(packageNameid string, editId string, apkVersionCode int64, language string, apklisting *ApkListing) *EditsApklistingsPatchCall {
-	c := &EditsApklistingsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsApklistingsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
@@ -1514,28 +2628,32 @@ func (r *EditsApklistingsService) Patch(packageNameid string, editId string, apk
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsApklistingsPatchCall) Fields(s ...googleapi.Field) *EditsApklistingsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsApklistingsPatchCall) Do() (*ApkListing, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsApklistingsPatchCall) Context(ctx context.Context) *EditsApklistingsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsApklistingsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.apklisting)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/listings/{language}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageNameid,
@@ -1544,8 +2662,32 @@ func (c *EditsApklistingsPatchCall) Do() (*ApkListing, error) {
 		"language":       c.language,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.apklistings.patch" call.
+// Exactly one of *ApkListing or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ApkListing.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *EditsApklistingsPatchCall) Do(opts ...googleapi.CallOption) (*ApkListing, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1553,7 +2695,12 @@ func (c *EditsApklistingsPatchCall) Do() (*ApkListing, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ApkListing
+	ret := &ApkListing{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1618,13 +2765,14 @@ type EditsApklistingsUpdateCall struct {
 	apkVersionCode int64
 	language       string
 	apklisting     *ApkListing
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Update: Updates or creates the APK-specific localized listing for a
 // specified APK and language code.
 func (r *EditsApklistingsService) Update(packageNameid string, editId string, apkVersionCode int64, language string, apklisting *ApkListing) *EditsApklistingsUpdateCall {
-	c := &EditsApklistingsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsApklistingsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
@@ -1633,28 +2781,32 @@ func (r *EditsApklistingsService) Update(packageNameid string, editId string, ap
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsApklistingsUpdateCall) Fields(s ...googleapi.Field) *EditsApklistingsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsApklistingsUpdateCall) Do() (*ApkListing, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsApklistingsUpdateCall) Context(ctx context.Context) *EditsApklistingsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsApklistingsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.apklisting)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/listings/{language}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageNameid,
@@ -1663,8 +2815,32 @@ func (c *EditsApklistingsUpdateCall) Do() (*ApkListing, error) {
 		"language":       c.language,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.apklistings.update" call.
+// Exactly one of *ApkListing or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ApkListing.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *EditsApklistingsUpdateCall) Do(opts ...googleapi.CallOption) (*ApkListing, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1672,7 +2848,12 @@ func (c *EditsApklistingsUpdateCall) Do() (*ApkListing, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ApkListing
+	ret := &ApkListing{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1735,52 +2916,81 @@ type EditsApksAddexternallyhostedCall struct {
 	packageNameid                  string
 	editId                         string
 	apksaddexternallyhostedrequest *ApksAddExternallyHostedRequest
-	opt_                           map[string]interface{}
+	urlParams_                     gensupport.URLParams
+	ctx_                           context.Context
 }
 
 // Addexternallyhosted: Creates a new APK without uploading the APK
 // itself to Google Play, instead hosting the APK at a specified URL.
 // This function is only available to enterprises using Google Play for
-// work whose application is configured to restrict distribution to the
+// Work whose application is configured to restrict distribution to the
 // enterprise domain.
 func (r *EditsApksService) Addexternallyhosted(packageNameid string, editId string, apksaddexternallyhostedrequest *ApksAddExternallyHostedRequest) *EditsApksAddexternallyhostedCall {
-	c := &EditsApksAddexternallyhostedCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsApksAddexternallyhostedCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apksaddexternallyhostedrequest = apksaddexternallyhostedrequest
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsApksAddexternallyhostedCall) Fields(s ...googleapi.Field) *EditsApksAddexternallyhostedCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsApksAddexternallyhostedCall) Do() (*ApksAddExternallyHostedResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsApksAddexternallyhostedCall) Context(ctx context.Context) *EditsApksAddexternallyhostedCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsApksAddexternallyhostedCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.apksaddexternallyhostedrequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/externallyHosted")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.apks.addexternallyhosted" call.
+// Exactly one of *ApksAddExternallyHostedResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *ApksAddExternallyHostedResponse.ServerResponse.Header or (if
+// a response was returned at all) in error.(*googleapi.Error).Header.
+// Use googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsApksAddexternallyhostedCall) Do(opts ...googleapi.CallOption) (*ApksAddExternallyHostedResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1788,13 +2998,18 @@ func (c *EditsApksAddexternallyhostedCall) Do() (*ApksAddExternallyHostedRespons
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ApksAddExternallyHostedResponse
+	ret := &ApksAddExternallyHostedResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new APK without uploading the APK itself to Google Play, instead hosting the APK at a specified URL. This function is only available to enterprises using Google Play for work whose application is configured to restrict distribution to the enterprise domain.",
+	//   "description": "Creates a new APK without uploading the APK itself to Google Play, instead hosting the APK at a specified URL. This function is only available to enterprises using Google Play for Work whose application is configured to restrict distribution to the enterprise domain.",
 	//   "httpMethod": "POST",
 	//   "id": "androidpublisher.edits.apks.addexternallyhosted",
 	//   "parameterOrder": [
@@ -1835,41 +3050,84 @@ type EditsApksListCall struct {
 	s             *Service
 	packageNameid string
 	editId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List:
 func (r *EditsApksService) List(packageNameid string, editId string) *EditsApksListCall {
-	c := &EditsApksListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsApksListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsApksListCall) Fields(s ...googleapi.Field) *EditsApksListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsApksListCall) Do() (*ApksListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsApksListCall) IfNoneMatch(entityTag string) *EditsApksListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsApksListCall) Context(ctx context.Context) *EditsApksListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsApksListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.apks.list" call.
+// Exactly one of *ApksListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ApksListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsApksListCall) Do(opts ...googleapi.CallOption) (*ApksListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1877,7 +3135,12 @@ func (c *EditsApksListCall) Do() (*ApksListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ApksListResponse
+	ret := &ApksListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1917,106 +3180,148 @@ func (c *EditsApksListCall) Do() (*ApksListResponse, error) {
 // method id "androidpublisher.edits.apks.upload":
 
 type EditsApksUploadCall struct {
-	s             *Service
-	packageNameid string
-	editId        string
-	opt_          map[string]interface{}
-	media_        io.Reader
-	resumable_    googleapi.SizeReaderAt
-	mediaType_    string
-	ctx_          context.Context
-	protocol_     string
+	s                *Service
+	packageNameid    string
+	editId           string
+	urlParams_       gensupport.URLParams
+	media_           io.Reader
+	resumableBuffer_ *gensupport.ResumableBuffer
+	mediaType_       string
+	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_ googleapi.ProgressUpdater
+	ctx_             context.Context
 }
 
 // Upload:
 func (r *EditsApksService) Upload(packageNameid string, editId string) *EditsApksUploadCall {
-	c := &EditsApksUploadCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsApksUploadCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *EditsApksUploadCall) Media(r io.Reader) *EditsApksUploadCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *EditsApksUploadCall) Media(r io.Reader, options ...googleapi.MediaOption) *EditsApksUploadCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *EditsApksUploadCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *EditsApksUploadCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *EditsApksUploadCall) ProgressUpdater(pu googleapi.ProgressUpdater) *EditsApksUploadCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsApksUploadCall) Fields(s ...googleapi.Field) *EditsApksUploadCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsApksUploadCall) Do() (*Apk, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *EditsApksUploadCall) Context(ctx context.Context) *EditsApksUploadCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsApksUploadCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
+		}
+		c.urlParams_.Set("uploadType", protocol)
 	}
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	body = new(bytes.Buffer)
 	ctype := "application/json"
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
-		}
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.apks.upload" call.
+// Exactly one of *Apk or error will be non-nil. Any non-2xx status code
+// is an error. Response headers are in either
+// *Apk.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *EditsApksUploadCall) Do(opts ...googleapi.CallOption) (*Apk, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2024,23 +3329,39 @@ func (c *EditsApksUploadCall) Do() (*Apk, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return nil, err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return nil, err
+		}
 	}
-	var ret *Apk
+	ret := &Apk{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2101,42 +3422,85 @@ type EditsDetailsGetCall struct {
 	s             *Service
 	packageNameid string
 	editId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get: Fetches app details for this edit. This includes the default
 // language and developer support contact information.
 func (r *EditsDetailsService) Get(packageNameid string, editId string) *EditsDetailsGetCall {
-	c := &EditsDetailsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsDetailsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsDetailsGetCall) Fields(s ...googleapi.Field) *EditsDetailsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsDetailsGetCall) Do() (*AppDetails, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsDetailsGetCall) IfNoneMatch(entityTag string) *EditsDetailsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsDetailsGetCall) Context(ctx context.Context) *EditsDetailsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsDetailsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/details")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.details.get" call.
+// Exactly one of *AppDetails or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *AppDetails.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *EditsDetailsGetCall) Do(opts ...googleapi.CallOption) (*AppDetails, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2144,7 +3508,12 @@ func (c *EditsDetailsGetCall) Do() (*AppDetails, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AppDetails
+	ret := &AppDetails{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2189,49 +3558,78 @@ type EditsDetailsPatchCall struct {
 	packageNameid string
 	editId        string
 	appdetails    *AppDetails
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Patch: Updates app details for this edit. This method supports patch
 // semantics.
 func (r *EditsDetailsService) Patch(packageNameid string, editId string, appdetails *AppDetails) *EditsDetailsPatchCall {
-	c := &EditsDetailsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsDetailsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.appdetails = appdetails
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsDetailsPatchCall) Fields(s ...googleapi.Field) *EditsDetailsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsDetailsPatchCall) Do() (*AppDetails, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsDetailsPatchCall) Context(ctx context.Context) *EditsDetailsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsDetailsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.appdetails)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/details")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.details.patch" call.
+// Exactly one of *AppDetails or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *AppDetails.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *EditsDetailsPatchCall) Do(opts ...googleapi.CallOption) (*AppDetails, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2239,7 +3637,12 @@ func (c *EditsDetailsPatchCall) Do() (*AppDetails, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AppDetails
+	ret := &AppDetails{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2287,48 +3690,77 @@ type EditsDetailsUpdateCall struct {
 	packageNameid string
 	editId        string
 	appdetails    *AppDetails
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Update: Updates app details for this edit.
 func (r *EditsDetailsService) Update(packageNameid string, editId string, appdetails *AppDetails) *EditsDetailsUpdateCall {
-	c := &EditsDetailsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsDetailsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.appdetails = appdetails
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsDetailsUpdateCall) Fields(s ...googleapi.Field) *EditsDetailsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsDetailsUpdateCall) Do() (*AppDetails, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsDetailsUpdateCall) Context(ctx context.Context) *EditsDetailsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsDetailsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.appdetails)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/details")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.details.update" call.
+// Exactly one of *AppDetails or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *AppDetails.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *EditsDetailsUpdateCall) Do(opts ...googleapi.CallOption) (*AppDetails, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2336,7 +3768,12 @@ func (c *EditsDetailsUpdateCall) Do() (*AppDetails, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AppDetails
+	ret := &AppDetails{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2385,12 +3822,14 @@ type EditsExpansionfilesGetCall struct {
 	editId            string
 	apkVersionCode    int64
 	expansionFileType string
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ifNoneMatch_      string
+	ctx_              context.Context
 }
 
 // Get: Fetches the Expansion File configuration for the APK specified.
 func (r *EditsExpansionfilesService) Get(packageNameid string, editId string, apkVersionCode int64, expansionFileType string) *EditsExpansionfilesGetCall {
-	c := &EditsExpansionfilesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsExpansionfilesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
@@ -2398,23 +3837,37 @@ func (r *EditsExpansionfilesService) Get(packageNameid string, editId string, ap
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsExpansionfilesGetCall) Fields(s ...googleapi.Field) *EditsExpansionfilesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsExpansionfilesGetCall) Do() (*ExpansionFile, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsExpansionfilesGetCall) IfNoneMatch(entityTag string) *EditsExpansionfilesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsExpansionfilesGetCall) Context(ctx context.Context) *EditsExpansionfilesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsExpansionfilesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/expansionFiles/{expansionFileType}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":       c.packageNameid,
@@ -2422,8 +3875,35 @@ func (c *EditsExpansionfilesGetCall) Do() (*ExpansionFile, error) {
 		"apkVersionCode":    strconv.FormatInt(c.apkVersionCode, 10),
 		"expansionFileType": c.expansionFileType,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.expansionfiles.get" call.
+// Exactly one of *ExpansionFile or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ExpansionFile.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsExpansionfilesGetCall) Do(opts ...googleapi.CallOption) (*ExpansionFile, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2431,7 +3911,12 @@ func (c *EditsExpansionfilesGetCall) Do() (*ExpansionFile, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ExpansionFile
+	ret := &ExpansionFile{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2500,14 +3985,15 @@ type EditsExpansionfilesPatchCall struct {
 	apkVersionCode    int64
 	expansionFileType string
 	expansionfile     *ExpansionFile
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
 }
 
 // Patch: Updates the APK's Expansion File configuration to reference
 // another APK's Expansion Files. To add a new Expansion File use the
 // Upload method. This method supports patch semantics.
 func (r *EditsExpansionfilesService) Patch(packageNameid string, editId string, apkVersionCode int64, expansionFileType string, expansionfile *ExpansionFile) *EditsExpansionfilesPatchCall {
-	c := &EditsExpansionfilesPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsExpansionfilesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
@@ -2516,28 +4002,32 @@ func (r *EditsExpansionfilesService) Patch(packageNameid string, editId string, 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsExpansionfilesPatchCall) Fields(s ...googleapi.Field) *EditsExpansionfilesPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsExpansionfilesPatchCall) Do() (*ExpansionFile, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsExpansionfilesPatchCall) Context(ctx context.Context) *EditsExpansionfilesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsExpansionfilesPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.expansionfile)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/expansionFiles/{expansionFileType}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":       c.packageNameid,
@@ -2546,8 +4036,32 @@ func (c *EditsExpansionfilesPatchCall) Do() (*ExpansionFile, error) {
 		"expansionFileType": c.expansionFileType,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.expansionfiles.patch" call.
+// Exactly one of *ExpansionFile or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ExpansionFile.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsExpansionfilesPatchCall) Do(opts ...googleapi.CallOption) (*ExpansionFile, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2555,7 +4069,12 @@ func (c *EditsExpansionfilesPatchCall) Do() (*ExpansionFile, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ExpansionFile
+	ret := &ExpansionFile{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2627,14 +4146,15 @@ type EditsExpansionfilesUpdateCall struct {
 	apkVersionCode    int64
 	expansionFileType string
 	expansionfile     *ExpansionFile
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
+	ctx_              context.Context
 }
 
 // Update: Updates the APK's Expansion File configuration to reference
 // another APK's Expansion Files. To add a new Expansion File use the
 // Upload method.
 func (r *EditsExpansionfilesService) Update(packageNameid string, editId string, apkVersionCode int64, expansionFileType string, expansionfile *ExpansionFile) *EditsExpansionfilesUpdateCall {
-	c := &EditsExpansionfilesUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsExpansionfilesUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
@@ -2643,28 +4163,32 @@ func (r *EditsExpansionfilesService) Update(packageNameid string, editId string,
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsExpansionfilesUpdateCall) Fields(s ...googleapi.Field) *EditsExpansionfilesUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsExpansionfilesUpdateCall) Do() (*ExpansionFile, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsExpansionfilesUpdateCall) Context(ctx context.Context) *EditsExpansionfilesUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsExpansionfilesUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.expansionfile)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/expansionFiles/{expansionFileType}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":       c.packageNameid,
@@ -2673,8 +4197,32 @@ func (c *EditsExpansionfilesUpdateCall) Do() (*ExpansionFile, error) {
 		"expansionFileType": c.expansionFileType,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.expansionfiles.update" call.
+// Exactly one of *ExpansionFile or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ExpansionFile.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsExpansionfilesUpdateCall) Do(opts ...googleapi.CallOption) (*ExpansionFile, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2682,7 +4230,12 @@ func (c *EditsExpansionfilesUpdateCall) Do() (*ExpansionFile, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ExpansionFile
+	ret := &ExpansionFile{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2753,18 +4306,19 @@ type EditsExpansionfilesUploadCall struct {
 	editId            string
 	apkVersionCode    int64
 	expansionFileType string
-	opt_              map[string]interface{}
+	urlParams_        gensupport.URLParams
 	media_            io.Reader
-	resumable_        googleapi.SizeReaderAt
+	resumableBuffer_  *gensupport.ResumableBuffer
 	mediaType_        string
+	mediaSize_        int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_  googleapi.ProgressUpdater
 	ctx_              context.Context
-	protocol_         string
 }
 
 // Upload: Uploads and attaches a new Expansion File to the APK
 // specified.
 func (r *EditsExpansionfilesService) Upload(packageNameid string, editId string, apkVersionCode int64, expansionFileType string) *EditsExpansionfilesUploadCall {
-	c := &EditsExpansionfilesUploadCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsExpansionfilesUploadCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.apkVersionCode = apkVersionCode
@@ -2772,69 +4326,90 @@ func (r *EditsExpansionfilesService) Upload(packageNameid string, editId string,
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *EditsExpansionfilesUploadCall) Media(r io.Reader) *EditsExpansionfilesUploadCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *EditsExpansionfilesUploadCall) Media(r io.Reader, options ...googleapi.MediaOption) *EditsExpansionfilesUploadCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *EditsExpansionfilesUploadCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *EditsExpansionfilesUploadCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *EditsExpansionfilesUploadCall) ProgressUpdater(pu googleapi.ProgressUpdater) *EditsExpansionfilesUploadCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsExpansionfilesUploadCall) Fields(s ...googleapi.Field) *EditsExpansionfilesUploadCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsExpansionfilesUploadCall) Do() (*ExpansionFilesUploadResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *EditsExpansionfilesUploadCall) Context(ctx context.Context) *EditsExpansionfilesUploadCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsExpansionfilesUploadCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/apks/{apkVersionCode}/expansionFiles/{expansionFileType}")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
+		}
+		c.urlParams_.Set("uploadType", protocol)
 	}
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	body = new(bytes.Buffer)
 	ctype := "application/json"
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
-		}
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
@@ -2843,18 +4418,38 @@ func (c *EditsExpansionfilesUploadCall) Do() (*ExpansionFilesUploadResponse, err
 		"apkVersionCode":    strconv.FormatInt(c.apkVersionCode, 10),
 		"expansionFileType": c.expansionFileType,
 	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.expansionfiles.upload" call.
+// Exactly one of *ExpansionFilesUploadResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *ExpansionFilesUploadResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsExpansionfilesUploadCall) Do(opts ...googleapi.CallOption) (*ExpansionFilesUploadResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2862,23 +4457,39 @@ func (c *EditsExpansionfilesUploadCall) Do() (*ExpansionFilesUploadResponse, err
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return nil, err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return nil, err
+		}
 	}
-	var ret *ExpansionFilesUploadResponse
+	ret := &ExpansionFilesUploadResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2964,12 +4575,13 @@ type EditsImagesDeleteCall struct {
 	language      string
 	imageType     string
 	imageId       string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Delete: Deletes the image (specified by id) from the edit.
 func (r *EditsImagesService) Delete(packageNameid string, editId string, language string, imageType string, imageId string) *EditsImagesDeleteCall {
-	c := &EditsImagesDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsImagesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.language = language
@@ -2978,23 +4590,27 @@ func (r *EditsImagesService) Delete(packageNameid string, editId string, languag
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsImagesDeleteCall) Fields(s ...googleapi.Field) *EditsImagesDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsImagesDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsImagesDeleteCall) Context(ctx context.Context) *EditsImagesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsImagesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings/{language}/{imageType}/{imageId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
@@ -3003,8 +4619,17 @@ func (c *EditsImagesDeleteCall) Do() error {
 		"imageType":   c.imageType,
 		"imageId":     c.imageId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.images.delete" call.
+func (c *EditsImagesDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -3046,9 +4671,11 @@ func (c *EditsImagesDeleteCall) Do() error {
 	//         "sevenInchScreenshots",
 	//         "tenInchScreenshots",
 	//         "tvBanner",
-	//         "tvScreenshots"
+	//         "tvScreenshots",
+	//         "wearScreenshots"
 	//       ],
 	//       "enumDescriptions": [
+	//         "",
 	//         "",
 	//         "",
 	//         "",
@@ -3091,13 +4718,14 @@ type EditsImagesDeleteallCall struct {
 	editId        string
 	language      string
 	imageType     string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Deleteall: Deletes all images for the specified language and image
 // type.
 func (r *EditsImagesService) Deleteall(packageNameid string, editId string, language string, imageType string) *EditsImagesDeleteallCall {
-	c := &EditsImagesDeleteallCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsImagesDeleteallCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.language = language
@@ -3105,23 +4733,27 @@ func (r *EditsImagesService) Deleteall(packageNameid string, editId string, lang
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsImagesDeleteallCall) Fields(s ...googleapi.Field) *EditsImagesDeleteallCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsImagesDeleteallCall) Do() (*ImagesDeleteAllResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsImagesDeleteallCall) Context(ctx context.Context) *EditsImagesDeleteallCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsImagesDeleteallCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings/{language}/{imageType}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
@@ -3129,8 +4761,32 @@ func (c *EditsImagesDeleteallCall) Do() (*ImagesDeleteAllResponse, error) {
 		"language":    c.language,
 		"imageType":   c.imageType,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.images.deleteall" call.
+// Exactly one of *ImagesDeleteAllResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ImagesDeleteAllResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsImagesDeleteallCall) Do(opts ...googleapi.CallOption) (*ImagesDeleteAllResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3138,7 +4794,12 @@ func (c *EditsImagesDeleteallCall) Do() (*ImagesDeleteAllResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ImagesDeleteAllResponse
+	ret := &ImagesDeleteAllResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3169,9 +4830,11 @@ func (c *EditsImagesDeleteallCall) Do() (*ImagesDeleteAllResponse, error) {
 	//         "sevenInchScreenshots",
 	//         "tenInchScreenshots",
 	//         "tvBanner",
-	//         "tvScreenshots"
+	//         "tvScreenshots",
+	//         "wearScreenshots"
 	//       ],
 	//       "enumDescriptions": [
+	//         "",
 	//         "",
 	//         "",
 	//         "",
@@ -3217,12 +4880,14 @@ type EditsImagesListCall struct {
 	editId        string
 	language      string
 	imageType     string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists all images for the specified language and image type.
 func (r *EditsImagesService) List(packageNameid string, editId string, language string, imageType string) *EditsImagesListCall {
-	c := &EditsImagesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsImagesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.language = language
@@ -3230,23 +4895,37 @@ func (r *EditsImagesService) List(packageNameid string, editId string, language 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsImagesListCall) Fields(s ...googleapi.Field) *EditsImagesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsImagesListCall) Do() (*ImagesListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsImagesListCall) IfNoneMatch(entityTag string) *EditsImagesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsImagesListCall) Context(ctx context.Context) *EditsImagesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsImagesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings/{language}/{imageType}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
@@ -3254,8 +4933,35 @@ func (c *EditsImagesListCall) Do() (*ImagesListResponse, error) {
 		"language":    c.language,
 		"imageType":   c.imageType,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.images.list" call.
+// Exactly one of *ImagesListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ImagesListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsImagesListCall) Do(opts ...googleapi.CallOption) (*ImagesListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3263,7 +4969,12 @@ func (c *EditsImagesListCall) Do() (*ImagesListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ImagesListResponse
+	ret := &ImagesListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3294,9 +5005,11 @@ func (c *EditsImagesListCall) Do() (*ImagesListResponse, error) {
 	//         "sevenInchScreenshots",
 	//         "tenInchScreenshots",
 	//         "tvBanner",
-	//         "tvScreenshots"
+	//         "tvScreenshots",
+	//         "wearScreenshots"
 	//       ],
 	//       "enumDescriptions": [
+	//         "",
 	//         "",
 	//         "",
 	//         "",
@@ -3337,23 +5050,24 @@ func (c *EditsImagesListCall) Do() (*ImagesListResponse, error) {
 // method id "androidpublisher.edits.images.upload":
 
 type EditsImagesUploadCall struct {
-	s             *Service
-	packageNameid string
-	editId        string
-	language      string
-	imageType     string
-	opt_          map[string]interface{}
-	media_        io.Reader
-	resumable_    googleapi.SizeReaderAt
-	mediaType_    string
-	ctx_          context.Context
-	protocol_     string
+	s                *Service
+	packageNameid    string
+	editId           string
+	language         string
+	imageType        string
+	urlParams_       gensupport.URLParams
+	media_           io.Reader
+	resumableBuffer_ *gensupport.ResumableBuffer
+	mediaType_       string
+	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_ googleapi.ProgressUpdater
+	ctx_             context.Context
 }
 
 // Upload: Uploads a new image and adds it to the list of images for the
 // specified language and image type.
 func (r *EditsImagesService) Upload(packageNameid string, editId string, language string, imageType string) *EditsImagesUploadCall {
-	c := &EditsImagesUploadCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsImagesUploadCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.language = language
@@ -3361,69 +5075,90 @@ func (r *EditsImagesService) Upload(packageNameid string, editId string, languag
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *EditsImagesUploadCall) Media(r io.Reader) *EditsImagesUploadCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *EditsImagesUploadCall) Media(r io.Reader, options ...googleapi.MediaOption) *EditsImagesUploadCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *EditsImagesUploadCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *EditsImagesUploadCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *EditsImagesUploadCall) ProgressUpdater(pu googleapi.ProgressUpdater) *EditsImagesUploadCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsImagesUploadCall) Fields(s ...googleapi.Field) *EditsImagesUploadCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsImagesUploadCall) Do() (*ImagesUploadResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *EditsImagesUploadCall) Context(ctx context.Context) *EditsImagesUploadCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsImagesUploadCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings/{language}/{imageType}")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
+		}
+		c.urlParams_.Set("uploadType", protocol)
 	}
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	body = new(bytes.Buffer)
 	ctype := "application/json"
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
-		}
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
@@ -3432,18 +5167,38 @@ func (c *EditsImagesUploadCall) Do() (*ImagesUploadResponse, error) {
 		"language":    c.language,
 		"imageType":   c.imageType,
 	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.images.upload" call.
+// Exactly one of *ImagesUploadResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ImagesUploadResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsImagesUploadCall) Do(opts ...googleapi.CallOption) (*ImagesUploadResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3451,23 +5206,39 @@ func (c *EditsImagesUploadCall) Do() (*ImagesUploadResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return nil, err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return nil, err
+		}
 	}
-	var ret *ImagesUploadResponse
+	ret := &ImagesUploadResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3514,9 +5285,11 @@ func (c *EditsImagesUploadCall) Do() (*ImagesUploadResponse, error) {
 	//         "sevenInchScreenshots",
 	//         "tenInchScreenshots",
 	//         "tvBanner",
-	//         "tvScreenshots"
+	//         "tvScreenshots",
+	//         "wearScreenshots"
 	//       ],
 	//       "enumDescriptions": [
+	//         "",
 	//         "",
 	//         "",
 	//         "",
@@ -3562,43 +5335,57 @@ type EditsListingsDeleteCall struct {
 	packageNameid string
 	editId        string
 	language      string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Delete: Deletes the specified localized store listing from an edit.
 func (r *EditsListingsService) Delete(packageNameid string, editId string, language string) *EditsListingsDeleteCall {
-	c := &EditsListingsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsListingsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.language = language
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsListingsDeleteCall) Fields(s ...googleapi.Field) *EditsListingsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsListingsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsListingsDeleteCall) Context(ctx context.Context) *EditsListingsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsListingsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings/{language}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 		"language":    c.language,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.listings.delete" call.
+func (c *EditsListingsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -3650,41 +5437,55 @@ type EditsListingsDeleteallCall struct {
 	s             *Service
 	packageNameid string
 	editId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Deleteall: Deletes all localized listings from an edit.
 func (r *EditsListingsService) Deleteall(packageNameid string, editId string) *EditsListingsDeleteallCall {
-	c := &EditsListingsDeleteallCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsListingsDeleteallCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsListingsDeleteallCall) Fields(s ...googleapi.Field) *EditsListingsDeleteallCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsListingsDeleteallCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsListingsDeleteallCall) Context(ctx context.Context) *EditsListingsDeleteallCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsListingsDeleteallCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.listings.deleteall" call.
+func (c *EditsListingsDeleteallCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -3730,43 +5531,86 @@ type EditsListingsGetCall struct {
 	packageNameid string
 	editId        string
 	language      string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get: Fetches information about a localized store listing.
 func (r *EditsListingsService) Get(packageNameid string, editId string, language string) *EditsListingsGetCall {
-	c := &EditsListingsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsListingsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.language = language
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsListingsGetCall) Fields(s ...googleapi.Field) *EditsListingsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsListingsGetCall) Do() (*Listing, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsListingsGetCall) IfNoneMatch(entityTag string) *EditsListingsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsListingsGetCall) Context(ctx context.Context) *EditsListingsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsListingsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings/{language}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 		"language":    c.language,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.listings.get" call.
+// Exactly one of *Listing or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Listing.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsListingsGetCall) Do(opts ...googleapi.CallOption) (*Listing, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3774,7 +5618,12 @@ func (c *EditsListingsGetCall) Do() (*Listing, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Listing
+	ret := &Listing{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3825,42 +5674,85 @@ type EditsListingsListCall struct {
 	s             *Service
 	packageNameid string
 	editId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Returns all of the localized store listings attached to this
 // edit.
 func (r *EditsListingsService) List(packageNameid string, editId string) *EditsListingsListCall {
-	c := &EditsListingsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsListingsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsListingsListCall) Fields(s ...googleapi.Field) *EditsListingsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsListingsListCall) Do() (*ListingsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsListingsListCall) IfNoneMatch(entityTag string) *EditsListingsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsListingsListCall) Context(ctx context.Context) *EditsListingsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsListingsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.listings.list" call.
+// Exactly one of *ListingsListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ListingsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsListingsListCall) Do(opts ...googleapi.CallOption) (*ListingsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3868,7 +5760,12 @@ func (c *EditsListingsListCall) Do() (*ListingsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ListingsListResponse
+	ret := &ListingsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3914,13 +5811,14 @@ type EditsListingsPatchCall struct {
 	editId        string
 	language      string
 	listing       *Listing
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Patch: Creates or updates a localized store listing. This method
 // supports patch semantics.
 func (r *EditsListingsService) Patch(packageNameid string, editId string, language string, listing *Listing) *EditsListingsPatchCall {
-	c := &EditsListingsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsListingsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.language = language
@@ -3928,28 +5826,32 @@ func (r *EditsListingsService) Patch(packageNameid string, editId string, langua
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsListingsPatchCall) Fields(s ...googleapi.Field) *EditsListingsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsListingsPatchCall) Do() (*Listing, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsListingsPatchCall) Context(ctx context.Context) *EditsListingsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsListingsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.listing)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings/{language}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
@@ -3957,8 +5859,32 @@ func (c *EditsListingsPatchCall) Do() (*Listing, error) {
 		"language":    c.language,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.listings.patch" call.
+// Exactly one of *Listing or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Listing.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsListingsPatchCall) Do(opts ...googleapi.CallOption) (*Listing, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3966,7 +5892,12 @@ func (c *EditsListingsPatchCall) Do() (*Listing, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Listing
+	ret := &Listing{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4022,12 +5953,13 @@ type EditsListingsUpdateCall struct {
 	editId        string
 	language      string
 	listing       *Listing
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Update: Creates or updates a localized store listing.
 func (r *EditsListingsService) Update(packageNameid string, editId string, language string, listing *Listing) *EditsListingsUpdateCall {
-	c := &EditsListingsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsListingsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.language = language
@@ -4035,28 +5967,32 @@ func (r *EditsListingsService) Update(packageNameid string, editId string, langu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsListingsUpdateCall) Fields(s ...googleapi.Field) *EditsListingsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsListingsUpdateCall) Do() (*Listing, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsListingsUpdateCall) Context(ctx context.Context) *EditsListingsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsListingsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.listing)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/listings/{language}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
@@ -4064,8 +6000,32 @@ func (c *EditsListingsUpdateCall) Do() (*Listing, error) {
 		"language":    c.language,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.listings.update" call.
+// Exactly one of *Listing or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Listing.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsListingsUpdateCall) Do(opts ...googleapi.CallOption) (*Listing, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4073,7 +6033,12 @@ func (c *EditsListingsUpdateCall) Do() (*Listing, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Listing
+	ret := &Listing{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4128,43 +6093,86 @@ type EditsTestersGetCall struct {
 	packageNameid string
 	editId        string
 	track         string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get:
 func (r *EditsTestersService) Get(packageNameid string, editId string, track string) *EditsTestersGetCall {
-	c := &EditsTestersGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsTestersGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.track = track
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsTestersGetCall) Fields(s ...googleapi.Field) *EditsTestersGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsTestersGetCall) Do() (*Testers, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsTestersGetCall) IfNoneMatch(entityTag string) *EditsTestersGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsTestersGetCall) Context(ctx context.Context) *EditsTestersGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsTestersGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/testers/{track}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 		"track":       c.track,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.testers.get" call.
+// Exactly one of *Testers or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Testers.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsTestersGetCall) Do(opts ...googleapi.CallOption) (*Testers, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4172,7 +6180,12 @@ func (c *EditsTestersGetCall) Do() (*Testers, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Testers
+	ret := &Testers{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4235,12 +6248,13 @@ type EditsTestersPatchCall struct {
 	editId        string
 	track         string
 	testers       *Testers
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Patch:
 func (r *EditsTestersService) Patch(packageNameid string, editId string, track string, testers *Testers) *EditsTestersPatchCall {
-	c := &EditsTestersPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsTestersPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.track = track
@@ -4248,28 +6262,32 @@ func (r *EditsTestersService) Patch(packageNameid string, editId string, track s
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsTestersPatchCall) Fields(s ...googleapi.Field) *EditsTestersPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsTestersPatchCall) Do() (*Testers, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsTestersPatchCall) Context(ctx context.Context) *EditsTestersPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsTestersPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testers)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/testers/{track}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
@@ -4277,8 +6295,32 @@ func (c *EditsTestersPatchCall) Do() (*Testers, error) {
 		"track":       c.track,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.testers.patch" call.
+// Exactly one of *Testers or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Testers.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsTestersPatchCall) Do(opts ...googleapi.CallOption) (*Testers, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4286,7 +6328,12 @@ func (c *EditsTestersPatchCall) Do() (*Testers, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Testers
+	ret := &Testers{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4352,12 +6399,13 @@ type EditsTestersUpdateCall struct {
 	editId        string
 	track         string
 	testers       *Testers
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Update:
 func (r *EditsTestersService) Update(packageNameid string, editId string, track string, testers *Testers) *EditsTestersUpdateCall {
-	c := &EditsTestersUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsTestersUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.track = track
@@ -4365,28 +6413,32 @@ func (r *EditsTestersService) Update(packageNameid string, editId string, track 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsTestersUpdateCall) Fields(s ...googleapi.Field) *EditsTestersUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsTestersUpdateCall) Do() (*Testers, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsTestersUpdateCall) Context(ctx context.Context) *EditsTestersUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsTestersUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testers)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/testers/{track}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
@@ -4394,8 +6446,32 @@ func (c *EditsTestersUpdateCall) Do() (*Testers, error) {
 		"track":       c.track,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.testers.update" call.
+// Exactly one of *Testers or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Testers.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsTestersUpdateCall) Do(opts ...googleapi.CallOption) (*Testers, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4403,7 +6479,12 @@ func (c *EditsTestersUpdateCall) Do() (*Testers, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Testers
+	ret := &Testers{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4468,44 +6549,87 @@ type EditsTracksGetCall struct {
 	packageNameid string
 	editId        string
 	track         string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // Get: Fetches the track configuration for the specified track type.
 // Includes the APK version codes that are in this track.
 func (r *EditsTracksService) Get(packageNameid string, editId string, track string) *EditsTracksGetCall {
-	c := &EditsTracksGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsTracksGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.track = track
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsTracksGetCall) Fields(s ...googleapi.Field) *EditsTracksGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsTracksGetCall) Do() (*Track, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsTracksGetCall) IfNoneMatch(entityTag string) *EditsTracksGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsTracksGetCall) Context(ctx context.Context) *EditsTracksGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsTracksGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/tracks/{track}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 		"track":       c.track,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.tracks.get" call.
+// Exactly one of *Track or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Track.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsTracksGetCall) Do(opts ...googleapi.CallOption) (*Track, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4513,7 +6637,12 @@ func (c *EditsTracksGetCall) Do() (*Track, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Track
+	ret := &Track{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4576,41 +6705,84 @@ type EditsTracksListCall struct {
 	s             *Service
 	packageNameid string
 	editId        string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: Lists all the track configurations for this edit.
 func (r *EditsTracksService) List(packageNameid string, editId string) *EditsTracksListCall {
-	c := &EditsTracksListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsTracksListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsTracksListCall) Fields(s ...googleapi.Field) *EditsTracksListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsTracksListCall) Do() (*TracksListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EditsTracksListCall) IfNoneMatch(entityTag string) *EditsTracksListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsTracksListCall) Context(ctx context.Context) *EditsTracksListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsTracksListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/tracks")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.tracks.list" call.
+// Exactly one of *TracksListResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *TracksListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EditsTracksListCall) Do(opts ...googleapi.CallOption) (*TracksListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4618,7 +6790,12 @@ func (c *EditsTracksListCall) Do() (*TracksListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *TracksListResponse
+	ret := &TracksListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4664,7 +6841,8 @@ type EditsTracksPatchCall struct {
 	editId        string
 	track         string
 	track2        *Track
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Patch: Updates the track configuration for the specified track type.
@@ -4672,7 +6850,7 @@ type EditsTracksPatchCall struct {
 // APKs, and adding new APKs will cause it to resume. This method
 // supports patch semantics.
 func (r *EditsTracksService) Patch(packageNameid string, editId string, track string, track2 *Track) *EditsTracksPatchCall {
-	c := &EditsTracksPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsTracksPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.track = track
@@ -4680,28 +6858,32 @@ func (r *EditsTracksService) Patch(packageNameid string, editId string, track st
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsTracksPatchCall) Fields(s ...googleapi.Field) *EditsTracksPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsTracksPatchCall) Do() (*Track, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsTracksPatchCall) Context(ctx context.Context) *EditsTracksPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsTracksPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.track2)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/tracks/{track}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
@@ -4709,8 +6891,32 @@ func (c *EditsTracksPatchCall) Do() (*Track, error) {
 		"track":       c.track,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.tracks.patch" call.
+// Exactly one of *Track or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Track.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsTracksPatchCall) Do(opts ...googleapi.CallOption) (*Track, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4718,7 +6924,12 @@ func (c *EditsTracksPatchCall) Do() (*Track, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Track
+	ret := &Track{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4786,14 +6997,15 @@ type EditsTracksUpdateCall struct {
 	editId        string
 	track         string
 	track2        *Track
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Update: Updates the track configuration for the specified track type.
 // When halted, the rollout track cannot be updated without adding new
 // APKs, and adding new APKs will cause it to resume.
 func (r *EditsTracksService) Update(packageNameid string, editId string, track string, track2 *Track) *EditsTracksUpdateCall {
-	c := &EditsTracksUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &EditsTracksUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.editId = editId
 	c.track = track
@@ -4801,28 +7013,32 @@ func (r *EditsTracksService) Update(packageNameid string, editId string, track s
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *EditsTracksUpdateCall) Fields(s ...googleapi.Field) *EditsTracksUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *EditsTracksUpdateCall) Do() (*Track, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EditsTracksUpdateCall) Context(ctx context.Context) *EditsTracksUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EditsTracksUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.track2)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/edits/{editId}/tracks/{track}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
@@ -4830,8 +7046,32 @@ func (c *EditsTracksUpdateCall) Do() (*Track, error) {
 		"track":       c.track,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.edits.tracks.update" call.
+// Exactly one of *Track or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Track.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *EditsTracksUpdateCall) Do(opts ...googleapi.CallOption) (*Track, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4839,7 +7079,12 @@ func (c *EditsTracksUpdateCall) Do() (*Track, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Track
+	ret := &Track{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4899,48 +7144,114 @@ func (c *EditsTracksUpdateCall) Do() (*Track, error) {
 
 }
 
-// method id "androidpublisher.inappproducts.batch":
+// method id "androidpublisher.entitlements.list":
 
-type InappproductsBatchCall struct {
-	s                         *Service
-	inappproductsbatchrequest *InappproductsBatchRequest
-	opt_                      map[string]interface{}
+type EntitlementsListCall struct {
+	s            *Service
+	packageName  string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
-// Batch:
-func (r *InappproductsService) Batch(inappproductsbatchrequest *InappproductsBatchRequest) *InappproductsBatchCall {
-	c := &InappproductsBatchCall{s: r.s, opt_: make(map[string]interface{})}
-	c.inappproductsbatchrequest = inappproductsbatchrequest
+// List: Lists the user's current inapp item or subscription
+// entitlements
+func (r *EntitlementsService) List(packageName string) *EntitlementsListCall {
+	c := &EntitlementsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.packageName = packageName
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// MaxResults sets the optional parameter "maxResults":
+func (c *EntitlementsListCall) MaxResults(maxResults int64) *EntitlementsListCall {
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
+	return c
+}
+
+// ProductId sets the optional parameter "productId": The product id of
+// the inapp product (for example, 'sku1'). This can be used to restrict
+// the result set.
+func (c *EntitlementsListCall) ProductId(productId string) *EntitlementsListCall {
+	c.urlParams_.Set("productId", productId)
+	return c
+}
+
+// StartIndex sets the optional parameter "startIndex":
+func (c *EntitlementsListCall) StartIndex(startIndex int64) *EntitlementsListCall {
+	c.urlParams_.Set("startIndex", fmt.Sprint(startIndex))
+	return c
+}
+
+// Token sets the optional parameter "token":
+func (c *EntitlementsListCall) Token(token string) *EntitlementsListCall {
+	c.urlParams_.Set("token", token)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
-func (c *InappproductsBatchCall) Fields(s ...googleapi.Field) *InappproductsBatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+func (c *EntitlementsListCall) Fields(s ...googleapi.Field) *EntitlementsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *InappproductsBatchCall) Do() (*InappproductsBatchResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *EntitlementsListCall) IfNoneMatch(entityTag string) *EntitlementsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *EntitlementsListCall) Context(ctx context.Context) *EntitlementsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *EntitlementsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.inappproductsbatchrequest)
-	if err != nil {
-		return nil, err
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/entitlements")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	googleapi.Expand(req.URL, map[string]string{
+		"packageName": c.packageName,
+	})
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
 	}
-	urls := googleapi.ResolveRelative(c.s.BasePath, "inappproducts/batch")
-	urls += "?" + params.Encode()
-	req, _ := http.NewRequest("POST", urls, body)
-	googleapi.SetOpaque(req.URL)
-	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.entitlements.list" call.
+// Exactly one of *EntitlementsListResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *EntitlementsListResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *EntitlementsListCall) Do(opts ...googleapi.CallOption) (*EntitlementsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4948,7 +7259,142 @@ func (c *InappproductsBatchCall) Do() (*InappproductsBatchResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *InappproductsBatchResponse
+	ret := &EntitlementsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists the user's current inapp item or subscription entitlements",
+	//   "httpMethod": "GET",
+	//   "id": "androidpublisher.entitlements.list",
+	//   "parameterOrder": [
+	//     "packageName"
+	//   ],
+	//   "parameters": {
+	//     "maxResults": {
+	//       "format": "uint32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "packageName": {
+	//       "description": "The package name of the application the inapp product was sold in (for example, 'com.some.thing').",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "productId": {
+	//       "description": "The product id of the inapp product (for example, 'sku1'). This can be used to restrict the result set.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "startIndex": {
+	//       "format": "uint32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "token": {
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{packageName}/entitlements",
+	//   "response": {
+	//     "$ref": "EntitlementsListResponse"
+	//   }
+	// }
+
+}
+
+// method id "androidpublisher.inappproducts.batch":
+
+type InappproductsBatchCall struct {
+	s                         *Service
+	inappproductsbatchrequest *InappproductsBatchRequest
+	urlParams_                gensupport.URLParams
+	ctx_                      context.Context
+}
+
+// Batch:
+func (r *InappproductsService) Batch(inappproductsbatchrequest *InappproductsBatchRequest) *InappproductsBatchCall {
+	c := &InappproductsBatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.inappproductsbatchrequest = inappproductsbatchrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *InappproductsBatchCall) Fields(s ...googleapi.Field) *InappproductsBatchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InappproductsBatchCall) Context(ctx context.Context) *InappproductsBatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *InappproductsBatchCall) doRequest(alt string) (*http.Response, error) {
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.inappproductsbatchrequest)
+	if err != nil {
+		return nil, err
+	}
+	ctype := "application/json"
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "inappproducts/batch")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	googleapi.SetOpaque(req.URL)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.inappproducts.batch" call.
+// Exactly one of *InappproductsBatchResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *InappproductsBatchResponse.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *InappproductsBatchCall) Do(opts ...googleapi.CallOption) (*InappproductsBatchResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &InappproductsBatchResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4976,41 +7422,55 @@ type InappproductsDeleteCall struct {
 	s             *Service
 	packageNameid string
 	skuid         string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Delete: Delete an in-app product for an app.
 func (r *InappproductsService) Delete(packageNameid string, skuid string) *InappproductsDeleteCall {
-	c := &InappproductsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &InappproductsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.skuid = skuid
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *InappproductsDeleteCall) Fields(s ...googleapi.Field) *InappproductsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *InappproductsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InappproductsDeleteCall) Context(ctx context.Context) *InappproductsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *InappproductsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/inappproducts/{sku}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"sku":         c.skuid,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.inappproducts.delete" call.
+func (c *InappproductsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -5052,44 +7512,87 @@ func (c *InappproductsDeleteCall) Do() error {
 // method id "androidpublisher.inappproducts.get":
 
 type InappproductsGetCall struct {
-	s           *Service
-	packageName string
-	skuid       string
-	opt_        map[string]interface{}
+	s            *Service
+	packageName  string
+	skuid        string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Returns information about the in-app product specified.
 func (r *InappproductsService) Get(packageName string, skuid string) *InappproductsGetCall {
-	c := &InappproductsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &InappproductsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.skuid = skuid
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *InappproductsGetCall) Fields(s ...googleapi.Field) *InappproductsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *InappproductsGetCall) Do() (*InAppProduct, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *InappproductsGetCall) IfNoneMatch(entityTag string) *InappproductsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InappproductsGetCall) Context(ctx context.Context) *InappproductsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *InappproductsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/inappproducts/{sku}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageName,
 		"sku":         c.skuid,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.inappproducts.get" call.
+// Exactly one of *InAppProduct or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *InAppProduct.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *InappproductsGetCall) Do(opts ...googleapi.CallOption) (*InAppProduct, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5097,7 +7600,12 @@ func (c *InappproductsGetCall) Do() (*InAppProduct, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *InAppProduct
+	ret := &InAppProduct{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5140,12 +7648,13 @@ type InappproductsInsertCall struct {
 	s             *Service
 	packageNameid string
 	inappproduct  *InAppProduct
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Insert: Creates a new in-app product for an app.
 func (r *InappproductsService) Insert(packageNameid string, inappproduct *InAppProduct) *InappproductsInsertCall {
-	c := &InappproductsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &InappproductsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.inappproduct = inappproduct
 	return c
@@ -5157,42 +7666,67 @@ func (r *InappproductsService) Insert(packageNameid string, inappproduct *InAppP
 // in-app product will be auto converted to the target currency based on
 // the default price. Defaults to false.
 func (c *InappproductsInsertCall) AutoConvertMissingPrices(autoConvertMissingPrices bool) *InappproductsInsertCall {
-	c.opt_["autoConvertMissingPrices"] = autoConvertMissingPrices
+	c.urlParams_.Set("autoConvertMissingPrices", fmt.Sprint(autoConvertMissingPrices))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *InappproductsInsertCall) Fields(s ...googleapi.Field) *InappproductsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *InappproductsInsertCall) Do() (*InAppProduct, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InappproductsInsertCall) Context(ctx context.Context) *InappproductsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *InappproductsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.inappproduct)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["autoConvertMissingPrices"]; ok {
-		params.Set("autoConvertMissingPrices", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/inappproducts")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.inappproducts.insert" call.
+// Exactly one of *InAppProduct or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *InAppProduct.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *InappproductsInsertCall) Do(opts ...googleapi.CallOption) (*InAppProduct, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5200,7 +7734,12 @@ func (c *InappproductsInsertCall) Do() (*InAppProduct, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *InAppProduct
+	ret := &InAppProduct{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5244,67 +7783,101 @@ func (c *InappproductsInsertCall) Do() (*InAppProduct, error) {
 type InappproductsListCall struct {
 	s             *Service
 	packageNameid string
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
 }
 
 // List: List all the in-app products for an Android app, both
 // subscriptions and managed in-app products..
 func (r *InappproductsService) List(packageNameid string) *InappproductsListCall {
-	c := &InappproductsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &InappproductsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults":
 func (c *InappproductsListCall) MaxResults(maxResults int64) *InappproductsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // StartIndex sets the optional parameter "startIndex":
 func (c *InappproductsListCall) StartIndex(startIndex int64) *InappproductsListCall {
-	c.opt_["startIndex"] = startIndex
+	c.urlParams_.Set("startIndex", fmt.Sprint(startIndex))
 	return c
 }
 
 // Token sets the optional parameter "token":
 func (c *InappproductsListCall) Token(token string) *InappproductsListCall {
-	c.opt_["token"] = token
+	c.urlParams_.Set("token", token)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *InappproductsListCall) Fields(s ...googleapi.Field) *InappproductsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *InappproductsListCall) Do() (*InappproductsListResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *InappproductsListCall) IfNoneMatch(entityTag string) *InappproductsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InappproductsListCall) Context(ctx context.Context) *InappproductsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *InappproductsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["startIndex"]; ok {
-		params.Set("startIndex", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["token"]; ok {
-		params.Set("token", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/inappproducts")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.inappproducts.list" call.
+// Exactly one of *InappproductsListResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *InappproductsListResponse.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *InappproductsListCall) Do(opts ...googleapi.CallOption) (*InappproductsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5312,7 +7885,12 @@ func (c *InappproductsListCall) Do() (*InappproductsListResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *InappproductsListResponse
+	ret := &InappproductsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5364,13 +7942,14 @@ type InappproductsPatchCall struct {
 	packageNameid string
 	skuid         string
 	inappproduct  *InAppProduct
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Patch: Updates the details of an in-app product. This method supports
 // patch semantics.
 func (r *InappproductsService) Patch(packageNameid string, skuid string, inappproduct *InAppProduct) *InappproductsPatchCall {
-	c := &InappproductsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &InappproductsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.skuid = skuid
 	c.inappproduct = inappproduct
@@ -5383,43 +7962,68 @@ func (r *InappproductsService) Patch(packageNameid string, skuid string, inapppr
 // in-app product will be auto converted to the target currency based on
 // the default price. Defaults to false.
 func (c *InappproductsPatchCall) AutoConvertMissingPrices(autoConvertMissingPrices bool) *InappproductsPatchCall {
-	c.opt_["autoConvertMissingPrices"] = autoConvertMissingPrices
+	c.urlParams_.Set("autoConvertMissingPrices", fmt.Sprint(autoConvertMissingPrices))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *InappproductsPatchCall) Fields(s ...googleapi.Field) *InappproductsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *InappproductsPatchCall) Do() (*InAppProduct, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InappproductsPatchCall) Context(ctx context.Context) *InappproductsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *InappproductsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.inappproduct)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["autoConvertMissingPrices"]; ok {
-		params.Set("autoConvertMissingPrices", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/inappproducts/{sku}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"sku":         c.skuid,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.inappproducts.patch" call.
+// Exactly one of *InAppProduct or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *InAppProduct.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *InappproductsPatchCall) Do(opts ...googleapi.CallOption) (*InAppProduct, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5427,7 +8031,12 @@ func (c *InappproductsPatchCall) Do() (*InAppProduct, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *InAppProduct
+	ret := &InAppProduct{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5480,12 +8089,13 @@ type InappproductsUpdateCall struct {
 	packageNameid string
 	skuid         string
 	inappproduct  *InAppProduct
-	opt_          map[string]interface{}
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
 }
 
 // Update: Updates the details of an in-app product.
 func (r *InappproductsService) Update(packageNameid string, skuid string, inappproduct *InAppProduct) *InappproductsUpdateCall {
-	c := &InappproductsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &InappproductsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageNameid = packageNameid
 	c.skuid = skuid
 	c.inappproduct = inappproduct
@@ -5498,43 +8108,68 @@ func (r *InappproductsService) Update(packageNameid string, skuid string, inappp
 // in-app product will be auto converted to the target currency based on
 // the default price. Defaults to false.
 func (c *InappproductsUpdateCall) AutoConvertMissingPrices(autoConvertMissingPrices bool) *InappproductsUpdateCall {
-	c.opt_["autoConvertMissingPrices"] = autoConvertMissingPrices
+	c.urlParams_.Set("autoConvertMissingPrices", fmt.Sprint(autoConvertMissingPrices))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *InappproductsUpdateCall) Fields(s ...googleapi.Field) *InappproductsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *InappproductsUpdateCall) Do() (*InAppProduct, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InappproductsUpdateCall) Context(ctx context.Context) *InappproductsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *InappproductsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.inappproduct)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["autoConvertMissingPrices"]; ok {
-		params.Set("autoConvertMissingPrices", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/inappproducts/{sku}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"sku":         c.skuid,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.inappproducts.update" call.
+// Exactly one of *InAppProduct or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *InAppProduct.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *InappproductsUpdateCall) Do(opts ...googleapi.CallOption) (*InAppProduct, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5542,7 +8177,12 @@ func (c *InappproductsUpdateCall) Do() (*InAppProduct, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *InAppProduct
+	ret := &InAppProduct{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5591,47 +8231,90 @@ func (c *InappproductsUpdateCall) Do() (*InAppProduct, error) {
 // method id "androidpublisher.purchases.products.get":
 
 type PurchasesProductsGetCall struct {
-	s           *Service
-	packageName string
-	productId   string
-	token       string
-	opt_        map[string]interface{}
+	s            *Service
+	packageName  string
+	productId    string
+	token        string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Checks the purchase and consumption status of an inapp item.
 func (r *PurchasesProductsService) Get(packageName string, productId string, token string) *PurchasesProductsGetCall {
-	c := &PurchasesProductsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PurchasesProductsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.productId = productId
 	c.token = token
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PurchasesProductsGetCall) Fields(s ...googleapi.Field) *PurchasesProductsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PurchasesProductsGetCall) Do() (*ProductPurchase, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PurchasesProductsGetCall) IfNoneMatch(entityTag string) *PurchasesProductsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PurchasesProductsGetCall) Context(ctx context.Context) *PurchasesProductsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PurchasesProductsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/purchases/products/{productId}/tokens/{token}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageName,
 		"productId":   c.productId,
 		"token":       c.token,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.purchases.products.get" call.
+// Exactly one of *ProductPurchase or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ProductPurchase.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PurchasesProductsGetCall) Do(opts ...googleapi.CallOption) (*ProductPurchase, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5639,7 +8322,12 @@ func (c *PurchasesProductsGetCall) Do() (*ProductPurchase, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ProductPurchase
+	ret := &ProductPurchase{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5691,44 +8379,58 @@ type PurchasesSubscriptionsCancelCall struct {
 	packageName    string
 	subscriptionId string
 	token          string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Cancel: Cancels a user's subscription purchase. The subscription
 // remains valid until its expiration time.
 func (r *PurchasesSubscriptionsService) Cancel(packageName string, subscriptionId string, token string) *PurchasesSubscriptionsCancelCall {
-	c := &PurchasesSubscriptionsCancelCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PurchasesSubscriptionsCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.subscriptionId = subscriptionId
 	c.token = token
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PurchasesSubscriptionsCancelCall) Fields(s ...googleapi.Field) *PurchasesSubscriptionsCancelCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PurchasesSubscriptionsCancelCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PurchasesSubscriptionsCancelCall) Context(ctx context.Context) *PurchasesSubscriptionsCancelCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PurchasesSubscriptionsCancelCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/purchases/subscriptions/{subscriptionId}/tokens/{token}:cancel")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageName,
 		"subscriptionId": c.subscriptionId,
 		"token":          c.token,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.purchases.subscriptions.cancel" call.
+func (c *PurchasesSubscriptionsCancelCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -5782,13 +8484,14 @@ type PurchasesSubscriptionsDeferCall struct {
 	subscriptionId                    string
 	token                             string
 	subscriptionpurchasesdeferrequest *SubscriptionPurchasesDeferRequest
-	opt_                              map[string]interface{}
+	urlParams_                        gensupport.URLParams
+	ctx_                              context.Context
 }
 
 // Defer: Defers a user's subscription purchase until a specified future
 // expiration time.
 func (r *PurchasesSubscriptionsService) Defer(packageName string, subscriptionId string, token string, subscriptionpurchasesdeferrequest *SubscriptionPurchasesDeferRequest) *PurchasesSubscriptionsDeferCall {
-	c := &PurchasesSubscriptionsDeferCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PurchasesSubscriptionsDeferCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.subscriptionId = subscriptionId
 	c.token = token
@@ -5796,28 +8499,32 @@ func (r *PurchasesSubscriptionsService) Defer(packageName string, subscriptionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PurchasesSubscriptionsDeferCall) Fields(s ...googleapi.Field) *PurchasesSubscriptionsDeferCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PurchasesSubscriptionsDeferCall) Do() (*SubscriptionPurchasesDeferResponse, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PurchasesSubscriptionsDeferCall) Context(ctx context.Context) *PurchasesSubscriptionsDeferCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PurchasesSubscriptionsDeferCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.subscriptionpurchasesdeferrequest)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/purchases/subscriptions/{subscriptionId}/tokens/{token}:defer")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageName,
@@ -5825,8 +8532,33 @@ func (c *PurchasesSubscriptionsDeferCall) Do() (*SubscriptionPurchasesDeferRespo
 		"token":          c.token,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.purchases.subscriptions.defer" call.
+// Exactly one of *SubscriptionPurchasesDeferResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *SubscriptionPurchasesDeferResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *PurchasesSubscriptionsDeferCall) Do(opts ...googleapi.CallOption) (*SubscriptionPurchasesDeferResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5834,7 +8566,12 @@ func (c *PurchasesSubscriptionsDeferCall) Do() (*SubscriptionPurchasesDeferRespo
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *SubscriptionPurchasesDeferResponse
+	ret := &SubscriptionPurchasesDeferResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5889,44 +8626,87 @@ type PurchasesSubscriptionsGetCall struct {
 	packageName    string
 	subscriptionId string
 	token          string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ifNoneMatch_   string
+	ctx_           context.Context
 }
 
 // Get: Checks whether a user's subscription purchase is valid and
 // returns its expiry time.
 func (r *PurchasesSubscriptionsService) Get(packageName string, subscriptionId string, token string) *PurchasesSubscriptionsGetCall {
-	c := &PurchasesSubscriptionsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PurchasesSubscriptionsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.subscriptionId = subscriptionId
 	c.token = token
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PurchasesSubscriptionsGetCall) Fields(s ...googleapi.Field) *PurchasesSubscriptionsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PurchasesSubscriptionsGetCall) Do() (*SubscriptionPurchase, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PurchasesSubscriptionsGetCall) IfNoneMatch(entityTag string) *PurchasesSubscriptionsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PurchasesSubscriptionsGetCall) Context(ctx context.Context) *PurchasesSubscriptionsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PurchasesSubscriptionsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/purchases/subscriptions/{subscriptionId}/tokens/{token}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageName,
 		"subscriptionId": c.subscriptionId,
 		"token":          c.token,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.purchases.subscriptions.get" call.
+// Exactly one of *SubscriptionPurchase or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *SubscriptionPurchase.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PurchasesSubscriptionsGetCall) Do(opts ...googleapi.CallOption) (*SubscriptionPurchase, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5934,7 +8714,12 @@ func (c *PurchasesSubscriptionsGetCall) Do() (*SubscriptionPurchase, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *SubscriptionPurchase
+	ret := &SubscriptionPurchase{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5986,45 +8771,59 @@ type PurchasesSubscriptionsRefundCall struct {
 	packageName    string
 	subscriptionId string
 	token          string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Refund: Refunds a user's subscription purchase, but the subscription
 // remains valid until its expiration time and it will continue to
 // recur.
 func (r *PurchasesSubscriptionsService) Refund(packageName string, subscriptionId string, token string) *PurchasesSubscriptionsRefundCall {
-	c := &PurchasesSubscriptionsRefundCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PurchasesSubscriptionsRefundCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.subscriptionId = subscriptionId
 	c.token = token
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PurchasesSubscriptionsRefundCall) Fields(s ...googleapi.Field) *PurchasesSubscriptionsRefundCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PurchasesSubscriptionsRefundCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PurchasesSubscriptionsRefundCall) Context(ctx context.Context) *PurchasesSubscriptionsRefundCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PurchasesSubscriptionsRefundCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/purchases/subscriptions/{subscriptionId}/tokens/{token}:refund")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageName,
 		"subscriptionId": c.subscriptionId,
 		"token":          c.token,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.purchases.subscriptions.refund" call.
+func (c *PurchasesSubscriptionsRefundCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -6077,45 +8876,59 @@ type PurchasesSubscriptionsRevokeCall struct {
 	packageName    string
 	subscriptionId string
 	token          string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Revoke: Refunds and immediately revokes a user's subscription
 // purchase. Access to the subscription will be terminated immediately
 // and it will stop recurring.
 func (r *PurchasesSubscriptionsService) Revoke(packageName string, subscriptionId string, token string) *PurchasesSubscriptionsRevokeCall {
-	c := &PurchasesSubscriptionsRevokeCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PurchasesSubscriptionsRevokeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.subscriptionId = subscriptionId
 	c.token = token
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PurchasesSubscriptionsRevokeCall) Fields(s ...googleapi.Field) *PurchasesSubscriptionsRevokeCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PurchasesSubscriptionsRevokeCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PurchasesSubscriptionsRevokeCall) Context(ctx context.Context) *PurchasesSubscriptionsRevokeCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PurchasesSubscriptionsRevokeCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/purchases/subscriptions/{subscriptionId}/tokens/{token}:revoke")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageName,
 		"subscriptionId": c.subscriptionId,
 		"token":          c.token,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.purchases.subscriptions.revoke" call.
+func (c *PurchasesSubscriptionsRevokeCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}

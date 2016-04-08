@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/drive/v2"
 //   ...
 //   driveService, err := drive.New(oauthHttpClient)
-package drive
+package drive // import "google.golang.org/api/drive/v2"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "drive:v2"
 const apiName = "drive"
@@ -52,12 +56,18 @@ const (
 	// View your Google Drive apps
 	DriveAppsReadonlyScope = "https://www.googleapis.com/auth/drive.apps.readonly"
 
-	// View and manage Google Drive files that you have opened or created
-	// with this app
+	// View and manage Google Drive files and folders that you have opened
+	// or created with this app
 	DriveFileScope = "https://www.googleapis.com/auth/drive.file"
+
+	// View and manage metadata of files in your Google Drive
+	DriveMetadataScope = "https://www.googleapis.com/auth/drive.metadata"
 
 	// View metadata for files in your Google Drive
 	DriveMetadataReadonlyScope = "https://www.googleapis.com/auth/drive.metadata.readonly"
+
+	// View the photos, videos and albums in your Google Photos
+	DrivePhotosReadonlyScope = "https://www.googleapis.com/auth/drive.photos.readonly"
 
 	// View the files in your Google Drive
 	DriveReadonlyScope = "https://www.googleapis.com/auth/drive.readonly"
@@ -88,8 +98,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	About *AboutService
 
@@ -116,6 +127,13 @@ type Service struct {
 	Replies *RepliesService
 
 	Revisions *RevisionsService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewAboutService(s *Service) *AboutService {
@@ -235,12 +253,18 @@ type RevisionsService struct {
 	s *Service
 }
 
+// About: An item with user information and settings.
 type About struct {
 	// AdditionalRoleInfo: Information about supported additional roles per
 	// file type. The most specific type takes precedence.
 	AdditionalRoleInfo []*AboutAdditionalRoleInfo `json:"additionalRoleInfo,omitempty"`
 
 	// DomainSharingPolicy: The domain sharing policy for the current user.
+	// Possible values are:
+	// - allowed
+	// - allowedWithWarning
+	// - incomingOnly
+	// - disallowed
 	DomainSharingPolicy string `json:"domainSharingPolicy,omitempty"`
 
 	// Etag: The ETag of the item.
@@ -320,6 +344,24 @@ type About struct {
 
 	// User: The authenticated user.
 	User *User `json:"user,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AdditionalRoleInfo")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *About) MarshalJSON() ([]byte, error) {
+	type noMethod About
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AboutAdditionalRoleInfo struct {
@@ -328,6 +370,20 @@ type AboutAdditionalRoleInfo struct {
 
 	// Type: The content type that this additional role info applies to.
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "RoleSets") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AboutAdditionalRoleInfo) MarshalJSON() ([]byte, error) {
+	type noMethod AboutAdditionalRoleInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AboutAdditionalRoleInfoRoleSets struct {
@@ -337,6 +393,20 @@ type AboutAdditionalRoleInfoRoleSets struct {
 
 	// PrimaryRole: A primary permission role.
 	PrimaryRole string `json:"primaryRole,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AdditionalRoles") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AboutAdditionalRoleInfoRoleSets) MarshalJSON() ([]byte, error) {
+	type noMethod AboutAdditionalRoleInfoRoleSets
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AboutExportFormats struct {
@@ -345,6 +415,20 @@ type AboutExportFormats struct {
 
 	// Targets: The possible content types to convert to.
 	Targets []string `json:"targets,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Source") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AboutExportFormats) MarshalJSON() ([]byte, error) {
+	type noMethod AboutExportFormats
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AboutFeatures struct {
@@ -354,6 +438,20 @@ type AboutFeatures struct {
 	// FeatureRate: The request limit rate for this feature, in queries per
 	// second.
 	FeatureRate float64 `json:"featureRate,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FeatureName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AboutFeatures) MarshalJSON() ([]byte, error) {
+	type noMethod AboutFeatures
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AboutImportFormats struct {
@@ -362,6 +460,20 @@ type AboutImportFormats struct {
 
 	// Targets: The possible content types to convert to.
 	Targets []string `json:"targets,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Source") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AboutImportFormats) MarshalJSON() ([]byte, error) {
+	type noMethod AboutImportFormats
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AboutMaxUploadSizes struct {
@@ -370,6 +482,20 @@ type AboutMaxUploadSizes struct {
 
 	// Type: The file type.
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Size") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AboutMaxUploadSizes) MarshalJSON() ([]byte, error) {
+	type noMethod AboutMaxUploadSizes
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AboutQuotaBytesByService struct {
@@ -378,8 +504,25 @@ type AboutQuotaBytesByService struct {
 
 	// ServiceName: The service's name, e.g. DRIVE, GMAIL, or PHOTOS.
 	ServiceName string `json:"serviceName,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BytesUsed") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AboutQuotaBytesByService) MarshalJSON() ([]byte, error) {
+	type noMethod AboutQuotaBytesByService
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// App: The apps resource provides a list of the apps that a user has
+// installed, with information about each app's supported MIME types,
+// file extensions, and other details.
 type App struct {
 	// Authorized: Whether the app is authorized to access data on the
 	// user's Drive.
@@ -421,7 +564,7 @@ type App struct {
 
 	// OpenUrlTemplate: The template url for opening files with this app.
 	// The template will contain {ids} and/or {exportIds} to be replaced by
-	// the actual file ids.
+	// the actual file ids. See  Open Files  for the full documentation.
 	OpenUrlTemplate string `json:"openUrlTemplate,omitempty"`
 
 	// PrimaryFileExtensions: The list of primary file extensions.
@@ -462,16 +605,31 @@ type App struct {
 	// UseByDefault: Whether the app is selected as the default handler for
 	// the types it supports.
 	UseByDefault bool `json:"useByDefault,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Authorized") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *App) MarshalJSON() ([]byte, error) {
+	type noMethod App
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AppIcons struct {
 	// Category: Category of the icon. Allowed values are:
-	// - application -
-	// icon for the application
-	// - document - icon for a file associated
-	// with the app
-	// - documentShared - icon for a shared file associated
-	// with the app
+	// - application - icon for the application
+	// - document - icon for a file associated with the app
+	// - documentShared - icon for a shared file associated with the app
 	Category string `json:"category,omitempty"`
 
 	// IconUrl: URL for the icon.
@@ -480,8 +638,24 @@ type AppIcons struct {
 	// Size: Size of the icon. Represented as the maximum of the width and
 	// height.
 	Size int64 `json:"size,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Category") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AppIcons) MarshalJSON() ([]byte, error) {
+	type noMethod AppIcons
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AppList: A list of third-party applications which the user has
+// installed or given access to Google Drive.
 type AppList struct {
 	// DefaultAppIds: List of app IDs that the user has specified to use by
 	// default. The list is in reverse-priority order (lowest to highest).
@@ -498,8 +672,27 @@ type AppList struct {
 
 	// SelfLink: A link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DefaultAppIds") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AppList) MarshalJSON() ([]byte, error) {
+	type noMethod AppList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Change: Representation of a change to a file.
 type Change struct {
 	// Deleted: Whether the file has been deleted.
 	Deleted bool `json:"deleted,omitempty"`
@@ -522,8 +715,27 @@ type Change struct {
 
 	// SelfLink: A link back to this change.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Deleted") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Change) MarshalJSON() ([]byte, error) {
+	type noMethod Change
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ChangeList: A list of changes for a user.
 type ChangeList struct {
 	// Etag: The ETag of the list.
 	Etag string `json:"etag,omitempty"`
@@ -545,8 +757,27 @@ type ChangeList struct {
 
 	// SelfLink: A link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ChangeList) MarshalJSON() ([]byte, error) {
+	type noMethod ChangeList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Channel: An notification channel used to watch for resource changes.
 type Channel struct {
 	// Address: The address where notifications are delivered for this
 	// channel.
@@ -584,8 +815,27 @@ type Channel struct {
 
 	// Type: The type of delivery mechanism used for this channel.
 	Type string `json:"type,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Address") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Channel) MarshalJSON() ([]byte, error) {
+	type noMethod Channel
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ChildList: A list of children of a file.
 type ChildList struct {
 	// Etag: The ETag of the list.
 	Etag string `json:"etag,omitempty"`
@@ -604,8 +854,27 @@ type ChildList struct {
 
 	// SelfLink: A link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ChildList) MarshalJSON() ([]byte, error) {
+	type noMethod ChildList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ChildReference: A reference to a folder's child.
 type ChildReference struct {
 	// ChildLink: A link to the child.
 	ChildLink string `json:"childLink,omitempty"`
@@ -618,8 +887,27 @@ type ChildReference struct {
 
 	// SelfLink: A link back to this reference.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ChildLink") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ChildReference) MarshalJSON() ([]byte, error) {
+	type noMethod ChildReference
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Comment: A comment on a file in Google Drive.
 type Comment struct {
 	// Anchor: A region of the document represented as a JSON string. See
 	// anchor documentation for details on how to define and interpret
@@ -672,13 +960,30 @@ type Comment struct {
 
 	// Status: The status of this comment. Status can be changed by posting
 	// a reply to a comment with the desired status.
-	// - "open" - The
-	// comment is still open.
-	// - "resolved" - The comment has been resolved
-	// by one of its replies.
+	// - "open" - The comment is still open.
+	// - "resolved" - The comment has been resolved by one of its replies.
 	Status string `json:"status,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Anchor") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Comment) MarshalJSON() ([]byte, error) {
+	type noMethod Comment
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CommentContext: The context of the file which is being commented on.
 type CommentContext struct {
 	// Type: The MIME type of the context snippet.
 	Type string `json:"type,omitempty"`
@@ -687,8 +992,23 @@ type CommentContext struct {
 	// on. In the case of a text file for example, this would be the actual
 	// text that the comment is about.
 	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Type") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CommentContext) MarshalJSON() ([]byte, error) {
+	type noMethod CommentContext
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CommentList: A list of comments on a file in Google Drive.
 type CommentList struct {
 	// Items: List of comments.
 	Items []*Comment `json:"items,omitempty"`
@@ -704,8 +1024,27 @@ type CommentList struct {
 
 	// SelfLink: A link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CommentList) MarshalJSON() ([]byte, error) {
+	type noMethod CommentList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CommentReply: A comment on a file in Google Drive.
 type CommentReply struct {
 	// Author: The user who wrote this reply.
 	Author *User `json:"author,omitempty"`
@@ -740,11 +1079,30 @@ type CommentReply struct {
 	// creating a new reply this is the action to be perform to the parent
 	// comment. Possible values are:
 	// - "resolve" - To resolve a comment.
-	//
 	// - "reopen" - To reopen (un-resolve) a comment.
 	Verb string `json:"verb,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Author") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CommentReply) MarshalJSON() ([]byte, error) {
+	type noMethod CommentReply
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CommentReplyList: A list of replies to a comment on a file in Google
+// Drive.
 type CommentReplyList struct {
 	// Items: List of reply.
 	Items []*CommentReply `json:"items,omitempty"`
@@ -760,8 +1118,27 @@ type CommentReplyList struct {
 
 	// SelfLink: A link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CommentReplyList) MarshalJSON() ([]byte, error) {
+	type noMethod CommentReplyList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// File: The metadata for a file.
 type File struct {
 	// AlternateLink: A link for opening the file in a relevant Google
 	// editor or viewer.
@@ -769,6 +1146,13 @@ type File struct {
 
 	// AppDataContents: Whether this file is in the Application Data folder.
 	AppDataContents bool `json:"appDataContents,omitempty"`
+
+	// CanComment: Whether the current user can comment on the file.
+	CanComment bool `json:"canComment,omitempty"`
+
+	// CanReadRevisions: Whether the current user has read access to the
+	// Revisions resource of the file.
+	CanReadRevisions bool `json:"canReadRevisions,omitempty"`
 
 	// Copyable: Whether the file can be copied by the current user.
 	Copyable bool `json:"copyable,omitempty"`
@@ -785,8 +1169,6 @@ type File struct {
 	// Description: A short description of the file.
 	Description string `json:"description,omitempty"`
 
-	// DownloadUrl: Short lived download URL for the file. This is only
-	// populated for files with content stored in Drive.
 	DownloadUrl string `json:"downloadUrl,omitempty"`
 
 	// Editable: Whether the file can be edited by the current user.
@@ -799,21 +1181,21 @@ type File struct {
 	Etag string `json:"etag,omitempty"`
 
 	// ExplicitlyTrashed: Whether this file has been explicitly trashed, as
-	// opposed to recursively trashed. This will only be populated if the
-	// file is trashed.
+	// opposed to recursively trashed.
 	ExplicitlyTrashed bool `json:"explicitlyTrashed,omitempty"`
 
 	// ExportLinks: Links for exporting Google Docs to specific formats.
 	ExportLinks map[string]string `json:"exportLinks,omitempty"`
 
-	// FileExtension: The file extension used when downloading this file.
-	// This field is read only. To set the extension, include it in the
-	// title when creating the file. This is only populated for files with
-	// content stored in Drive.
+	// FileExtension: The final component of fullFileExtension with trailing
+	// text that does not appear to be part of the extension removed. This
+	// field is only populated for files with content stored in Drive; it is
+	// not populated for Google Docs or shortcut files.
 	FileExtension string `json:"fileExtension,omitempty"`
 
-	// FileSize: The size of the file in bytes. This is only populated for
-	// files with content stored in Drive.
+	// FileSize: The size of the file in bytes. This field is only populated
+	// for files with content stored in Drive; it is not populated for
+	// Google Docs or shortcut files.
 	FileSize int64 `json:"fileSize,omitempty,string"`
 
 	// FolderColorRgb: Folder color as an RGB hex string if the file is a
@@ -823,8 +1205,17 @@ type File struct {
 	// palette.
 	FolderColorRgb string `json:"folderColorRgb,omitempty"`
 
-	// HeadRevisionId: The ID of the file's head revision. This will only be
-	// populated for files with content stored in Drive.
+	// FullFileExtension: The full file extension; extracted from the title.
+	// May contain multiple concatenated extensions, such as "tar.gz".
+	// Removing an extension from the title does not clear this field;
+	// however, changing the extension on the title does update this field.
+	// This field is only populated for files with content stored in Drive;
+	// it is not populated for Google Docs or shortcut files.
+	FullFileExtension string `json:"fullFileExtension,omitempty"`
+
+	// HeadRevisionId: The ID of the file's head revision. This field is
+	// only populated for files with content stored in Drive; it is not
+	// populated for Google Docs or shortcut files.
 	HeadRevisionId string `json:"headRevisionId,omitempty"`
 
 	// IconLink: A link to the file's icon.
@@ -858,12 +1249,12 @@ type File struct {
 	// (formatted RFC 3339 timestamp).
 	LastViewedByMeDate string `json:"lastViewedByMeDate,omitempty"`
 
-	// MarkedViewedByMeDate: Time this file was explicitly marked viewed by
-	// the user (formatted RFC 3339 timestamp).
+	// MarkedViewedByMeDate: Deprecated.
 	MarkedViewedByMeDate string `json:"markedViewedByMeDate,omitempty"`
 
-	// Md5Checksum: An MD5 checksum for the content of this file. This is
-	// populated only for files with content stored in Drive.
+	// Md5Checksum: An MD5 checksum for the content of this file. This field
+	// is only populated for files with content stored in Drive; it is not
+	// populated for Google Docs or shortcut files.
 	Md5Checksum string `json:"md5Checksum,omitempty"`
 
 	// MimeType: The MIME type of the file. This is only mutable on update
@@ -889,9 +1280,12 @@ type File struct {
 	// OriginalFilename: The original filename if the file was uploaded
 	// manually, or the original title if the file was inserted through the
 	// API. Note that renames of the title will not change the original
-	// filename. This will only be populated on files with content stored in
-	// Drive.
+	// filename. This field is only populated for files with content stored
+	// in Drive; it is not populated for Google Docs or shortcut files.
 	OriginalFilename string `json:"originalFilename,omitempty"`
+
+	// OwnedByMe: Whether the file is owned by the current user.
+	OwnedByMe bool `json:"ownedByMe,omitempty"`
 
 	// OwnerNames: Name(s) of the owner(s) of this file.
 	OwnerNames []string `json:"ownerNames,omitempty"`
@@ -901,9 +1295,9 @@ type File struct {
 
 	// Parents: Collection of parent folders which contain this
 	// file.
-	// Setting this field will put the file in all of the provided
-	// folders. On insert, if no folders are provided, the file will be
-	// placed in the default root folder.
+	// Setting this field will put the file in all of the provided folders.
+	// On insert, if no folders are provided, the file will be placed in the
+	// default root folder.
 	Parents []*ParentReference `json:"parents,omitempty"`
 
 	// Permissions: The list of permissions for users with access to this
@@ -919,6 +1313,10 @@ type File struct {
 	// SelfLink: A link back to this file.
 	SelfLink string `json:"selfLink,omitempty"`
 
+	// Shareable: Whether the file's sharing settings can be modified by the
+	// current user.
+	Shareable bool `json:"shareable,omitempty"`
+
 	// Shared: Whether the file has been shared.
 	Shared bool `json:"shared,omitempty"`
 
@@ -930,11 +1328,16 @@ type File struct {
 	// available.
 	SharingUser *User `json:"sharingUser,omitempty"`
 
+	// Spaces: The list of spaces which contain the file. Supported values
+	// are 'drive', 'appDataFolder' and 'photos'.
+	Spaces []string `json:"spaces,omitempty"`
+
 	// Thumbnail: Thumbnail for the file. Only accepted on upload and for
 	// files that are not already thumbnailed by Google.
 	Thumbnail *FileThumbnail `json:"thumbnail,omitempty"`
 
-	// ThumbnailLink: A link to the file's thumbnail.
+	// ThumbnailLink: A short-lived link to the file's thumbnail. Typically
+	// lasts on the order of hours.
 	ThumbnailLink string `json:"thumbnailLink,omitempty"`
 
 	// Title: The title of this file.
@@ -967,8 +1370,29 @@ type File struct {
 	// WritersCanShare: Whether writers can share the document with other
 	// users.
 	WritersCanShare bool `json:"writersCanShare,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AlternateLink") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *File) MarshalJSON() ([]byte, error) {
+	type noMethod File
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FileImageMediaMetadata: Metadata about image media. This will only be
+// present for image types, and its contents will depend on what can be
+// parsed from the image content.
 type FileImageMediaMetadata struct {
 	// Aperture: The aperture used to create the photo (f-number).
 	Aperture float64 `json:"aperture,omitempty"`
@@ -1035,8 +1459,24 @@ type FileImageMediaMetadata struct {
 
 	// Width: The width of the image in pixels.
 	Width int64 `json:"width,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Aperture") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FileImageMediaMetadata) MarshalJSON() ([]byte, error) {
+	type noMethod FileImageMediaMetadata
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FileImageMediaMetadataLocation: Geographic location information
+// stored in the image.
 type FileImageMediaMetadataLocation struct {
 	// Altitude: The altitude stored in the image.
 	Altitude float64 `json:"altitude,omitempty"`
@@ -1046,38 +1486,105 @@ type FileImageMediaMetadataLocation struct {
 
 	// Longitude: The longitude stored in the image.
 	Longitude float64 `json:"longitude,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Altitude") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FileImageMediaMetadataLocation) MarshalJSON() ([]byte, error) {
+	type noMethod FileImageMediaMetadataLocation
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FileIndexableText: Indexable text attributes for the file (can only
+// be written)
 type FileIndexableText struct {
 	// Text: The text to be indexed for this file.
 	Text string `json:"text,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Text") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FileIndexableText) MarshalJSON() ([]byte, error) {
+	type noMethod FileIndexableText
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FileLabels: A group of labels for the file.
 type FileLabels struct {
 	// Hidden: Deprecated.
 	Hidden bool `json:"hidden,omitempty"`
 
-	// Restricted: Whether viewers are prevented from downloading this file.
+	// Restricted: Whether viewers and commenters are prevented from
+	// downloading, printing, and copying this file.
 	Restricted bool `json:"restricted,omitempty"`
 
 	// Starred: Whether this file is starred by the user.
 	Starred bool `json:"starred,omitempty"`
 
-	// Trashed: Whether this file has been trashed.
+	// Trashed: Whether this file has been trashed. This label applies to
+	// all users accessing the file; however, only owners are allowed to see
+	// and untrash files.
 	Trashed bool `json:"trashed,omitempty"`
 
 	// Viewed: Whether this file has been viewed by this user.
 	Viewed bool `json:"viewed,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Hidden") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FileLabels) MarshalJSON() ([]byte, error) {
+	type noMethod FileLabels
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FileThumbnail: Thumbnail for the file. Only accepted on upload and
+// for files that are not already thumbnailed by Google.
 type FileThumbnail struct {
-	// Image: The URL-safe Base64 encoded bytes of the thumbnail image.
+	// Image: The URL-safe Base64 encoded bytes of the thumbnail image. It
+	// should conform to RFC 4648 section 5.
 	Image string `json:"image,omitempty"`
 
 	// MimeType: The MIME type of the thumbnail.
 	MimeType string `json:"mimeType,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Image") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FileThumbnail) MarshalJSON() ([]byte, error) {
+	type noMethod FileThumbnail
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FileVideoMediaMetadata: Metadata about video media. This will only be
+// present for video types.
 type FileVideoMediaMetadata struct {
 	// DurationMillis: The duration of the video in milliseconds.
 	DurationMillis int64 `json:"durationMillis,omitempty,string"`
@@ -1087,8 +1594,23 @@ type FileVideoMediaMetadata struct {
 
 	// Width: The width of the video in pixels.
 	Width int64 `json:"width,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DurationMillis") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FileVideoMediaMetadata) MarshalJSON() ([]byte, error) {
+	type noMethod FileVideoMediaMetadata
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// FileList: A list of files.
 type FileList struct {
 	// Etag: The ETag of the list.
 	Etag string `json:"etag,omitempty"`
@@ -1107,8 +1629,59 @@ type FileList struct {
 
 	// SelfLink: A link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *FileList) MarshalJSON() ([]byte, error) {
+	type noMethod FileList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// GeneratedIds: A list of generated IDs which can be provided in insert
+// requests
+type GeneratedIds struct {
+	// Ids: The IDs generated for the requesting user in the specified
+	// space.
+	Ids []string `json:"ids,omitempty"`
+
+	// Kind: This is always drive#generatedIds
+	Kind string `json:"kind,omitempty"`
+
+	// Space: The type of file that can be created with these IDs.
+	Space string `json:"space,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Ids") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *GeneratedIds) MarshalJSON() ([]byte, error) {
+	type noMethod GeneratedIds
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ParentList: A list of a file's parents.
 type ParentList struct {
 	// Etag: The ETag of the list.
 	Etag string `json:"etag,omitempty"`
@@ -1121,8 +1694,27 @@ type ParentList struct {
 
 	// SelfLink: A link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ParentList) MarshalJSON() ([]byte, error) {
+	type noMethod ParentList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// ParentReference: A reference to a file's parent.
 type ParentReference struct {
 	// Id: The ID of the parent.
 	Id string `json:"id,omitempty"`
@@ -1138,8 +1730,27 @@ type ParentReference struct {
 
 	// SelfLink: A link back to this reference.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ParentReference) MarshalJSON() ([]byte, error) {
+	type noMethod ParentReference
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Permission: A permission for a file.
 type Permission struct {
 	// AdditionalRoles: Additional roles for this user. Only commenter is
 	// currently allowed.
@@ -1178,7 +1789,6 @@ type Permission struct {
 
 	// Role: The primary role for this user. Allowed values are:
 	// - owner
-	//
 	// - reader
 	// - writer
 	Role string `json:"role,omitempty"`
@@ -1189,8 +1799,7 @@ type Permission struct {
 	// Type: The account type. Allowed values are:
 	// - user
 	// - group
-	// -
-	// domain
+	// - domain
 	// - anyone
 	Type string `json:"type,omitempty"`
 
@@ -1202,16 +1811,54 @@ type Permission struct {
 
 	// WithLink: Whether the link is required for this permission.
 	WithLink bool `json:"withLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AdditionalRoles") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Permission) MarshalJSON() ([]byte, error) {
+	type noMethod Permission
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PermissionId: An ID for a user or group as seen in Permission items.
 type PermissionId struct {
 	// Id: The permission ID.
 	Id string `json:"id,omitempty"`
 
 	// Kind: This is always drive#permissionId.
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PermissionId) MarshalJSON() ([]byte, error) {
+	type noMethod PermissionId
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PermissionList: A list of permissions associated with a file.
 type PermissionList struct {
 	// Etag: The ETag of the list.
 	Etag string `json:"etag,omitempty"`
@@ -1224,8 +1871,34 @@ type PermissionList struct {
 
 	// SelfLink: A link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PermissionList) MarshalJSON() ([]byte, error) {
+	type noMethod PermissionList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Property: A key-value pair attached to a file that is either public
+// or private to an application.
+// The following limits apply to file properties:
+// - Maximum of 100 properties total per file
+// - Maximum of 30 private properties per app
+// - Maximum of 30 public properties
+// - Maximum of 124 bytes size limit on (key + value) string in UTF-8
+// encoding for a single property.
 type Property struct {
 	// Etag: ETag of the property.
 	Etag string `json:"etag,omitempty"`
@@ -1244,8 +1917,28 @@ type Property struct {
 
 	// Visibility: The visibility of this property.
 	Visibility string `json:"visibility,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Property) MarshalJSON() ([]byte, error) {
+	type noMethod Property
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PropertyList: A collection of properties, key-value pairs that are
+// either public or private to an application.
 type PropertyList struct {
 	// Etag: The ETag of the list.
 	Etag string `json:"etag,omitempty"`
@@ -1258,8 +1951,27 @@ type PropertyList struct {
 
 	// SelfLink: The link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PropertyList) MarshalJSON() ([]byte, error) {
+	type noMethod PropertyList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Revision: A revision of a file.
 type Revision struct {
 	// DownloadUrl: Short term download URL for the file. This will only be
 	// populated on files with content stored in Drive.
@@ -1329,8 +2041,27 @@ type Revision struct {
 
 	// SelfLink: A link back to this revision.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DownloadUrl") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Revision) MarshalJSON() ([]byte, error) {
+	type noMethod Revision
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// RevisionList: A list of revisions of a file.
 type RevisionList struct {
 	// Etag: The ETag of the list.
 	Etag string `json:"etag,omitempty"`
@@ -1343,8 +2074,27 @@ type RevisionList struct {
 
 	// SelfLink: A link back to this list.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *RevisionList) MarshalJSON() ([]byte, error) {
+	type noMethod RevisionList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// User: Information about a Drive user.
 type User struct {
 	// DisplayName: A plain text displayable name for this user.
 	DisplayName string `json:"displayName,omitempty"`
@@ -1364,24 +2114,55 @@ type User struct {
 
 	// Picture: The user's profile picture.
 	Picture *UserPicture `json:"picture,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DisplayName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *User) MarshalJSON() ([]byte, error) {
+	type noMethod User
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// UserPicture: The user's profile picture.
 type UserPicture struct {
 	// Url: A URL that points to a profile picture of this user.
 	Url string `json:"url,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Url") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *UserPicture) MarshalJSON() ([]byte, error) {
+	type noMethod UserPicture
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "drive.about.get":
 
 type AboutGetCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets the information about the current user along with Drive API
 // settings
 func (r *AboutService) Get() *AboutGetCall {
-	c := &AboutGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AboutGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -1392,14 +2173,14 @@ func (r *AboutService) Get() *AboutGetCall {
 // or public files that the user has explicitly added to a folder they
 // own.
 func (c *AboutGetCall) IncludeSubscribed(includeSubscribed bool) *AboutGetCall {
-	c.opt_["includeSubscribed"] = includeSubscribed
+	c.urlParams_.Set("includeSubscribed", fmt.Sprint(includeSubscribed))
 	return c
 }
 
 // MaxChangeIdCount sets the optional parameter "maxChangeIdCount":
 // Maximum number of remaining change IDs to count
 func (c *AboutGetCall) MaxChangeIdCount(maxChangeIdCount int64) *AboutGetCall {
-	c.opt_["maxChangeIdCount"] = maxChangeIdCount
+	c.urlParams_.Set("maxChangeIdCount", fmt.Sprint(maxChangeIdCount))
 	return c
 }
 
@@ -1407,40 +2188,72 @@ func (c *AboutGetCall) MaxChangeIdCount(maxChangeIdCount int64) *AboutGetCall {
 // to start counting from when calculating number of remaining change
 // IDs
 func (c *AboutGetCall) StartChangeId(startChangeId int64) *AboutGetCall {
-	c.opt_["startChangeId"] = startChangeId
+	c.urlParams_.Set("startChangeId", fmt.Sprint(startChangeId))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AboutGetCall) Fields(s ...googleapi.Field) *AboutGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AboutGetCall) Do() (*About, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AboutGetCall) IfNoneMatch(entityTag string) *AboutGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AboutGetCall) Context(ctx context.Context) *AboutGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AboutGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["includeSubscribed"]; ok {
-		params.Set("includeSubscribed", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxChangeIdCount"]; ok {
-		params.Set("maxChangeIdCount", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["startChangeId"]; ok {
-		params.Set("startChangeId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "about")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.about.get" call.
+// Exactly one of *About or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *About.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *AboutGetCall) Do(opts ...googleapi.CallOption) (*About, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1448,7 +2261,12 @@ func (c *AboutGetCall) Do() (*About, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *About
+	ret := &About{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1486,7 +2304,9 @@ func (c *AboutGetCall) Do() (*About, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -1496,41 +2316,84 @@ func (c *AboutGetCall) Do() (*About, error) {
 // method id "drive.apps.get":
 
 type AppsGetCall struct {
-	s     *Service
-	appId string
-	opt_  map[string]interface{}
+	s            *Service
+	appId        string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a specific app.
 func (r *AppsService) Get(appId string) *AppsGetCall {
-	c := &AppsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AppsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.appId = appId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AppsGetCall) Fields(s ...googleapi.Field) *AppsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AppsGetCall) Do() (*App, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AppsGetCall) IfNoneMatch(entityTag string) *AppsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AppsGetCall) Context(ctx context.Context) *AppsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AppsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "apps/{appId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"appId": c.appId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.apps.get" call.
+// Exactly one of *App or error will be non-nil. Any non-2xx status code
+// is an error. Response headers are in either
+// *App.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *AppsGetCall) Do(opts ...googleapi.CallOption) (*App, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1538,7 +2401,12 @@ func (c *AppsGetCall) Do() (*App, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *App
+	ret := &App{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1567,6 +2435,7 @@ func (c *AppsGetCall) Do() (*App, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
@@ -1577,13 +2446,15 @@ func (c *AppsGetCall) Do() (*App, error) {
 // method id "drive.apps.list":
 
 type AppsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists a user's installed apps.
 func (r *AppsService) List() *AppsListCall {
-	c := &AppsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AppsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
@@ -1594,7 +2465,7 @@ func (r *AppsService) List() *AppsListCall {
 // response. If appFilterMimeTypes are provided as well, the result is a
 // union of the two resulting app lists.
 func (c *AppsListCall) AppFilterExtensions(appFilterExtensions string) *AppsListCall {
-	c.opt_["appFilterExtensions"] = appFilterExtensions
+	c.urlParams_.Set("appFilterExtensions", appFilterExtensions)
 	return c
 }
 
@@ -1605,7 +2476,7 @@ func (c *AppsListCall) AppFilterExtensions(appFilterExtensions string) *AppsList
 // are provided as well, the result is a union of the two resulting app
 // lists.
 func (c *AppsListCall) AppFilterMimeTypes(appFilterMimeTypes string) *AppsListCall {
-	c.opt_["appFilterMimeTypes"] = appFilterMimeTypes
+	c.urlParams_.Set("appFilterMimeTypes", appFilterMimeTypes)
 	return c
 }
 
@@ -1613,40 +2484,72 @@ func (c *AppsListCall) AppFilterMimeTypes(appFilterMimeTypes string) *AppsListCa
 // or locale code, as defined by BCP 47, with some extensions from
 // Unicode's LDML format (http://www.unicode.org/reports/tr35/).
 func (c *AppsListCall) LanguageCode(languageCode string) *AppsListCall {
-	c.opt_["languageCode"] = languageCode
+	c.urlParams_.Set("languageCode", languageCode)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AppsListCall) Fields(s ...googleapi.Field) *AppsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AppsListCall) Do() (*AppList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AppsListCall) IfNoneMatch(entityTag string) *AppsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AppsListCall) Context(ctx context.Context) *AppsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AppsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["appFilterExtensions"]; ok {
-		params.Set("appFilterExtensions", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["appFilterMimeTypes"]; ok {
-		params.Set("appFilterMimeTypes", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["languageCode"]; ok {
-		params.Set("languageCode", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "apps")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.apps.list" call.
+// Exactly one of *AppList or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *AppList.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *AppsListCall) Do(opts ...googleapi.CallOption) (*AppList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1654,7 +2557,12 @@ func (c *AppsListCall) Do() (*AppList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AppList
+	ret := &AppList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1696,41 +2604,84 @@ func (c *AppsListCall) Do() (*AppList, error) {
 // method id "drive.changes.get":
 
 type ChangesGetCall struct {
-	s        *Service
-	changeId string
-	opt_     map[string]interface{}
+	s            *Service
+	changeId     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a specific change.
 func (r *ChangesService) Get(changeId string) *ChangesGetCall {
-	c := &ChangesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ChangesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.changeId = changeId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ChangesGetCall) Fields(s ...googleapi.Field) *ChangesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ChangesGetCall) Do() (*Change, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ChangesGetCall) IfNoneMatch(entityTag string) *ChangesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ChangesGetCall) Context(ctx context.Context) *ChangesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ChangesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "changes/{changeId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"changeId": c.changeId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.changes.get" call.
+// Exactly one of *Change or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Change.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ChangesGetCall) Do(opts ...googleapi.CallOption) (*Change, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1738,7 +2689,12 @@ func (c *ChangesGetCall) Do() (*Change, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Change
+	ret := &Change{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1767,7 +2723,9 @@ func (c *ChangesGetCall) Do() (*Change, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -1777,20 +2735,22 @@ func (c *ChangesGetCall) Do() (*Change, error) {
 // method id "drive.changes.list":
 
 type ChangesListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists the changes for a user.
 func (r *ChangesService) List() *ChangesListCall {
-	c := &ChangesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ChangesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
 // IncludeDeleted sets the optional parameter "includeDeleted": Whether
 // to include deleted items.
 func (c *ChangesListCall) IncludeDeleted(includeDeleted bool) *ChangesListCall {
-	c.opt_["includeDeleted"] = includeDeleted
+	c.urlParams_.Set("includeDeleted", fmt.Sprint(includeDeleted))
 	return c
 }
 
@@ -1799,67 +2759,101 @@ func (c *ChangesListCall) IncludeDeleted(includeDeleted bool) *ChangesListCall {
 // When set to false, the list only includes owned files plus any shared
 // or public files the user has explicitly added to a folder they own.
 func (c *ChangesListCall) IncludeSubscribed(includeSubscribed bool) *ChangesListCall {
-	c.opt_["includeSubscribed"] = includeSubscribed
+	c.urlParams_.Set("includeSubscribed", fmt.Sprint(includeSubscribed))
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of changes to return.
 func (c *ChangesListCall) MaxResults(maxResults int64) *ChangesListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": Page token for
 // changes.
 func (c *ChangesListCall) PageToken(pageToken string) *ChangesListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Spaces sets the optional parameter "spaces": A comma-separated list
+// of spaces to query. Supported values are 'drive', 'appDataFolder' and
+// 'photos'.
+func (c *ChangesListCall) Spaces(spaces string) *ChangesListCall {
+	c.urlParams_.Set("spaces", spaces)
 	return c
 }
 
 // StartChangeId sets the optional parameter "startChangeId": Change ID
 // to start listing changes from.
 func (c *ChangesListCall) StartChangeId(startChangeId int64) *ChangesListCall {
-	c.opt_["startChangeId"] = startChangeId
+	c.urlParams_.Set("startChangeId", fmt.Sprint(startChangeId))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ChangesListCall) Fields(s ...googleapi.Field) *ChangesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ChangesListCall) Do() (*ChangeList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ChangesListCall) IfNoneMatch(entityTag string) *ChangesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ChangesListCall) Context(ctx context.Context) *ChangesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ChangesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["includeDeleted"]; ok {
-		params.Set("includeDeleted", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["includeSubscribed"]; ok {
-		params.Set("includeSubscribed", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["startChangeId"]; ok {
-		params.Set("startChangeId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "changes")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.changes.list" call.
+// Exactly one of *ChangeList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ChangeList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ChangesListCall) Do(opts ...googleapi.CallOption) (*ChangeList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1867,7 +2861,12 @@ func (c *ChangesListCall) Do() (*ChangeList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ChangeList
+	ret := &ChangeList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1902,6 +2901,11 @@ func (c *ChangesListCall) Do() (*ChangeList, error) {
 	//       "location": "query",
 	//       "type": "string"
 	//     },
+	//     "spaces": {
+	//       "description": "A comma-separated list of spaces to query. Supported values are 'drive', 'appDataFolder' and 'photos'.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "startChangeId": {
 	//       "description": "Change ID to start listing changes from.",
 	//       "format": "int64",
@@ -1918,7 +2922,9 @@ func (c *ChangesListCall) Do() (*ChangeList, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ],
 	//   "supportsSubscription": true
@@ -1926,17 +2932,39 @@ func (c *ChangesListCall) Do() (*ChangeList, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ChangesListCall) Pages(ctx context.Context, f func(*ChangeList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "drive.changes.watch":
 
 type ChangesWatchCall struct {
-	s       *Service
-	channel *Channel
-	opt_    map[string]interface{}
+	s          *Service
+	channel    *Channel
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Watch: Subscribe to changes for a user.
 func (r *ChangesService) Watch(channel *Channel) *ChangesWatchCall {
-	c := &ChangesWatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ChangesWatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.channel = channel
 	return c
 }
@@ -1944,7 +2972,7 @@ func (r *ChangesService) Watch(channel *Channel) *ChangesWatchCall {
 // IncludeDeleted sets the optional parameter "includeDeleted": Whether
 // to include deleted items.
 func (c *ChangesWatchCall) IncludeDeleted(includeDeleted bool) *ChangesWatchCall {
-	c.opt_["includeDeleted"] = includeDeleted
+	c.urlParams_.Set("includeDeleted", fmt.Sprint(includeDeleted))
 	return c
 }
 
@@ -1953,73 +2981,94 @@ func (c *ChangesWatchCall) IncludeDeleted(includeDeleted bool) *ChangesWatchCall
 // When set to false, the list only includes owned files plus any shared
 // or public files the user has explicitly added to a folder they own.
 func (c *ChangesWatchCall) IncludeSubscribed(includeSubscribed bool) *ChangesWatchCall {
-	c.opt_["includeSubscribed"] = includeSubscribed
+	c.urlParams_.Set("includeSubscribed", fmt.Sprint(includeSubscribed))
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of changes to return.
 func (c *ChangesWatchCall) MaxResults(maxResults int64) *ChangesWatchCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": Page token for
 // changes.
 func (c *ChangesWatchCall) PageToken(pageToken string) *ChangesWatchCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Spaces sets the optional parameter "spaces": A comma-separated list
+// of spaces to query. Supported values are 'drive', 'appDataFolder' and
+// 'photos'.
+func (c *ChangesWatchCall) Spaces(spaces string) *ChangesWatchCall {
+	c.urlParams_.Set("spaces", spaces)
 	return c
 }
 
 // StartChangeId sets the optional parameter "startChangeId": Change ID
 // to start listing changes from.
 func (c *ChangesWatchCall) StartChangeId(startChangeId int64) *ChangesWatchCall {
-	c.opt_["startChangeId"] = startChangeId
+	c.urlParams_.Set("startChangeId", fmt.Sprint(startChangeId))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ChangesWatchCall) Fields(s ...googleapi.Field) *ChangesWatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ChangesWatchCall) Do() (*Channel, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ChangesWatchCall) Context(ctx context.Context) *ChangesWatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ChangesWatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.channel)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["includeDeleted"]; ok {
-		params.Set("includeDeleted", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["includeSubscribed"]; ok {
-		params.Set("includeSubscribed", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["startChangeId"]; ok {
-		params.Set("startChangeId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "changes/watch")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.changes.watch" call.
+// Exactly one of *Channel or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Channel.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ChangesWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2027,7 +3076,12 @@ func (c *ChangesWatchCall) Do() (*Channel, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Channel
+	ret := &Channel{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2062,6 +3116,11 @@ func (c *ChangesWatchCall) Do() (*Channel, error) {
 	//       "location": "query",
 	//       "type": "string"
 	//     },
+	//     "spaces": {
+	//       "description": "A comma-separated list of spaces to query. Supported values are 'drive', 'appDataFolder' and 'photos'.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "startChangeId": {
 	//       "description": "Change ID to start listing changes from.",
 	//       "format": "int64",
@@ -2082,7 +3141,9 @@ func (c *ChangesWatchCall) Do() (*Channel, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ],
 	//   "supportsSubscription": true
@@ -2093,45 +3154,59 @@ func (c *ChangesWatchCall) Do() (*Channel, error) {
 // method id "drive.channels.stop":
 
 type ChannelsStopCall struct {
-	s       *Service
-	channel *Channel
-	opt_    map[string]interface{}
+	s          *Service
+	channel    *Channel
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Stop: Stop watching resources through this channel
 func (r *ChannelsService) Stop(channel *Channel) *ChannelsStopCall {
-	c := &ChannelsStopCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ChannelsStopCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.channel = channel
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ChannelsStopCall) Fields(s ...googleapi.Field) *ChannelsStopCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ChannelsStopCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ChannelsStopCall) Context(ctx context.Context) *ChannelsStopCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ChannelsStopCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.channel)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "channels/stop")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.channels.stop" call.
+func (c *ChannelsStopCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -2154,7 +3229,9 @@ func (c *ChannelsStopCall) Do() error {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -2164,44 +3241,58 @@ func (c *ChannelsStopCall) Do() error {
 // method id "drive.children.delete":
 
 type ChildrenDeleteCall struct {
-	s        *Service
-	folderId string
-	childId  string
-	opt_     map[string]interface{}
+	s          *Service
+	folderId   string
+	childId    string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Removes a child from a folder.
 func (r *ChildrenService) Delete(folderId string, childId string) *ChildrenDeleteCall {
-	c := &ChildrenDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ChildrenDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.folderId = folderId
 	c.childId = childId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ChildrenDeleteCall) Fields(s ...googleapi.Field) *ChildrenDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ChildrenDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ChildrenDeleteCall) Context(ctx context.Context) *ChildrenDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ChildrenDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{folderId}/children/{childId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"folderId": c.folderId,
 		"childId":  c.childId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.children.delete" call.
+func (c *ChildrenDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -2244,44 +3335,87 @@ func (c *ChildrenDeleteCall) Do() error {
 // method id "drive.children.get":
 
 type ChildrenGetCall struct {
-	s        *Service
-	folderId string
-	childId  string
-	opt_     map[string]interface{}
+	s            *Service
+	folderId     string
+	childId      string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a specific child reference.
 func (r *ChildrenService) Get(folderId string, childId string) *ChildrenGetCall {
-	c := &ChildrenGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ChildrenGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.folderId = folderId
 	c.childId = childId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ChildrenGetCall) Fields(s ...googleapi.Field) *ChildrenGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ChildrenGetCall) Do() (*ChildReference, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ChildrenGetCall) IfNoneMatch(entityTag string) *ChildrenGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ChildrenGetCall) Context(ctx context.Context) *ChildrenGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ChildrenGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{folderId}/children/{childId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"folderId": c.folderId,
 		"childId":  c.childId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.children.get" call.
+// Exactly one of *ChildReference or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ChildReference.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ChildrenGetCall) Do(opts ...googleapi.CallOption) (*ChildReference, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2289,7 +3423,12 @@ func (c *ChildrenGetCall) Do() (*ChildReference, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ChildReference
+	ret := &ChildReference{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2324,7 +3463,9 @@ func (c *ChildrenGetCall) Do() (*ChildReference, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -2337,46 +3478,75 @@ type ChildrenInsertCall struct {
 	s              *Service
 	folderId       string
 	childreference *ChildReference
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Insert: Inserts a file into a folder.
 func (r *ChildrenService) Insert(folderId string, childreference *ChildReference) *ChildrenInsertCall {
-	c := &ChildrenInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ChildrenInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.folderId = folderId
 	c.childreference = childreference
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ChildrenInsertCall) Fields(s ...googleapi.Field) *ChildrenInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ChildrenInsertCall) Do() (*ChildReference, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ChildrenInsertCall) Context(ctx context.Context) *ChildrenInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ChildrenInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.childreference)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{folderId}/children")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"folderId": c.folderId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.children.insert" call.
+// Exactly one of *ChildReference or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ChildReference.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ChildrenInsertCall) Do(opts ...googleapi.CallOption) (*ChildReference, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2384,7 +3554,12 @@ func (c *ChildrenInsertCall) Do() (*ChildReference, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ChildReference
+	ret := &ChildReference{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2423,14 +3598,16 @@ func (c *ChildrenInsertCall) Do() (*ChildReference, error) {
 // method id "drive.children.list":
 
 type ChildrenListCall struct {
-	s        *Service
-	folderId string
-	opt_     map[string]interface{}
+	s            *Service
+	folderId     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists a folder's children.
 func (r *ChildrenService) List(folderId string) *ChildrenListCall {
-	c := &ChildrenListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ChildrenListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.folderId = folderId
 	return c
 }
@@ -2438,56 +3615,102 @@ func (r *ChildrenService) List(folderId string) *ChildrenListCall {
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of children to return.
 func (c *ChildrenListCall) MaxResults(maxResults int64) *ChildrenListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
+	return c
+}
+
+// OrderBy sets the optional parameter "orderBy": A comma-separated list
+// of sort keys. Valid keys are 'createdDate', 'folder',
+// 'lastViewedByMeDate', 'modifiedByMeDate', 'modifiedDate',
+// 'quotaBytesUsed', 'recency', 'sharedWithMeDate', 'starred', and
+// 'title'. Each key sorts ascending by default, but may be reversed
+// with the 'desc' modifier. Example usage: ?orderBy=folder,modifiedDate
+// desc,title. Please note that there is a current limitation for users
+// with approximately one million files in which the requested sort
+// order is ignored.
+func (c *ChildrenListCall) OrderBy(orderBy string) *ChildrenListCall {
+	c.urlParams_.Set("orderBy", orderBy)
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": Page token for
 // children.
 func (c *ChildrenListCall) PageToken(pageToken string) *ChildrenListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // Q sets the optional parameter "q": Query string for searching
 // children.
 func (c *ChildrenListCall) Q(q string) *ChildrenListCall {
-	c.opt_["q"] = q
+	c.urlParams_.Set("q", q)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ChildrenListCall) Fields(s ...googleapi.Field) *ChildrenListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ChildrenListCall) Do() (*ChildList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ChildrenListCall) IfNoneMatch(entityTag string) *ChildrenListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ChildrenListCall) Context(ctx context.Context) *ChildrenListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ChildrenListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["q"]; ok {
-		params.Set("q", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{folderId}/children")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"folderId": c.folderId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.children.list" call.
+// Exactly one of *ChildList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ChildList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ChildrenListCall) Do(opts ...googleapi.CallOption) (*ChildList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2495,7 +3718,12 @@ func (c *ChildrenListCall) Do() (*ChildList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ChildList
+	ret := &ChildList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2522,6 +3750,11 @@ func (c *ChildrenListCall) Do() (*ChildList, error) {
 	//       "minimum": "0",
 	//       "type": "integer"
 	//     },
+	//     "orderBy": {
+	//       "description": "A comma-separated list of sort keys. Valid keys are 'createdDate', 'folder', 'lastViewedByMeDate', 'modifiedByMeDate', 'modifiedDate', 'quotaBytesUsed', 'recency', 'sharedWithMeDate', 'starred', and 'title'. Each key sorts ascending by default, but may be reversed with the 'desc' modifier. Example usage: ?orderBy=folder,modifiedDate desc,title. Please note that there is a current limitation for users with approximately one million files in which the requested sort order is ignored.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "pageToken": {
 	//       "description": "Page token for children.",
 	//       "location": "query",
@@ -2541,54 +3774,91 @@ func (c *ChildrenListCall) Do() (*ChildList, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ChildrenListCall) Pages(ctx context.Context, f func(*ChildList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "drive.comments.delete":
 
 type CommentsDeleteCall struct {
-	s         *Service
-	fileId    string
-	commentId string
-	opt_      map[string]interface{}
+	s          *Service
+	fileId     string
+	commentId  string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Deletes a comment.
 func (r *CommentsService) Delete(fileId string, commentId string) *CommentsDeleteCall {
-	c := &CommentsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CommentsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CommentsDeleteCall) Fields(s ...googleapi.Field) *CommentsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CommentsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CommentsDeleteCall) Context(ctx context.Context) *CommentsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CommentsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
 		"commentId": c.commentId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.comments.delete" call.
+func (c *CommentsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -2622,8 +3892,7 @@ func (c *CommentsDeleteCall) Do() error {
 	//   "path": "files/{fileId}/comments/{commentId}",
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
-	//     "https://www.googleapis.com/auth/drive.file",
-	//     "https://www.googleapis.com/auth/drive.readonly"
+	//     "https://www.googleapis.com/auth/drive.file"
 	//   ]
 	// }
 
@@ -2632,15 +3901,17 @@ func (c *CommentsDeleteCall) Do() error {
 // method id "drive.comments.get":
 
 type CommentsGetCall struct {
-	s         *Service
-	fileId    string
-	commentId string
-	opt_      map[string]interface{}
+	s            *Service
+	fileId       string
+	commentId    string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a comment by ID.
 func (r *CommentsService) Get(fileId string, commentId string) *CommentsGetCall {
-	c := &CommentsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CommentsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	return c
@@ -2650,37 +3921,75 @@ func (r *CommentsService) Get(fileId string, commentId string) *CommentsGetCall 
 // this will succeed when retrieving a deleted comment, and will include
 // any deleted replies.
 func (c *CommentsGetCall) IncludeDeleted(includeDeleted bool) *CommentsGetCall {
-	c.opt_["includeDeleted"] = includeDeleted
+	c.urlParams_.Set("includeDeleted", fmt.Sprint(includeDeleted))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CommentsGetCall) Fields(s ...googleapi.Field) *CommentsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CommentsGetCall) Do() (*Comment, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CommentsGetCall) IfNoneMatch(entityTag string) *CommentsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CommentsGetCall) Context(ctx context.Context) *CommentsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CommentsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["includeDeleted"]; ok {
-		params.Set("includeDeleted", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
 		"commentId": c.commentId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.comments.get" call.
+// Exactly one of *Comment or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Comment.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *CommentsGetCall) Do(opts ...googleapi.CallOption) (*Comment, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2688,7 +3997,12 @@ func (c *CommentsGetCall) Do() (*Comment, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Comment
+	ret := &Comment{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2737,49 +4051,78 @@ func (c *CommentsGetCall) Do() (*Comment, error) {
 // method id "drive.comments.insert":
 
 type CommentsInsertCall struct {
-	s       *Service
-	fileId  string
-	comment *Comment
-	opt_    map[string]interface{}
+	s          *Service
+	fileId     string
+	comment    *Comment
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Insert: Creates a new comment on the given file.
 func (r *CommentsService) Insert(fileId string, comment *Comment) *CommentsInsertCall {
-	c := &CommentsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CommentsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.comment = comment
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CommentsInsertCall) Fields(s ...googleapi.Field) *CommentsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CommentsInsertCall) Do() (*Comment, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CommentsInsertCall) Context(ctx context.Context) *CommentsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CommentsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.comment)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.comments.insert" call.
+// Exactly one of *Comment or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Comment.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *CommentsInsertCall) Do(opts ...googleapi.CallOption) (*Comment, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2787,7 +4130,12 @@ func (c *CommentsInsertCall) Do() (*Comment, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Comment
+	ret := &Comment{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2825,14 +4173,16 @@ func (c *CommentsInsertCall) Do() (*Comment, error) {
 // method id "drive.comments.list":
 
 type CommentsListCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s            *Service
+	fileId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists a file's comments.
 func (r *CommentsService) List(fileId string) *CommentsListCall {
-	c := &CommentsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CommentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
@@ -2841,14 +4191,14 @@ func (r *CommentsService) List(fileId string) *CommentsListCall {
 // all comments and replies, including deleted comments and replies
 // (with content stripped) will be returned.
 func (c *CommentsListCall) IncludeDeleted(includeDeleted bool) *CommentsListCall {
-	c.opt_["includeDeleted"] = includeDeleted
+	c.urlParams_.Set("includeDeleted", fmt.Sprint(includeDeleted))
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults": The maximum
 // number of discussions to include in the response, used for paging.
 func (c *CommentsListCall) MaxResults(maxResults int64) *CommentsListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -2857,7 +4207,7 @@ func (c *CommentsListCall) MaxResults(maxResults int64) *CommentsListCall {
 // of results, set this parameter to the value of "nextPageToken" from
 // the previous response.
 func (c *CommentsListCall) PageToken(pageToken string) *CommentsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
@@ -2865,45 +4215,74 @@ func (c *CommentsListCall) PageToken(pageToken string) *CommentsListCall {
 // that were updated after this timestamp will be returned. Formatted as
 // an RFC 3339 timestamp.
 func (c *CommentsListCall) UpdatedMin(updatedMin string) *CommentsListCall {
-	c.opt_["updatedMin"] = updatedMin
+	c.urlParams_.Set("updatedMin", updatedMin)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CommentsListCall) Fields(s ...googleapi.Field) *CommentsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CommentsListCall) Do() (*CommentList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CommentsListCall) IfNoneMatch(entityTag string) *CommentsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CommentsListCall) Context(ctx context.Context) *CommentsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CommentsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["includeDeleted"]; ok {
-		params.Set("includeDeleted", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["updatedMin"]; ok {
-		params.Set("updatedMin", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.comments.list" call.
+// Exactly one of *CommentList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CommentList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *CommentsListCall) Do(opts ...googleapi.CallOption) (*CommentList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2911,7 +4290,12 @@ func (c *CommentsListCall) Do() (*CommentList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CommentList
+	ret := &CommentList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2969,56 +4353,106 @@ func (c *CommentsListCall) Do() (*CommentList, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *CommentsListCall) Pages(ctx context.Context, f func(*CommentList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "drive.comments.patch":
 
 type CommentsPatchCall struct {
-	s         *Service
-	fileId    string
-	commentId string
-	comment   *Comment
-	opt_      map[string]interface{}
+	s          *Service
+	fileId     string
+	commentId  string
+	comment    *Comment
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Updates an existing comment. This method supports patch
 // semantics.
 func (r *CommentsService) Patch(fileId string, commentId string, comment *Comment) *CommentsPatchCall {
-	c := &CommentsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CommentsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	c.comment = comment
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CommentsPatchCall) Fields(s ...googleapi.Field) *CommentsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CommentsPatchCall) Do() (*Comment, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CommentsPatchCall) Context(ctx context.Context) *CommentsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CommentsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.comment)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
 		"commentId": c.commentId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.comments.patch" call.
+// Exactly one of *Comment or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Comment.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *CommentsPatchCall) Do(opts ...googleapi.CallOption) (*Comment, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3026,7 +4460,12 @@ func (c *CommentsPatchCall) Do() (*Comment, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Comment
+	ret := &Comment{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3071,52 +4510,81 @@ func (c *CommentsPatchCall) Do() (*Comment, error) {
 // method id "drive.comments.update":
 
 type CommentsUpdateCall struct {
-	s         *Service
-	fileId    string
-	commentId string
-	comment   *Comment
-	opt_      map[string]interface{}
+	s          *Service
+	fileId     string
+	commentId  string
+	comment    *Comment
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Update: Updates an existing comment.
 func (r *CommentsService) Update(fileId string, commentId string, comment *Comment) *CommentsUpdateCall {
-	c := &CommentsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CommentsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	c.comment = comment
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CommentsUpdateCall) Fields(s ...googleapi.Field) *CommentsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CommentsUpdateCall) Do() (*Comment, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CommentsUpdateCall) Context(ctx context.Context) *CommentsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CommentsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.comment)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
 		"commentId": c.commentId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.comments.update" call.
+// Exactly one of *Comment or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Comment.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *CommentsUpdateCall) Do(opts ...googleapi.CallOption) (*Comment, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3124,7 +4592,12 @@ func (c *CommentsUpdateCall) Do() (*Comment, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Comment
+	ret := &Comment{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3169,15 +4642,16 @@ func (c *CommentsUpdateCall) Do() (*Comment, error) {
 // method id "drive.files.copy":
 
 type FilesCopyCall struct {
-	s      *Service
-	fileId string
-	file   *File
-	opt_   map[string]interface{}
+	s          *Service
+	fileId     string
+	file       *File
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Copy: Creates a copy of the specified file.
 func (r *FilesService) Copy(fileId string, file *File) *FilesCopyCall {
-	c := &FilesCopyCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesCopyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.file = file
 	return c
@@ -3186,21 +4660,21 @@ func (r *FilesService) Copy(fileId string, file *File) *FilesCopyCall {
 // Convert sets the optional parameter "convert": Whether to convert
 // this file to the corresponding Google Docs format.
 func (c *FilesCopyCall) Convert(convert bool) *FilesCopyCall {
-	c.opt_["convert"] = convert
+	c.urlParams_.Set("convert", fmt.Sprint(convert))
 	return c
 }
 
 // Ocr sets the optional parameter "ocr": Whether to attempt OCR on
 // .jpg, .png, .gif, or .pdf uploads.
 func (c *FilesCopyCall) Ocr(ocr bool) *FilesCopyCall {
-	c.opt_["ocr"] = ocr
+	c.urlParams_.Set("ocr", fmt.Sprint(ocr))
 	return c
 }
 
 // OcrLanguage sets the optional parameter "ocrLanguage": If ocr is
-// true, hints at the language to use. Valid values are ISO 639-1 codes.
+// true, hints at the language to use. Valid values are BCP 47 codes.
 func (c *FilesCopyCall) OcrLanguage(ocrLanguage string) *FilesCopyCall {
-	c.opt_["ocrLanguage"] = ocrLanguage
+	c.urlParams_.Set("ocrLanguage", ocrLanguage)
 	return c
 }
 
@@ -3208,82 +4682,94 @@ func (c *FilesCopyCall) OcrLanguage(ocrLanguage string) *FilesCopyCall {
 // revision of the new copy. A file can have a maximum of 200 pinned
 // revisions.
 func (c *FilesCopyCall) Pinned(pinned bool) *FilesCopyCall {
-	c.opt_["pinned"] = pinned
+	c.urlParams_.Set("pinned", fmt.Sprint(pinned))
 	return c
 }
 
 // TimedTextLanguage sets the optional parameter "timedTextLanguage":
 // The language of the timed text.
 func (c *FilesCopyCall) TimedTextLanguage(timedTextLanguage string) *FilesCopyCall {
-	c.opt_["timedTextLanguage"] = timedTextLanguage
+	c.urlParams_.Set("timedTextLanguage", timedTextLanguage)
 	return c
 }
 
 // TimedTextTrackName sets the optional parameter "timedTextTrackName":
 // The timed text track name.
 func (c *FilesCopyCall) TimedTextTrackName(timedTextTrackName string) *FilesCopyCall {
-	c.opt_["timedTextTrackName"] = timedTextTrackName
+	c.urlParams_.Set("timedTextTrackName", timedTextTrackName)
 	return c
 }
 
 // Visibility sets the optional parameter "visibility": The visibility
 // of the new file. This parameter is only relevant when the source is
 // not a native Google Doc and convert=false.
+//
+// Possible values:
+//   "DEFAULT" (default) - The visibility of the new file is determined
+// by the user's default visibility/sharing policies.
+//   "PRIVATE" - The new file will be visible to only the owner.
 func (c *FilesCopyCall) Visibility(visibility string) *FilesCopyCall {
-	c.opt_["visibility"] = visibility
+	c.urlParams_.Set("visibility", visibility)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesCopyCall) Fields(s ...googleapi.Field) *FilesCopyCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesCopyCall) Do() (*File, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesCopyCall) Context(ctx context.Context) *FilesCopyCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesCopyCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.file)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["convert"]; ok {
-		params.Set("convert", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["ocr"]; ok {
-		params.Set("ocr", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["ocrLanguage"]; ok {
-		params.Set("ocrLanguage", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pinned"]; ok {
-		params.Set("pinned", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["timedTextLanguage"]; ok {
-		params.Set("timedTextLanguage", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["timedTextTrackName"]; ok {
-		params.Set("timedTextTrackName", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["visibility"]; ok {
-		params.Set("visibility", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/copy")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.copy" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *FilesCopyCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3291,7 +4777,12 @@ func (c *FilesCopyCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3323,7 +4814,7 @@ func (c *FilesCopyCall) Do() (*File, error) {
 	//       "type": "boolean"
 	//     },
 	//     "ocrLanguage": {
-	//       "description": "If ocr is true, hints at the language to use. Valid values are ISO 639-1 codes.",
+	//       "description": "If ocr is true, hints at the language to use. Valid values are BCP 47 codes.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -3369,7 +4860,8 @@ func (c *FilesCopyCall) Do() (*File, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
-	//     "https://www.googleapis.com/auth/drive.file"
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly"
 	//   ]
 	// }
 
@@ -3378,41 +4870,56 @@ func (c *FilesCopyCall) Do() (*File, error) {
 // method id "drive.files.delete":
 
 type FilesDeleteCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s          *Service
+	fileId     string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
-// Delete: Permanently deletes a file by ID. Skips the trash.
+// Delete: Permanently deletes a file by ID. Skips the trash. The
+// currently authenticated user must own the file.
 func (r *FilesService) Delete(fileId string) *FilesDeleteCall {
-	c := &FilesDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesDeleteCall) Fields(s ...googleapi.Field) *FilesDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesDeleteCall) Context(ctx context.Context) *FilesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.delete" call.
+func (c *FilesDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -3422,7 +4929,7 @@ func (c *FilesDeleteCall) Do() error {
 	}
 	return nil
 	// {
-	//   "description": "Permanently deletes a file by ID. Skips the trash.",
+	//   "description": "Permanently deletes a file by ID. Skips the trash. The currently authenticated user must own the file.",
 	//   "httpMethod": "DELETE",
 	//   "id": "drive.files.delete",
 	//   "parameterOrder": [
@@ -3449,37 +4956,51 @@ func (c *FilesDeleteCall) Do() error {
 // method id "drive.files.emptyTrash":
 
 type FilesEmptyTrashCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s          *Service
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // EmptyTrash: Permanently deletes all of the user's trashed files.
 func (r *FilesService) EmptyTrash() *FilesEmptyTrashCall {
-	c := &FilesEmptyTrashCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesEmptyTrashCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesEmptyTrashCall) Fields(s ...googleapi.Field) *FilesEmptyTrashCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesEmptyTrashCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesEmptyTrashCall) Context(ctx context.Context) *FilesEmptyTrashCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesEmptyTrashCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/trash")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.emptyTrash" call.
+func (c *FilesEmptyTrashCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -3500,17 +5021,288 @@ func (c *FilesEmptyTrashCall) Do() error {
 
 }
 
+// method id "drive.files.export":
+
+type FilesExportCall struct {
+	s            *Service
+	fileId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+}
+
+// Export: Exports a Google Doc to the requested MIME type and returns
+// the exported content.
+func (r *FilesService) Export(fileId string, mimeType string) *FilesExportCall {
+	c := &FilesExportCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.fileId = fileId
+	c.urlParams_.Set("mimeType", mimeType)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *FilesExportCall) Fields(s ...googleapi.Field) *FilesExportCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *FilesExportCall) IfNoneMatch(entityTag string) *FilesExportCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do and Download
+// methods. Any pending HTTP request will be aborted if the provided
+// context is canceled.
+func (c *FilesExportCall) Context(ctx context.Context) *FilesExportCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesExportCall) doRequest(alt string) (*http.Response, error) {
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/export")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	googleapi.Expand(req.URL, map[string]string{
+		"fileId": c.fileId,
+	})
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Download fetches the API endpoint's "media" value, instead of the normal
+// API response value. If the returned error is nil, the Response is guaranteed to
+// have a 2xx status code. Callers must close the Response.Body as usual.
+func (c *FilesExportCall) Download(opts ...googleapi.CallOption) (*http.Response, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("media")
+	if err != nil {
+		return nil, err
+	}
+	if err := googleapi.CheckMediaResponse(res); err != nil {
+		res.Body.Close()
+		return nil, err
+	}
+	return res, nil
+}
+
+// Do executes the "drive.files.export" call.
+func (c *FilesExportCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if err != nil {
+		return err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return err
+	}
+	return nil
+	// {
+	//   "description": "Exports a Google Doc to the requested MIME type and returns the exported content.",
+	//   "httpMethod": "GET",
+	//   "id": "drive.files.export",
+	//   "parameterOrder": [
+	//     "fileId",
+	//     "mimeType"
+	//   ],
+	//   "parameters": {
+	//     "fileId": {
+	//       "description": "The ID of the file.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "mimeType": {
+	//       "description": "The MIME type of the format requested for this export.",
+	//       "location": "query",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "files/{fileId}/export",
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.readonly"
+	//   ],
+	//   "supportsMediaDownload": true
+	// }
+
+}
+
+// method id "drive.files.generateIds":
+
+type FilesGenerateIdsCall struct {
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+}
+
+// GenerateIds: Generates a set of file IDs which can be provided in
+// insert requests.
+func (r *FilesService) GenerateIds() *FilesGenerateIdsCall {
+	c := &FilesGenerateIdsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	return c
+}
+
+// MaxResults sets the optional parameter "maxResults": Maximum number
+// of IDs to return.
+func (c *FilesGenerateIdsCall) MaxResults(maxResults int64) *FilesGenerateIdsCall {
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
+	return c
+}
+
+// Space sets the optional parameter "space": The space in which the IDs
+// can be used to create new files. Supported values are 'drive' and
+// 'appDataFolder'.
+func (c *FilesGenerateIdsCall) Space(space string) *FilesGenerateIdsCall {
+	c.urlParams_.Set("space", space)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *FilesGenerateIdsCall) Fields(s ...googleapi.Field) *FilesGenerateIdsCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *FilesGenerateIdsCall) IfNoneMatch(entityTag string) *FilesGenerateIdsCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesGenerateIdsCall) Context(ctx context.Context) *FilesGenerateIdsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesGenerateIdsCall) doRequest(alt string) (*http.Response, error) {
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "files/generateIds")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	googleapi.SetOpaque(req.URL)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.generateIds" call.
+// Exactly one of *GeneratedIds or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *GeneratedIds.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *FilesGenerateIdsCall) Do(opts ...googleapi.CallOption) (*GeneratedIds, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &GeneratedIds{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Generates a set of file IDs which can be provided in insert requests.",
+	//   "httpMethod": "GET",
+	//   "id": "drive.files.generateIds",
+	//   "parameters": {
+	//     "maxResults": {
+	//       "default": "10",
+	//       "description": "Maximum number of IDs to return.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "maximum": "1000",
+	//       "minimum": "1",
+	//       "type": "integer"
+	//     },
+	//     "space": {
+	//       "default": "drive",
+	//       "description": "The space in which the IDs can be used to create new files. Supported values are 'drive' and 'appDataFolder'.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "files/generateIds",
+	//   "response": {
+	//     "$ref": "GeneratedIds"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.appdata",
+	//     "https://www.googleapis.com/auth/drive.file"
+	//   ]
+	// }
+
+}
+
 // method id "drive.files.get":
 
 type FilesGetCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s            *Service
+	fileId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a file's metadata by ID.
 func (r *FilesService) Get(fileId string) *FilesGetCall {
-	c := &FilesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
@@ -3519,57 +5311,117 @@ func (r *FilesService) Get(fileId string) *FilesGetCall {
 // Whether the user is acknowledging the risk of downloading known
 // malware or other abusive files.
 func (c *FilesGetCall) AcknowledgeAbuse(acknowledgeAbuse bool) *FilesGetCall {
-	c.opt_["acknowledgeAbuse"] = acknowledgeAbuse
+	c.urlParams_.Set("acknowledgeAbuse", fmt.Sprint(acknowledgeAbuse))
 	return c
 }
 
 // Projection sets the optional parameter "projection": This parameter
 // is deprecated and has no function.
+//
+// Possible values:
+//   "BASIC" - Deprecated
+//   "FULL" - Deprecated
 func (c *FilesGetCall) Projection(projection string) *FilesGetCall {
-	c.opt_["projection"] = projection
+	c.urlParams_.Set("projection", projection)
+	return c
+}
+
+// RevisionId sets the optional parameter "revisionId": Specifies the
+// Revision ID that should be downloaded. Ignored unless alt=media is
+// specified.
+func (c *FilesGetCall) RevisionId(revisionId string) *FilesGetCall {
+	c.urlParams_.Set("revisionId", revisionId)
 	return c
 }
 
 // UpdateViewedDate sets the optional parameter "updateViewedDate":
-// Whether to update the view date after successfully retrieving the
-// file.
+// Deprecated: Use files.update with modifiedDateBehavior=noChange,
+// updateViewedDate=true and an empty request body.
 func (c *FilesGetCall) UpdateViewedDate(updateViewedDate bool) *FilesGetCall {
-	c.opt_["updateViewedDate"] = updateViewedDate
+	c.urlParams_.Set("updateViewedDate", fmt.Sprint(updateViewedDate))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesGetCall) Fields(s ...googleapi.Field) *FilesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesGetCall) Do() (*File, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *FilesGetCall) IfNoneMatch(entityTag string) *FilesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do and Download
+// methods. Any pending HTTP request will be aborted if the provided
+// context is canceled.
+func (c *FilesGetCall) Context(ctx context.Context) *FilesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["acknowledgeAbuse"]; ok {
-		params.Set("acknowledgeAbuse", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projection"]; ok {
-		params.Set("projection", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["updateViewedDate"]; ok {
-		params.Set("updateViewedDate", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Download fetches the API endpoint's "media" value, instead of the normal
+// API response value. If the returned error is nil, the Response is guaranteed to
+// have a 2xx status code. Callers must close the Response.Body as usual.
+func (c *FilesGetCall) Download(opts ...googleapi.CallOption) (*http.Response, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("media")
+	if err != nil {
+		return nil, err
+	}
+	if err := googleapi.CheckMediaResponse(res); err != nil {
+		res.Body.Close()
+		return nil, err
+	}
+	return res, nil
+}
+
+// Do executes the "drive.files.get" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *FilesGetCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3577,7 +5429,12 @@ func (c *FilesGetCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3615,9 +5472,14 @@ func (c *FilesGetCall) Do() (*File, error) {
 	//       "location": "query",
 	//       "type": "string"
 	//     },
+	//     "revisionId": {
+	//       "description": "Specifies the Revision ID that should be downloaded. Ignored unless alt=media is specified.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "updateViewedDate": {
 	//       "default": "false",
-	//       "description": "Whether to update the view date after successfully retrieving the file.",
+	//       "description": "Deprecated: Use files.update with modifiedDateBehavior=noChange, updateViewedDate=true and an empty request body.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     }
@@ -3631,11 +5493,14 @@ func (c *FilesGetCall) Do() (*File, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ],
 	//   "supportsMediaDownload": true,
-	//   "supportsSubscription": true
+	//   "supportsSubscription": true,
+	//   "useMediaDownloadService": true
 	// }
 
 }
@@ -3643,19 +5508,20 @@ func (c *FilesGetCall) Do() (*File, error) {
 // method id "drive.files.insert":
 
 type FilesInsertCall struct {
-	s          *Service
-	file       *File
-	opt_       map[string]interface{}
-	media_     io.Reader
-	resumable_ googleapi.SizeReaderAt
-	mediaType_ string
-	ctx_       context.Context
-	protocol_  string
+	s                *Service
+	file             *File
+	urlParams_       gensupport.URLParams
+	media_           io.Reader
+	resumableBuffer_ *gensupport.ResumableBuffer
+	mediaType_       string
+	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_ googleapi.ProgressUpdater
+	ctx_             context.Context
 }
 
 // Insert: Insert a new file.
 func (r *FilesService) Insert(file *File) *FilesInsertCall {
-	c := &FilesInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.file = file
 	return c
 }
@@ -3663,21 +5529,21 @@ func (r *FilesService) Insert(file *File) *FilesInsertCall {
 // Convert sets the optional parameter "convert": Whether to convert
 // this file to the corresponding Google Docs format.
 func (c *FilesInsertCall) Convert(convert bool) *FilesInsertCall {
-	c.opt_["convert"] = convert
+	c.urlParams_.Set("convert", fmt.Sprint(convert))
 	return c
 }
 
 // Ocr sets the optional parameter "ocr": Whether to attempt OCR on
 // .jpg, .png, .gif, or .pdf uploads.
 func (c *FilesInsertCall) Ocr(ocr bool) *FilesInsertCall {
-	c.opt_["ocr"] = ocr
+	c.urlParams_.Set("ocr", fmt.Sprint(ocr))
 	return c
 }
 
 // OcrLanguage sets the optional parameter "ocrLanguage": If ocr is
-// true, hints at the language to use. Valid values are ISO 639-1 codes.
+// true, hints at the language to use. Valid values are BCP 47 codes.
 func (c *FilesInsertCall) OcrLanguage(ocrLanguage string) *FilesInsertCall {
-	c.opt_["ocrLanguage"] = ocrLanguage
+	c.urlParams_.Set("ocrLanguage", ocrLanguage)
 	return c
 }
 
@@ -3685,21 +5551,21 @@ func (c *FilesInsertCall) OcrLanguage(ocrLanguage string) *FilesInsertCall {
 // revision of the uploaded file. A file can have a maximum of 200
 // pinned revisions.
 func (c *FilesInsertCall) Pinned(pinned bool) *FilesInsertCall {
-	c.opt_["pinned"] = pinned
+	c.urlParams_.Set("pinned", fmt.Sprint(pinned))
 	return c
 }
 
 // TimedTextLanguage sets the optional parameter "timedTextLanguage":
 // The language of the timed text.
 func (c *FilesInsertCall) TimedTextLanguage(timedTextLanguage string) *FilesInsertCall {
-	c.opt_["timedTextLanguage"] = timedTextLanguage
+	c.urlParams_.Set("timedTextLanguage", timedTextLanguage)
 	return c
 }
 
 // TimedTextTrackName sets the optional parameter "timedTextTrackName":
 // The timed text track name.
 func (c *FilesInsertCall) TimedTextTrackName(timedTextTrackName string) *FilesInsertCall {
-	c.opt_["timedTextTrackName"] = timedTextTrackName
+	c.urlParams_.Set("timedTextTrackName", timedTextTrackName)
 	return c
 }
 
@@ -3707,122 +5573,144 @@ func (c *FilesInsertCall) TimedTextTrackName(timedTextTrackName string) *FilesIn
 // "useContentAsIndexableText": Whether to use the content as indexable
 // text.
 func (c *FilesInsertCall) UseContentAsIndexableText(useContentAsIndexableText bool) *FilesInsertCall {
-	c.opt_["useContentAsIndexableText"] = useContentAsIndexableText
+	c.urlParams_.Set("useContentAsIndexableText", fmt.Sprint(useContentAsIndexableText))
 	return c
 }
 
 // Visibility sets the optional parameter "visibility": The visibility
 // of the new file. This parameter is only relevant when convert=false.
+//
+// Possible values:
+//   "DEFAULT" (default) - The visibility of the new file is determined
+// by the user's default visibility/sharing policies.
+//   "PRIVATE" - The new file will be visible to only the owner.
 func (c *FilesInsertCall) Visibility(visibility string) *FilesInsertCall {
-	c.opt_["visibility"] = visibility
+	c.urlParams_.Set("visibility", visibility)
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *FilesInsertCall) Media(r io.Reader) *FilesInsertCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *FilesInsertCall) Media(r io.Reader, options ...googleapi.MediaOption) *FilesInsertCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *FilesInsertCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *FilesInsertCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *FilesInsertCall) ProgressUpdater(pu googleapi.ProgressUpdater) *FilesInsertCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesInsertCall) Fields(s ...googleapi.Field) *FilesInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesInsertCall) Do() (*File, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *FilesInsertCall) Context(ctx context.Context) *FilesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.file)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["convert"]; ok {
-		params.Set("convert", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["ocr"]; ok {
-		params.Set("ocr", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["ocrLanguage"]; ok {
-		params.Set("ocrLanguage", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pinned"]; ok {
-		params.Set("pinned", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["timedTextLanguage"]; ok {
-		params.Set("timedTextLanguage", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["timedTextTrackName"]; ok {
-		params.Set("timedTextTrackName", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["useContentAsIndexableText"]; ok {
-		params.Set("useContentAsIndexableText", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["visibility"]; ok {
-		params.Set("visibility", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
-	}
-	urls += "?" + params.Encode()
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
 		}
+		c.urlParams_.Set("uploadType", protocol)
+	}
+	urls += "?" + c.urlParams_.Encode()
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.insert" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *FilesInsertCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -3830,23 +5718,39 @@ func (c *FilesInsertCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return nil, err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return nil, err
+		}
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -3885,7 +5789,7 @@ func (c *FilesInsertCall) Do() (*File, error) {
 	//       "type": "boolean"
 	//     },
 	//     "ocrLanguage": {
-	//       "description": "If ocr is true, hints at the language to use. Valid values are ISO 639-1 codes.",
+	//       "description": "If ocr is true, hints at the language to use. Valid values are BCP 47 codes.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -3948,86 +5852,144 @@ func (c *FilesInsertCall) Do() (*File, error) {
 // method id "drive.files.list":
 
 type FilesListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists the user's files.
 func (r *FilesService) List() *FilesListCall {
-	c := &FilesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
 // Corpus sets the optional parameter "corpus": The body of items
 // (files/documents) to which the query applies.
+//
+// Possible values:
+//   "DEFAULT" - The items that the user has accessed.
+//   "DOMAIN" - Items shared to the user's domain.
 func (c *FilesListCall) Corpus(corpus string) *FilesListCall {
-	c.opt_["corpus"] = corpus
+	c.urlParams_.Set("corpus", corpus)
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults": Maximum number
 // of files to return.
 func (c *FilesListCall) MaxResults(maxResults int64) *FilesListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
+	return c
+}
+
+// OrderBy sets the optional parameter "orderBy": A comma-separated list
+// of sort keys. Valid keys are 'createdDate', 'folder',
+// 'lastViewedByMeDate', 'modifiedByMeDate', 'modifiedDate',
+// 'quotaBytesUsed', 'recency', 'sharedWithMeDate', 'starred', and
+// 'title'. Each key sorts ascending by default, but may be reversed
+// with the 'desc' modifier. Example usage: ?orderBy=folder,modifiedDate
+// desc,title. Please note that there is a current limitation for users
+// with approximately one million files in which the requested sort
+// order is ignored.
+func (c *FilesListCall) OrderBy(orderBy string) *FilesListCall {
+	c.urlParams_.Set("orderBy", orderBy)
 	return c
 }
 
 // PageToken sets the optional parameter "pageToken": Page token for
 // files.
 func (c *FilesListCall) PageToken(pageToken string) *FilesListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // Projection sets the optional parameter "projection": This parameter
 // is deprecated and has no function.
+//
+// Possible values:
+//   "BASIC" - Deprecated
+//   "FULL" - Deprecated
 func (c *FilesListCall) Projection(projection string) *FilesListCall {
-	c.opt_["projection"] = projection
+	c.urlParams_.Set("projection", projection)
 	return c
 }
 
 // Q sets the optional parameter "q": Query string for searching files.
 func (c *FilesListCall) Q(q string) *FilesListCall {
-	c.opt_["q"] = q
+	c.urlParams_.Set("q", q)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Spaces sets the optional parameter "spaces": A comma-separated list
+// of spaces to query. Supported values are 'drive', 'appDataFolder' and
+// 'photos'.
+func (c *FilesListCall) Spaces(spaces string) *FilesListCall {
+	c.urlParams_.Set("spaces", spaces)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesListCall) Fields(s ...googleapi.Field) *FilesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesListCall) Do() (*FileList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *FilesListCall) IfNoneMatch(entityTag string) *FilesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesListCall) Context(ctx context.Context) *FilesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["corpus"]; ok {
-		params.Set("corpus", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projection"]; ok {
-		params.Set("projection", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["q"]; ok {
-		params.Set("q", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.list" call.
+// Exactly one of *FileList or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *FileList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *FilesListCall) Do(opts ...googleapi.CallOption) (*FileList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4035,7 +5997,12 @@ func (c *FilesListCall) Do() (*FileList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *FileList
+	ret := &FileList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4066,6 +6033,11 @@ func (c *FilesListCall) Do() (*FileList, error) {
 	//       "minimum": "0",
 	//       "type": "integer"
 	//     },
+	//     "orderBy": {
+	//       "description": "A comma-separated list of sort keys. Valid keys are 'createdDate', 'folder', 'lastViewedByMeDate', 'modifiedByMeDate', 'modifiedDate', 'quotaBytesUsed', 'recency', 'sharedWithMeDate', 'starred', and 'title'. Each key sorts ascending by default, but may be reversed with the 'desc' modifier. Example usage: ?orderBy=folder,modifiedDate desc,title. Please note that there is a current limitation for users with approximately one million files in which the requested sort order is ignored.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "pageToken": {
 	//       "description": "Page token for files.",
 	//       "location": "query",
@@ -4088,6 +6060,11 @@ func (c *FilesListCall) Do() (*FileList, error) {
 	//       "description": "Query string for searching files.",
 	//       "location": "query",
 	//       "type": "string"
+	//     },
+	//     "spaces": {
+	//       "description": "A comma-separated list of spaces to query. Supported values are 'drive', 'appDataFolder' and 'photos'.",
+	//       "location": "query",
+	//       "type": "string"
 	//     }
 	//   },
 	//   "path": "files",
@@ -4099,26 +6076,50 @@ func (c *FilesListCall) Do() (*FileList, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *FilesListCall) Pages(ctx context.Context, f func(*FileList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "drive.files.patch":
 
 type FilesPatchCall struct {
-	s      *Service
-	fileId string
-	file   *File
-	opt_   map[string]interface{}
+	s          *Service
+	fileId     string
+	file       *File
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Updates file metadata and/or content. This method supports
 // patch semantics.
 func (r *FilesService) Patch(fileId string, file *File) *FilesPatchCall {
-	c := &FilesPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.file = file
 	return c
@@ -4127,80 +6128,103 @@ func (r *FilesService) Patch(fileId string, file *File) *FilesPatchCall {
 // AddParents sets the optional parameter "addParents": Comma-separated
 // list of parent IDs to add.
 func (c *FilesPatchCall) AddParents(addParents string) *FilesPatchCall {
-	c.opt_["addParents"] = addParents
+	c.urlParams_.Set("addParents", addParents)
 	return c
 }
 
-// Convert sets the optional parameter "convert": Whether to convert
-// this file to the corresponding Google Docs format.
+// Convert sets the optional parameter "convert": This parameter is
+// deprecated and has no function.
 func (c *FilesPatchCall) Convert(convert bool) *FilesPatchCall {
-	c.opt_["convert"] = convert
+	c.urlParams_.Set("convert", fmt.Sprint(convert))
+	return c
+}
+
+// ModifiedDateBehavior sets the optional parameter
+// "modifiedDateBehavior": Determines the behavior in which modifiedDate
+// is updated. This overrides setModifiedDate.
+//
+// Possible values:
+//   "fromBody" - Set modifiedDate to the value provided in the body of
+// the request. No change if no value was provided.
+//   "fromBodyIfNeeded" - Set modifiedDate to the value provided in the
+// body of the request depending on other contents of the update.
+//   "fromBodyOrNow" - Set modifiedDate to the value provided in the
+// body of the request, or to the current time if no value was provided.
+//   "noChange" - Maintain the previous value of modifiedDate.
+//   "now" - Set modifiedDate to the current time.
+//   "nowIfNeeded" - Set modifiedDate to the current time depending on
+// contents of the update.
+func (c *FilesPatchCall) ModifiedDateBehavior(modifiedDateBehavior string) *FilesPatchCall {
+	c.urlParams_.Set("modifiedDateBehavior", modifiedDateBehavior)
 	return c
 }
 
 // NewRevision sets the optional parameter "newRevision": Whether a blob
 // upload should create a new revision. If false, the blob data in the
 // current head revision is replaced. If true or not set, a new blob is
-// created as head revision, and previous revisions are preserved
-// (causing increased use of the user's data storage quota).
+// created as head revision, and previous unpinned revisions are
+// preserved for a short period of time. Pinned revisions are stored
+// indefinitely, using additional storage quota, up to a maximum of 200
+// revisions. For details on how revisions are retained, see the Drive
+// Help Center.
 func (c *FilesPatchCall) NewRevision(newRevision bool) *FilesPatchCall {
-	c.opt_["newRevision"] = newRevision
+	c.urlParams_.Set("newRevision", fmt.Sprint(newRevision))
 	return c
 }
 
 // Ocr sets the optional parameter "ocr": Whether to attempt OCR on
 // .jpg, .png, .gif, or .pdf uploads.
 func (c *FilesPatchCall) Ocr(ocr bool) *FilesPatchCall {
-	c.opt_["ocr"] = ocr
+	c.urlParams_.Set("ocr", fmt.Sprint(ocr))
 	return c
 }
 
 // OcrLanguage sets the optional parameter "ocrLanguage": If ocr is
-// true, hints at the language to use. Valid values are ISO 639-1 codes.
+// true, hints at the language to use. Valid values are BCP 47 codes.
 func (c *FilesPatchCall) OcrLanguage(ocrLanguage string) *FilesPatchCall {
-	c.opt_["ocrLanguage"] = ocrLanguage
+	c.urlParams_.Set("ocrLanguage", ocrLanguage)
 	return c
 }
 
 // Pinned sets the optional parameter "pinned": Whether to pin the new
 // revision. A file can have a maximum of 200 pinned revisions.
 func (c *FilesPatchCall) Pinned(pinned bool) *FilesPatchCall {
-	c.opt_["pinned"] = pinned
+	c.urlParams_.Set("pinned", fmt.Sprint(pinned))
 	return c
 }
 
 // RemoveParents sets the optional parameter "removeParents":
 // Comma-separated list of parent IDs to remove.
 func (c *FilesPatchCall) RemoveParents(removeParents string) *FilesPatchCall {
-	c.opt_["removeParents"] = removeParents
+	c.urlParams_.Set("removeParents", removeParents)
 	return c
 }
 
 // SetModifiedDate sets the optional parameter "setModifiedDate":
 // Whether to set the modified date with the supplied modified date.
 func (c *FilesPatchCall) SetModifiedDate(setModifiedDate bool) *FilesPatchCall {
-	c.opt_["setModifiedDate"] = setModifiedDate
+	c.urlParams_.Set("setModifiedDate", fmt.Sprint(setModifiedDate))
 	return c
 }
 
 // TimedTextLanguage sets the optional parameter "timedTextLanguage":
 // The language of the timed text.
 func (c *FilesPatchCall) TimedTextLanguage(timedTextLanguage string) *FilesPatchCall {
-	c.opt_["timedTextLanguage"] = timedTextLanguage
+	c.urlParams_.Set("timedTextLanguage", timedTextLanguage)
 	return c
 }
 
 // TimedTextTrackName sets the optional parameter "timedTextTrackName":
 // The timed text track name.
 func (c *FilesPatchCall) TimedTextTrackName(timedTextTrackName string) *FilesPatchCall {
-	c.opt_["timedTextTrackName"] = timedTextTrackName
+	c.urlParams_.Set("timedTextTrackName", timedTextTrackName)
 	return c
 }
 
 // UpdateViewedDate sets the optional parameter "updateViewedDate":
 // Whether to update the view date after successfully updating the file.
 func (c *FilesPatchCall) UpdateViewedDate(updateViewedDate bool) *FilesPatchCall {
-	c.opt_["updateViewedDate"] = updateViewedDate
+	c.urlParams_.Set("updateViewedDate", fmt.Sprint(updateViewedDate))
 	return c
 }
 
@@ -4208,75 +6232,67 @@ func (c *FilesPatchCall) UpdateViewedDate(updateViewedDate bool) *FilesPatchCall
 // "useContentAsIndexableText": Whether to use the content as indexable
 // text.
 func (c *FilesPatchCall) UseContentAsIndexableText(useContentAsIndexableText bool) *FilesPatchCall {
-	c.opt_["useContentAsIndexableText"] = useContentAsIndexableText
+	c.urlParams_.Set("useContentAsIndexableText", fmt.Sprint(useContentAsIndexableText))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesPatchCall) Fields(s ...googleapi.Field) *FilesPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesPatchCall) Do() (*File, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesPatchCall) Context(ctx context.Context) *FilesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.file)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["addParents"]; ok {
-		params.Set("addParents", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["convert"]; ok {
-		params.Set("convert", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["newRevision"]; ok {
-		params.Set("newRevision", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["ocr"]; ok {
-		params.Set("ocr", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["ocrLanguage"]; ok {
-		params.Set("ocrLanguage", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pinned"]; ok {
-		params.Set("pinned", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["removeParents"]; ok {
-		params.Set("removeParents", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["setModifiedDate"]; ok {
-		params.Set("setModifiedDate", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["timedTextLanguage"]; ok {
-		params.Set("timedTextLanguage", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["timedTextTrackName"]; ok {
-		params.Set("timedTextTrackName", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["updateViewedDate"]; ok {
-		params.Set("updateViewedDate", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["useContentAsIndexableText"]; ok {
-		params.Set("useContentAsIndexableText", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.patch" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *FilesPatchCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4284,7 +6300,12 @@ func (c *FilesPatchCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4304,7 +6325,7 @@ func (c *FilesPatchCall) Do() (*File, error) {
 	//     },
 	//     "convert": {
 	//       "default": "false",
-	//       "description": "Whether to convert this file to the corresponding Google Docs format.",
+	//       "description": "This parameter is deprecated and has no function.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     },
@@ -4314,9 +6335,30 @@ func (c *FilesPatchCall) Do() (*File, error) {
 	//       "required": true,
 	//       "type": "string"
 	//     },
+	//     "modifiedDateBehavior": {
+	//       "description": "Determines the behavior in which modifiedDate is updated. This overrides setModifiedDate.",
+	//       "enum": [
+	//         "fromBody",
+	//         "fromBodyIfNeeded",
+	//         "fromBodyOrNow",
+	//         "noChange",
+	//         "now",
+	//         "nowIfNeeded"
+	//       ],
+	//       "enumDescriptions": [
+	//         "Set modifiedDate to the value provided in the body of the request. No change if no value was provided.",
+	//         "Set modifiedDate to the value provided in the body of the request depending on other contents of the update.",
+	//         "Set modifiedDate to the value provided in the body of the request, or to the current time if no value was provided.",
+	//         "Maintain the previous value of modifiedDate.",
+	//         "Set modifiedDate to the current time.",
+	//         "Set modifiedDate to the current time depending on contents of the update."
+	//       ],
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "newRevision": {
 	//       "default": "true",
-	//       "description": "Whether a blob upload should create a new revision. If false, the blob data in the current head revision is replaced. If true or not set, a new blob is created as head revision, and previous revisions are preserved (causing increased use of the user's data storage quota).",
+	//       "description": "Whether a blob upload should create a new revision. If false, the blob data in the current head revision is replaced. If true or not set, a new blob is created as head revision, and previous unpinned revisions are preserved for a short period of time. Pinned revisions are stored indefinitely, using additional storage quota, up to a maximum of 200 revisions. For details on how revisions are retained, see the Drive Help Center.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     },
@@ -4327,7 +6369,7 @@ func (c *FilesPatchCall) Do() (*File, error) {
 	//       "type": "boolean"
 	//     },
 	//     "ocrLanguage": {
-	//       "description": "If ocr is true, hints at the language to use. Valid values are ISO 639-1 codes.",
+	//       "description": "If ocr is true, hints at the language to use. Valid values are BCP 47 codes.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -4383,6 +6425,7 @@ func (c *FilesPatchCall) Do() (*File, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.scripts"
 	//   ]
 	// }
@@ -4392,41 +6435,70 @@ func (c *FilesPatchCall) Do() (*File, error) {
 // method id "drive.files.touch":
 
 type FilesTouchCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s          *Service
+	fileId     string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Touch: Set the file's updated time to the current server time.
 func (r *FilesService) Touch(fileId string) *FilesTouchCall {
-	c := &FilesTouchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesTouchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesTouchCall) Fields(s ...googleapi.Field) *FilesTouchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesTouchCall) Do() (*File, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesTouchCall) Context(ctx context.Context) *FilesTouchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesTouchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/touch")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.touch" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *FilesTouchCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4434,7 +6506,12 @@ func (c *FilesTouchCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4462,7 +6539,8 @@ func (c *FilesTouchCall) Do() (*File, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
-	//     "https://www.googleapis.com/auth/drive.file"
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata"
 	//   ]
 	// }
 
@@ -4471,41 +6549,71 @@ func (c *FilesTouchCall) Do() (*File, error) {
 // method id "drive.files.trash":
 
 type FilesTrashCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s          *Service
+	fileId     string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
-// Trash: Moves a file to the trash.
+// Trash: Moves a file to the trash. The currently authenticated user
+// must own the file.
 func (r *FilesService) Trash(fileId string) *FilesTrashCall {
-	c := &FilesTrashCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesTrashCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesTrashCall) Fields(s ...googleapi.Field) *FilesTrashCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesTrashCall) Do() (*File, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesTrashCall) Context(ctx context.Context) *FilesTrashCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesTrashCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/trash")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.trash" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *FilesTrashCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4513,13 +6621,18 @@ func (c *FilesTrashCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Moves a file to the trash.",
+	//   "description": "Moves a file to the trash. The currently authenticated user must own the file.",
 	//   "httpMethod": "POST",
 	//   "id": "drive.files.trash",
 	//   "parameterOrder": [
@@ -4550,41 +6663,70 @@ func (c *FilesTrashCall) Do() (*File, error) {
 // method id "drive.files.untrash":
 
 type FilesUntrashCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s          *Service
+	fileId     string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Untrash: Restores a file from the trash.
 func (r *FilesService) Untrash(fileId string) *FilesUntrashCall {
-	c := &FilesUntrashCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesUntrashCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesUntrashCall) Fields(s ...googleapi.Field) *FilesUntrashCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesUntrashCall) Do() (*File, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FilesUntrashCall) Context(ctx context.Context) *FilesUntrashCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesUntrashCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/untrash")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.untrash" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *FilesUntrashCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4592,7 +6734,12 @@ func (c *FilesUntrashCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4629,20 +6776,21 @@ func (c *FilesUntrashCall) Do() (*File, error) {
 // method id "drive.files.update":
 
 type FilesUpdateCall struct {
-	s          *Service
-	fileId     string
-	file       *File
-	opt_       map[string]interface{}
-	media_     io.Reader
-	resumable_ googleapi.SizeReaderAt
-	mediaType_ string
-	ctx_       context.Context
-	protocol_  string
+	s                *Service
+	fileId           string
+	file             *File
+	urlParams_       gensupport.URLParams
+	media_           io.Reader
+	resumableBuffer_ *gensupport.ResumableBuffer
+	mediaType_       string
+	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_ googleapi.ProgressUpdater
+	ctx_             context.Context
 }
 
 // Update: Updates file metadata and/or content.
 func (r *FilesService) Update(fileId string, file *File) *FilesUpdateCall {
-	c := &FilesUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.file = file
 	return c
@@ -4651,80 +6799,103 @@ func (r *FilesService) Update(fileId string, file *File) *FilesUpdateCall {
 // AddParents sets the optional parameter "addParents": Comma-separated
 // list of parent IDs to add.
 func (c *FilesUpdateCall) AddParents(addParents string) *FilesUpdateCall {
-	c.opt_["addParents"] = addParents
+	c.urlParams_.Set("addParents", addParents)
 	return c
 }
 
-// Convert sets the optional parameter "convert": Whether to convert
-// this file to the corresponding Google Docs format.
+// Convert sets the optional parameter "convert": This parameter is
+// deprecated and has no function.
 func (c *FilesUpdateCall) Convert(convert bool) *FilesUpdateCall {
-	c.opt_["convert"] = convert
+	c.urlParams_.Set("convert", fmt.Sprint(convert))
+	return c
+}
+
+// ModifiedDateBehavior sets the optional parameter
+// "modifiedDateBehavior": Determines the behavior in which modifiedDate
+// is updated. This overrides setModifiedDate.
+//
+// Possible values:
+//   "fromBody" - Set modifiedDate to the value provided in the body of
+// the request. No change if no value was provided.
+//   "fromBodyIfNeeded" - Set modifiedDate to the value provided in the
+// body of the request depending on other contents of the update.
+//   "fromBodyOrNow" - Set modifiedDate to the value provided in the
+// body of the request, or to the current time if no value was provided.
+//   "noChange" - Maintain the previous value of modifiedDate.
+//   "now" - Set modifiedDate to the current time.
+//   "nowIfNeeded" - Set modifiedDate to the current time depending on
+// contents of the update.
+func (c *FilesUpdateCall) ModifiedDateBehavior(modifiedDateBehavior string) *FilesUpdateCall {
+	c.urlParams_.Set("modifiedDateBehavior", modifiedDateBehavior)
 	return c
 }
 
 // NewRevision sets the optional parameter "newRevision": Whether a blob
 // upload should create a new revision. If false, the blob data in the
 // current head revision is replaced. If true or not set, a new blob is
-// created as head revision, and previous revisions are preserved
-// (causing increased use of the user's data storage quota).
+// created as head revision, and previous unpinned revisions are
+// preserved for a short period of time. Pinned revisions are stored
+// indefinitely, using additional storage quota, up to a maximum of 200
+// revisions. For details on how revisions are retained, see the Drive
+// Help Center.
 func (c *FilesUpdateCall) NewRevision(newRevision bool) *FilesUpdateCall {
-	c.opt_["newRevision"] = newRevision
+	c.urlParams_.Set("newRevision", fmt.Sprint(newRevision))
 	return c
 }
 
 // Ocr sets the optional parameter "ocr": Whether to attempt OCR on
 // .jpg, .png, .gif, or .pdf uploads.
 func (c *FilesUpdateCall) Ocr(ocr bool) *FilesUpdateCall {
-	c.opt_["ocr"] = ocr
+	c.urlParams_.Set("ocr", fmt.Sprint(ocr))
 	return c
 }
 
 // OcrLanguage sets the optional parameter "ocrLanguage": If ocr is
-// true, hints at the language to use. Valid values are ISO 639-1 codes.
+// true, hints at the language to use. Valid values are BCP 47 codes.
 func (c *FilesUpdateCall) OcrLanguage(ocrLanguage string) *FilesUpdateCall {
-	c.opt_["ocrLanguage"] = ocrLanguage
+	c.urlParams_.Set("ocrLanguage", ocrLanguage)
 	return c
 }
 
 // Pinned sets the optional parameter "pinned": Whether to pin the new
 // revision. A file can have a maximum of 200 pinned revisions.
 func (c *FilesUpdateCall) Pinned(pinned bool) *FilesUpdateCall {
-	c.opt_["pinned"] = pinned
+	c.urlParams_.Set("pinned", fmt.Sprint(pinned))
 	return c
 }
 
 // RemoveParents sets the optional parameter "removeParents":
 // Comma-separated list of parent IDs to remove.
 func (c *FilesUpdateCall) RemoveParents(removeParents string) *FilesUpdateCall {
-	c.opt_["removeParents"] = removeParents
+	c.urlParams_.Set("removeParents", removeParents)
 	return c
 }
 
 // SetModifiedDate sets the optional parameter "setModifiedDate":
 // Whether to set the modified date with the supplied modified date.
 func (c *FilesUpdateCall) SetModifiedDate(setModifiedDate bool) *FilesUpdateCall {
-	c.opt_["setModifiedDate"] = setModifiedDate
+	c.urlParams_.Set("setModifiedDate", fmt.Sprint(setModifiedDate))
 	return c
 }
 
 // TimedTextLanguage sets the optional parameter "timedTextLanguage":
 // The language of the timed text.
 func (c *FilesUpdateCall) TimedTextLanguage(timedTextLanguage string) *FilesUpdateCall {
-	c.opt_["timedTextLanguage"] = timedTextLanguage
+	c.urlParams_.Set("timedTextLanguage", timedTextLanguage)
 	return c
 }
 
 // TimedTextTrackName sets the optional parameter "timedTextTrackName":
 // The timed text track name.
 func (c *FilesUpdateCall) TimedTextTrackName(timedTextTrackName string) *FilesUpdateCall {
-	c.opt_["timedTextTrackName"] = timedTextTrackName
+	c.urlParams_.Set("timedTextTrackName", timedTextTrackName)
 	return c
 }
 
 // UpdateViewedDate sets the optional parameter "updateViewedDate":
 // Whether to update the view date after successfully updating the file.
 func (c *FilesUpdateCall) UpdateViewedDate(updateViewedDate bool) *FilesUpdateCall {
-	c.opt_["updateViewedDate"] = updateViewedDate
+	c.urlParams_.Set("updateViewedDate", fmt.Sprint(updateViewedDate))
 	return c
 }
 
@@ -4732,129 +6903,134 @@ func (c *FilesUpdateCall) UpdateViewedDate(updateViewedDate bool) *FilesUpdateCa
 // "useContentAsIndexableText": Whether to use the content as indexable
 // text.
 func (c *FilesUpdateCall) UseContentAsIndexableText(useContentAsIndexableText bool) *FilesUpdateCall {
-	c.opt_["useContentAsIndexableText"] = useContentAsIndexableText
+	c.urlParams_.Set("useContentAsIndexableText", fmt.Sprint(useContentAsIndexableText))
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *FilesUpdateCall) Media(r io.Reader) *FilesUpdateCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *FilesUpdateCall) Media(r io.Reader, options ...googleapi.MediaOption) *FilesUpdateCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *FilesUpdateCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *FilesUpdateCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *FilesUpdateCall) ProgressUpdater(pu googleapi.ProgressUpdater) *FilesUpdateCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesUpdateCall) Fields(s ...googleapi.Field) *FilesUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesUpdateCall) Do() (*File, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *FilesUpdateCall) Context(ctx context.Context) *FilesUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.file)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["addParents"]; ok {
-		params.Set("addParents", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["convert"]; ok {
-		params.Set("convert", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["newRevision"]; ok {
-		params.Set("newRevision", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["ocr"]; ok {
-		params.Set("ocr", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["ocrLanguage"]; ok {
-		params.Set("ocrLanguage", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pinned"]; ok {
-		params.Set("pinned", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["removeParents"]; ok {
-		params.Set("removeParents", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["setModifiedDate"]; ok {
-		params.Set("setModifiedDate", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["timedTextLanguage"]; ok {
-		params.Set("timedTextLanguage", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["timedTextTrackName"]; ok {
-		params.Set("timedTextTrackName", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["updateViewedDate"]; ok {
-		params.Set("updateViewedDate", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["useContentAsIndexableText"]; ok {
-		params.Set("useContentAsIndexableText", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
-	}
-	urls += "?" + params.Encode()
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
 		}
+		c.urlParams_.Set("uploadType", protocol)
+	}
+	urls += "?" + c.urlParams_.Encode()
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.files.update" call.
+// Exactly one of *File or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *File.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *FilesUpdateCall) Do(opts ...googleapi.CallOption) (*File, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -4862,23 +7038,39 @@ func (c *FilesUpdateCall) Do() (*File, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return nil, err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return nil, err
+		}
 	}
-	var ret *File
+	ret := &File{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -4914,7 +7106,7 @@ func (c *FilesUpdateCall) Do() (*File, error) {
 	//     },
 	//     "convert": {
 	//       "default": "false",
-	//       "description": "Whether to convert this file to the corresponding Google Docs format.",
+	//       "description": "This parameter is deprecated and has no function.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     },
@@ -4924,9 +7116,30 @@ func (c *FilesUpdateCall) Do() (*File, error) {
 	//       "required": true,
 	//       "type": "string"
 	//     },
+	//     "modifiedDateBehavior": {
+	//       "description": "Determines the behavior in which modifiedDate is updated. This overrides setModifiedDate.",
+	//       "enum": [
+	//         "fromBody",
+	//         "fromBodyIfNeeded",
+	//         "fromBodyOrNow",
+	//         "noChange",
+	//         "now",
+	//         "nowIfNeeded"
+	//       ],
+	//       "enumDescriptions": [
+	//         "Set modifiedDate to the value provided in the body of the request. No change if no value was provided.",
+	//         "Set modifiedDate to the value provided in the body of the request depending on other contents of the update.",
+	//         "Set modifiedDate to the value provided in the body of the request, or to the current time if no value was provided.",
+	//         "Maintain the previous value of modifiedDate.",
+	//         "Set modifiedDate to the current time.",
+	//         "Set modifiedDate to the current time depending on contents of the update."
+	//       ],
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "newRevision": {
 	//       "default": "true",
-	//       "description": "Whether a blob upload should create a new revision. If false, the blob data in the current head revision is replaced. If true or not set, a new blob is created as head revision, and previous revisions are preserved (causing increased use of the user's data storage quota).",
+	//       "description": "Whether a blob upload should create a new revision. If false, the blob data in the current head revision is replaced. If true or not set, a new blob is created as head revision, and previous unpinned revisions are preserved for a short period of time. Pinned revisions are stored indefinitely, using additional storage quota, up to a maximum of 200 revisions. For details on how revisions are retained, see the Drive Help Center.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     },
@@ -4937,7 +7150,7 @@ func (c *FilesUpdateCall) Do() (*File, error) {
 	//       "type": "boolean"
 	//     },
 	//     "ocrLanguage": {
-	//       "description": "If ocr is true, hints at the language to use. Valid values are ISO 639-1 codes.",
+	//       "description": "If ocr is true, hints at the language to use. Valid values are BCP 47 codes.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -4993,6 +7206,7 @@ func (c *FilesUpdateCall) Do() (*File, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.scripts"
 	//   ],
 	//   "supportsMediaUpload": true
@@ -5003,15 +7217,16 @@ func (c *FilesUpdateCall) Do() (*File, error) {
 // method id "drive.files.watch":
 
 type FilesWatchCall struct {
-	s       *Service
-	fileId  string
-	channel *Channel
-	opt_    map[string]interface{}
+	s          *Service
+	fileId     string
+	channel    *Channel
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Watch: Subscribe to changes on a file
 func (r *FilesService) Watch(fileId string, channel *Channel) *FilesWatchCall {
-	c := &FilesWatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &FilesWatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.channel = channel
 	return c
@@ -5021,63 +7236,110 @@ func (r *FilesService) Watch(fileId string, channel *Channel) *FilesWatchCall {
 // Whether the user is acknowledging the risk of downloading known
 // malware or other abusive files.
 func (c *FilesWatchCall) AcknowledgeAbuse(acknowledgeAbuse bool) *FilesWatchCall {
-	c.opt_["acknowledgeAbuse"] = acknowledgeAbuse
+	c.urlParams_.Set("acknowledgeAbuse", fmt.Sprint(acknowledgeAbuse))
 	return c
 }
 
 // Projection sets the optional parameter "projection": This parameter
 // is deprecated and has no function.
+//
+// Possible values:
+//   "BASIC" - Deprecated
+//   "FULL" - Deprecated
 func (c *FilesWatchCall) Projection(projection string) *FilesWatchCall {
-	c.opt_["projection"] = projection
+	c.urlParams_.Set("projection", projection)
+	return c
+}
+
+// RevisionId sets the optional parameter "revisionId": Specifies the
+// Revision ID that should be downloaded. Ignored unless alt=media is
+// specified.
+func (c *FilesWatchCall) RevisionId(revisionId string) *FilesWatchCall {
+	c.urlParams_.Set("revisionId", revisionId)
 	return c
 }
 
 // UpdateViewedDate sets the optional parameter "updateViewedDate":
-// Whether to update the view date after successfully retrieving the
-// file.
+// Deprecated: Use files.update with modifiedDateBehavior=noChange,
+// updateViewedDate=true and an empty request body.
 func (c *FilesWatchCall) UpdateViewedDate(updateViewedDate bool) *FilesWatchCall {
-	c.opt_["updateViewedDate"] = updateViewedDate
+	c.urlParams_.Set("updateViewedDate", fmt.Sprint(updateViewedDate))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *FilesWatchCall) Fields(s ...googleapi.Field) *FilesWatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *FilesWatchCall) Do() (*Channel, error) {
+// Context sets the context to be used in this call's Do and Download
+// methods. Any pending HTTP request will be aborted if the provided
+// context is canceled.
+func (c *FilesWatchCall) Context(ctx context.Context) *FilesWatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *FilesWatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.channel)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["acknowledgeAbuse"]; ok {
-		params.Set("acknowledgeAbuse", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["projection"]; ok {
-		params.Set("projection", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["updateViewedDate"]; ok {
-		params.Set("updateViewedDate", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/watch")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Download fetches the API endpoint's "media" value, instead of the normal
+// API response value. If the returned error is nil, the Response is guaranteed to
+// have a 2xx status code. Callers must close the Response.Body as usual.
+func (c *FilesWatchCall) Download(opts ...googleapi.CallOption) (*http.Response, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("media")
+	if err != nil {
+		return nil, err
+	}
+	if err := googleapi.CheckMediaResponse(res); err != nil {
+		res.Body.Close()
+		return nil, err
+	}
+	return res, nil
+}
+
+// Do executes the "drive.files.watch" call.
+// Exactly one of *Channel or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Channel.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *FilesWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5085,7 +7347,12 @@ func (c *FilesWatchCall) Do() (*Channel, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Channel
+	ret := &Channel{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5123,9 +7390,14 @@ func (c *FilesWatchCall) Do() (*Channel, error) {
 	//       "location": "query",
 	//       "type": "string"
 	//     },
+	//     "revisionId": {
+	//       "description": "Specifies the Revision ID that should be downloaded. Ignored unless alt=media is specified.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "updateViewedDate": {
 	//       "default": "false",
-	//       "description": "Whether to update the view date after successfully retrieving the file.",
+	//       "description": "Deprecated: Use files.update with modifiedDateBehavior=noChange, updateViewedDate=true and an empty request body.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     }
@@ -5143,11 +7415,14 @@ func (c *FilesWatchCall) Do() (*Channel, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ],
 	//   "supportsMediaDownload": true,
-	//   "supportsSubscription": true
+	//   "supportsSubscription": true,
+	//   "useMediaDownloadService": true
 	// }
 
 }
@@ -5155,44 +7430,58 @@ func (c *FilesWatchCall) Do() (*Channel, error) {
 // method id "drive.parents.delete":
 
 type ParentsDeleteCall struct {
-	s        *Service
-	fileId   string
-	parentId string
-	opt_     map[string]interface{}
+	s          *Service
+	fileId     string
+	parentId   string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Removes a parent from a file.
 func (r *ParentsService) Delete(fileId string, parentId string) *ParentsDeleteCall {
-	c := &ParentsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ParentsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.parentId = parentId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ParentsDeleteCall) Fields(s ...googleapi.Field) *ParentsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ParentsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ParentsDeleteCall) Context(ctx context.Context) *ParentsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ParentsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/parents/{parentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":   c.fileId,
 		"parentId": c.parentId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.parents.delete" call.
+func (c *ParentsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -5235,44 +7524,87 @@ func (c *ParentsDeleteCall) Do() error {
 // method id "drive.parents.get":
 
 type ParentsGetCall struct {
-	s        *Service
-	fileId   string
-	parentId string
-	opt_     map[string]interface{}
+	s            *Service
+	fileId       string
+	parentId     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a specific parent reference.
 func (r *ParentsService) Get(fileId string, parentId string) *ParentsGetCall {
-	c := &ParentsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ParentsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.parentId = parentId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ParentsGetCall) Fields(s ...googleapi.Field) *ParentsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ParentsGetCall) Do() (*ParentReference, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ParentsGetCall) IfNoneMatch(entityTag string) *ParentsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ParentsGetCall) Context(ctx context.Context) *ParentsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ParentsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/parents/{parentId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":   c.fileId,
 		"parentId": c.parentId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.parents.get" call.
+// Exactly one of *ParentReference or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ParentReference.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ParentsGetCall) Do(opts ...googleapi.CallOption) (*ParentReference, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5280,7 +7612,12 @@ func (c *ParentsGetCall) Do() (*ParentReference, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ParentReference
+	ret := &ParentReference{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5315,7 +7652,9 @@ func (c *ParentsGetCall) Do() (*ParentReference, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -5328,46 +7667,75 @@ type ParentsInsertCall struct {
 	s               *Service
 	fileId          string
 	parentreference *ParentReference
-	opt_            map[string]interface{}
+	urlParams_      gensupport.URLParams
+	ctx_            context.Context
 }
 
 // Insert: Adds a parent folder for a file.
 func (r *ParentsService) Insert(fileId string, parentreference *ParentReference) *ParentsInsertCall {
-	c := &ParentsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ParentsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.parentreference = parentreference
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ParentsInsertCall) Fields(s ...googleapi.Field) *ParentsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ParentsInsertCall) Do() (*ParentReference, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ParentsInsertCall) Context(ctx context.Context) *ParentsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ParentsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.parentreference)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/parents")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.parents.insert" call.
+// Exactly one of *ParentReference or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ParentReference.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ParentsInsertCall) Do(opts ...googleapi.CallOption) (*ParentReference, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5375,7 +7743,12 @@ func (c *ParentsInsertCall) Do() (*ParentReference, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ParentReference
+	ret := &ParentReference{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5414,41 +7787,84 @@ func (c *ParentsInsertCall) Do() (*ParentReference, error) {
 // method id "drive.parents.list":
 
 type ParentsListCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s            *Service
+	fileId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists a file's parents.
 func (r *ParentsService) List(fileId string) *ParentsListCall {
-	c := &ParentsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &ParentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *ParentsListCall) Fields(s ...googleapi.Field) *ParentsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *ParentsListCall) Do() (*ParentList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ParentsListCall) IfNoneMatch(entityTag string) *ParentsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ParentsListCall) Context(ctx context.Context) *ParentsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *ParentsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/parents")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.parents.list" call.
+// Exactly one of *ParentList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *ParentList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ParentsListCall) Do(opts ...googleapi.CallOption) (*ParentList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5456,7 +7872,12 @@ func (c *ParentsListCall) Do() (*ParentList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ParentList
+	ret := &ParentList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5484,7 +7905,9 @@ func (c *ParentsListCall) Do() (*ParentList, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -5497,41 +7920,55 @@ type PermissionsDeleteCall struct {
 	s            *Service
 	fileId       string
 	permissionId string
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Delete: Deletes a permission from a file.
 func (r *PermissionsService) Delete(fileId string, permissionId string) *PermissionsDeleteCall {
-	c := &PermissionsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PermissionsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.permissionId = permissionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PermissionsDeleteCall) Fields(s ...googleapi.Field) *PermissionsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PermissionsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PermissionsDeleteCall) Context(ctx context.Context) *PermissionsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PermissionsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/permissions/{permissionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":       c.fileId,
 		"permissionId": c.permissionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.permissions.delete" call.
+func (c *PermissionsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -5577,41 +8014,84 @@ type PermissionsGetCall struct {
 	s            *Service
 	fileId       string
 	permissionId string
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a permission by ID.
 func (r *PermissionsService) Get(fileId string, permissionId string) *PermissionsGetCall {
-	c := &PermissionsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PermissionsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.permissionId = permissionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PermissionsGetCall) Fields(s ...googleapi.Field) *PermissionsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PermissionsGetCall) Do() (*Permission, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PermissionsGetCall) IfNoneMatch(entityTag string) *PermissionsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PermissionsGetCall) Context(ctx context.Context) *PermissionsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PermissionsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/permissions/{permissionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":       c.fileId,
 		"permissionId": c.permissionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.permissions.get" call.
+// Exactly one of *Permission or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Permission.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PermissionsGetCall) Do(opts ...googleapi.CallOption) (*Permission, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5619,7 +8099,12 @@ func (c *PermissionsGetCall) Do() (*Permission, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Permission
+	ret := &Permission{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5653,7 +8138,9 @@ func (c *PermissionsGetCall) Do() (*Permission, error) {
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -5663,41 +8150,84 @@ func (c *PermissionsGetCall) Do() (*Permission, error) {
 // method id "drive.permissions.getIdForEmail":
 
 type PermissionsGetIdForEmailCall struct {
-	s     *Service
-	email string
-	opt_  map[string]interface{}
+	s            *Service
+	email        string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // GetIdForEmail: Returns the permission ID for an email address.
 func (r *PermissionsService) GetIdForEmail(email string) *PermissionsGetIdForEmailCall {
-	c := &PermissionsGetIdForEmailCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PermissionsGetIdForEmailCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.email = email
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PermissionsGetIdForEmailCall) Fields(s ...googleapi.Field) *PermissionsGetIdForEmailCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PermissionsGetIdForEmailCall) Do() (*PermissionId, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PermissionsGetIdForEmailCall) IfNoneMatch(entityTag string) *PermissionsGetIdForEmailCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PermissionsGetIdForEmailCall) Context(ctx context.Context) *PermissionsGetIdForEmailCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PermissionsGetIdForEmailCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "permissionIds/{email}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"email": c.email,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.permissions.getIdForEmail" call.
+// Exactly one of *PermissionId or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *PermissionId.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PermissionsGetIdForEmailCall) Do(opts ...googleapi.CallOption) (*PermissionId, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5705,7 +8235,12 @@ func (c *PermissionsGetIdForEmailCall) Do() (*PermissionId, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionId
+	ret := &PermissionId{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5734,7 +8269,9 @@ func (c *PermissionsGetIdForEmailCall) Do() (*PermissionId, error) {
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.apps.readonly",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -5747,12 +8284,13 @@ type PermissionsInsertCall struct {
 	s          *Service
 	fileId     string
 	permission *Permission
-	opt_       map[string]interface{}
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Insert: Inserts a permission for a file.
 func (r *PermissionsService) Insert(fileId string, permission *Permission) *PermissionsInsertCall {
-	c := &PermissionsInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PermissionsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.permission = permission
 	return c
@@ -5761,7 +8299,7 @@ func (r *PermissionsService) Insert(fileId string, permission *Permission) *Perm
 // EmailMessage sets the optional parameter "emailMessage": A custom
 // message to include in notification emails.
 func (c *PermissionsInsertCall) EmailMessage(emailMessage string) *PermissionsInsertCall {
-	c.opt_["emailMessage"] = emailMessage
+	c.urlParams_.Set("emailMessage", emailMessage)
 	return c
 }
 
@@ -5770,45 +8308,67 @@ func (c *PermissionsInsertCall) EmailMessage(emailMessage string) *PermissionsIn
 // sharing to users or groups. This parameter is ignored and an email is
 // sent if the role is owner.
 func (c *PermissionsInsertCall) SendNotificationEmails(sendNotificationEmails bool) *PermissionsInsertCall {
-	c.opt_["sendNotificationEmails"] = sendNotificationEmails
+	c.urlParams_.Set("sendNotificationEmails", fmt.Sprint(sendNotificationEmails))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PermissionsInsertCall) Fields(s ...googleapi.Field) *PermissionsInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PermissionsInsertCall) Do() (*Permission, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PermissionsInsertCall) Context(ctx context.Context) *PermissionsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PermissionsInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permission)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["emailMessage"]; ok {
-		params.Set("emailMessage", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["sendNotificationEmails"]; ok {
-		params.Set("sendNotificationEmails", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/permissions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.permissions.insert" call.
+// Exactly one of *Permission or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Permission.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PermissionsInsertCall) Do(opts ...googleapi.CallOption) (*Permission, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5816,7 +8376,12 @@ func (c *PermissionsInsertCall) Do() (*Permission, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Permission
+	ret := &Permission{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5865,41 +8430,84 @@ func (c *PermissionsInsertCall) Do() (*Permission, error) {
 // method id "drive.permissions.list":
 
 type PermissionsListCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s            *Service
+	fileId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists a file's permissions.
 func (r *PermissionsService) List(fileId string) *PermissionsListCall {
-	c := &PermissionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PermissionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PermissionsListCall) Fields(s ...googleapi.Field) *PermissionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PermissionsListCall) Do() (*PermissionList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PermissionsListCall) IfNoneMatch(entityTag string) *PermissionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PermissionsListCall) Context(ctx context.Context) *PermissionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PermissionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/permissions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.permissions.list" call.
+// Exactly one of *PermissionList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *PermissionList.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PermissionsListCall) Do(opts ...googleapi.CallOption) (*PermissionList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -5907,7 +8515,12 @@ func (c *PermissionsListCall) Do() (*PermissionList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PermissionList
+	ret := &PermissionList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -5934,7 +8547,9 @@ func (c *PermissionsListCall) Do() (*PermissionList, error) {
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -5948,12 +8563,13 @@ type PermissionsPatchCall struct {
 	fileId       string
 	permissionId string
 	permission   *Permission
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
-// Patch: Updates a permission. This method supports patch semantics.
+// Patch: Updates a permission using patch semantics.
 func (r *PermissionsService) Patch(fileId string, permissionId string, permission *Permission) *PermissionsPatchCall {
-	c := &PermissionsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PermissionsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.permissionId = permissionId
 	c.permission = permission
@@ -5961,46 +8577,71 @@ func (r *PermissionsService) Patch(fileId string, permissionId string, permissio
 }
 
 // TransferOwnership sets the optional parameter "transferOwnership":
-// Whether changing a role to 'owner' should also downgrade the current
-// owners to writers.
+// Whether changing a role to 'owner' downgrades the current owners to
+// writers. Does nothing if the specified role is not 'owner'.
 func (c *PermissionsPatchCall) TransferOwnership(transferOwnership bool) *PermissionsPatchCall {
-	c.opt_["transferOwnership"] = transferOwnership
+	c.urlParams_.Set("transferOwnership", fmt.Sprint(transferOwnership))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PermissionsPatchCall) Fields(s ...googleapi.Field) *PermissionsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PermissionsPatchCall) Do() (*Permission, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PermissionsPatchCall) Context(ctx context.Context) *PermissionsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PermissionsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permission)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["transferOwnership"]; ok {
-		params.Set("transferOwnership", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/permissions/{permissionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":       c.fileId,
 		"permissionId": c.permissionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.permissions.patch" call.
+// Exactly one of *Permission or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Permission.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PermissionsPatchCall) Do(opts ...googleapi.CallOption) (*Permission, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6008,13 +8649,18 @@ func (c *PermissionsPatchCall) Do() (*Permission, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Permission
+	ret := &Permission{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates a permission. This method supports patch semantics.",
+	//   "description": "Updates a permission using patch semantics.",
 	//   "httpMethod": "PATCH",
 	//   "id": "drive.permissions.patch",
 	//   "parameterOrder": [
@@ -6036,7 +8682,7 @@ func (c *PermissionsPatchCall) Do() (*Permission, error) {
 	//     },
 	//     "transferOwnership": {
 	//       "default": "false",
-	//       "description": "Whether changing a role to 'owner' should also downgrade the current owners to writers.",
+	//       "description": "Whether changing a role to 'owner' downgrades the current owners to writers. Does nothing if the specified role is not 'owner'.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     }
@@ -6063,12 +8709,13 @@ type PermissionsUpdateCall struct {
 	fileId       string
 	permissionId string
 	permission   *Permission
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Update: Updates a permission.
 func (r *PermissionsService) Update(fileId string, permissionId string, permission *Permission) *PermissionsUpdateCall {
-	c := &PermissionsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PermissionsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.permissionId = permissionId
 	c.permission = permission
@@ -6076,46 +8723,71 @@ func (r *PermissionsService) Update(fileId string, permissionId string, permissi
 }
 
 // TransferOwnership sets the optional parameter "transferOwnership":
-// Whether changing a role to 'owner' should also downgrade the current
-// owners to writers.
+// Whether changing a role to 'owner' downgrades the current owners to
+// writers. Does nothing if the specified role is not 'owner'.
 func (c *PermissionsUpdateCall) TransferOwnership(transferOwnership bool) *PermissionsUpdateCall {
-	c.opt_["transferOwnership"] = transferOwnership
+	c.urlParams_.Set("transferOwnership", fmt.Sprint(transferOwnership))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PermissionsUpdateCall) Fields(s ...googleapi.Field) *PermissionsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PermissionsUpdateCall) Do() (*Permission, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PermissionsUpdateCall) Context(ctx context.Context) *PermissionsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PermissionsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.permission)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["transferOwnership"]; ok {
-		params.Set("transferOwnership", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/permissions/{permissionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":       c.fileId,
 		"permissionId": c.permissionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.permissions.update" call.
+// Exactly one of *Permission or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Permission.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PermissionsUpdateCall) Do(opts ...googleapi.CallOption) (*Permission, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6123,7 +8795,12 @@ func (c *PermissionsUpdateCall) Do() (*Permission, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Permission
+	ret := &Permission{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6151,7 +8828,7 @@ func (c *PermissionsUpdateCall) Do() (*Permission, error) {
 	//     },
 	//     "transferOwnership": {
 	//       "default": "false",
-	//       "description": "Whether changing a role to 'owner' should also downgrade the current owners to writers.",
+	//       "description": "Whether changing a role to 'owner' downgrades the current owners to writers. Does nothing if the specified role is not 'owner'.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     }
@@ -6177,12 +8854,13 @@ type PropertiesDeleteCall struct {
 	s           *Service
 	fileId      string
 	propertyKey string
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
 // Delete: Deletes a property.
 func (r *PropertiesService) Delete(fileId string, propertyKey string) *PropertiesDeleteCall {
-	c := &PropertiesDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PropertiesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.propertyKey = propertyKey
 	return c
@@ -6191,37 +8869,47 @@ func (r *PropertiesService) Delete(fileId string, propertyKey string) *Propertie
 // Visibility sets the optional parameter "visibility": The visibility
 // of the property.
 func (c *PropertiesDeleteCall) Visibility(visibility string) *PropertiesDeleteCall {
-	c.opt_["visibility"] = visibility
+	c.urlParams_.Set("visibility", visibility)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PropertiesDeleteCall) Fields(s ...googleapi.Field) *PropertiesDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PropertiesDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PropertiesDeleteCall) Context(ctx context.Context) *PropertiesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PropertiesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["visibility"]; ok {
-		params.Set("visibility", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/properties/{propertyKey}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":      c.fileId,
 		"propertyKey": c.propertyKey,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.properties.delete" call.
+func (c *PropertiesDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -6262,7 +8950,8 @@ func (c *PropertiesDeleteCall) Do() error {
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
-	//     "https://www.googleapis.com/auth/drive.file"
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata"
 	//   ]
 	// }
 
@@ -6271,15 +8960,17 @@ func (c *PropertiesDeleteCall) Do() error {
 // method id "drive.properties.get":
 
 type PropertiesGetCall struct {
-	s           *Service
-	fileId      string
-	propertyKey string
-	opt_        map[string]interface{}
+	s            *Service
+	fileId       string
+	propertyKey  string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a property by its key.
 func (r *PropertiesService) Get(fileId string, propertyKey string) *PropertiesGetCall {
-	c := &PropertiesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PropertiesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.propertyKey = propertyKey
 	return c
@@ -6288,37 +8979,75 @@ func (r *PropertiesService) Get(fileId string, propertyKey string) *PropertiesGe
 // Visibility sets the optional parameter "visibility": The visibility
 // of the property.
 func (c *PropertiesGetCall) Visibility(visibility string) *PropertiesGetCall {
-	c.opt_["visibility"] = visibility
+	c.urlParams_.Set("visibility", visibility)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PropertiesGetCall) Fields(s ...googleapi.Field) *PropertiesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PropertiesGetCall) Do() (*Property, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PropertiesGetCall) IfNoneMatch(entityTag string) *PropertiesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PropertiesGetCall) Context(ctx context.Context) *PropertiesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PropertiesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["visibility"]; ok {
-		params.Set("visibility", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/properties/{propertyKey}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":      c.fileId,
 		"propertyKey": c.propertyKey,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.properties.get" call.
+// Exactly one of *Property or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Property.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PropertiesGetCall) Do(opts ...googleapi.CallOption) (*Property, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6326,7 +9055,12 @@ func (c *PropertiesGetCall) Do() (*Property, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Property
+	ret := &Property{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6367,7 +9101,9 @@ func (c *PropertiesGetCall) Do() (*Property, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -6377,49 +9113,79 @@ func (c *PropertiesGetCall) Do() (*Property, error) {
 // method id "drive.properties.insert":
 
 type PropertiesInsertCall struct {
-	s        *Service
-	fileId   string
-	property *Property
-	opt_     map[string]interface{}
+	s          *Service
+	fileId     string
+	property   *Property
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
-// Insert: Adds a property to a file.
+// Insert: Adds a property to a file, or updates it if it already
+// exists.
 func (r *PropertiesService) Insert(fileId string, property *Property) *PropertiesInsertCall {
-	c := &PropertiesInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PropertiesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.property = property
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PropertiesInsertCall) Fields(s ...googleapi.Field) *PropertiesInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PropertiesInsertCall) Do() (*Property, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PropertiesInsertCall) Context(ctx context.Context) *PropertiesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PropertiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.property)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/properties")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.properties.insert" call.
+// Exactly one of *Property or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Property.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PropertiesInsertCall) Do(opts ...googleapi.CallOption) (*Property, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6427,13 +9193,18 @@ func (c *PropertiesInsertCall) Do() (*Property, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Property
+	ret := &Property{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Adds a property to a file.",
+	//   "description": "Adds a property to a file, or updates it if it already exists.",
 	//   "httpMethod": "POST",
 	//   "id": "drive.properties.insert",
 	//   "parameterOrder": [
@@ -6457,7 +9228,8 @@ func (c *PropertiesInsertCall) Do() (*Property, error) {
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
-	//     "https://www.googleapis.com/auth/drive.file"
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata"
 	//   ]
 	// }
 
@@ -6466,41 +9238,84 @@ func (c *PropertiesInsertCall) Do() (*Property, error) {
 // method id "drive.properties.list":
 
 type PropertiesListCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s            *Service
+	fileId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists a file's properties.
 func (r *PropertiesService) List(fileId string) *PropertiesListCall {
-	c := &PropertiesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PropertiesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PropertiesListCall) Fields(s ...googleapi.Field) *PropertiesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PropertiesListCall) Do() (*PropertyList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PropertiesListCall) IfNoneMatch(entityTag string) *PropertiesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PropertiesListCall) Context(ctx context.Context) *PropertiesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PropertiesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/properties")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.properties.list" call.
+// Exactly one of *PropertyList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *PropertyList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PropertiesListCall) Do(opts ...googleapi.CallOption) (*PropertyList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6508,7 +9323,12 @@ func (c *PropertiesListCall) Do() (*PropertyList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PropertyList
+	ret := &PropertyList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -6536,7 +9356,9 @@ func (c *PropertiesListCall) Do() (*PropertyList, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -6550,12 +9372,14 @@ type PropertiesPatchCall struct {
 	fileId      string
 	propertyKey string
 	property    *Property
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
-// Patch: Updates a property. This method supports patch semantics.
+// Patch: Updates a property, or adds it if it doesn't exist. This
+// method supports patch semantics.
 func (r *PropertiesService) Patch(fileId string, propertyKey string, property *Property) *PropertiesPatchCall {
-	c := &PropertiesPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PropertiesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.propertyKey = propertyKey
 	c.property = property
@@ -6565,43 +9389,68 @@ func (r *PropertiesService) Patch(fileId string, propertyKey string, property *P
 // Visibility sets the optional parameter "visibility": The visibility
 // of the property.
 func (c *PropertiesPatchCall) Visibility(visibility string) *PropertiesPatchCall {
-	c.opt_["visibility"] = visibility
+	c.urlParams_.Set("visibility", visibility)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PropertiesPatchCall) Fields(s ...googleapi.Field) *PropertiesPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PropertiesPatchCall) Do() (*Property, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PropertiesPatchCall) Context(ctx context.Context) *PropertiesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PropertiesPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.property)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["visibility"]; ok {
-		params.Set("visibility", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/properties/{propertyKey}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":      c.fileId,
 		"propertyKey": c.propertyKey,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.properties.patch" call.
+// Exactly one of *Property or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Property.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PropertiesPatchCall) Do(opts ...googleapi.CallOption) (*Property, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6609,13 +9458,18 @@ func (c *PropertiesPatchCall) Do() (*Property, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Property
+	ret := &Property{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates a property. This method supports patch semantics.",
+	//   "description": "Updates a property, or adds it if it doesn't exist. This method supports patch semantics.",
 	//   "httpMethod": "PATCH",
 	//   "id": "drive.properties.patch",
 	//   "parameterOrder": [
@@ -6652,7 +9506,8 @@ func (c *PropertiesPatchCall) Do() (*Property, error) {
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
-	//     "https://www.googleapis.com/auth/drive.file"
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata"
 	//   ]
 	// }
 
@@ -6665,12 +9520,13 @@ type PropertiesUpdateCall struct {
 	fileId      string
 	propertyKey string
 	property    *Property
-	opt_        map[string]interface{}
+	urlParams_  gensupport.URLParams
+	ctx_        context.Context
 }
 
-// Update: Updates a property.
+// Update: Updates a property, or adds it if it doesn't exist.
 func (r *PropertiesService) Update(fileId string, propertyKey string, property *Property) *PropertiesUpdateCall {
-	c := &PropertiesUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PropertiesUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.propertyKey = propertyKey
 	c.property = property
@@ -6680,43 +9536,68 @@ func (r *PropertiesService) Update(fileId string, propertyKey string, property *
 // Visibility sets the optional parameter "visibility": The visibility
 // of the property.
 func (c *PropertiesUpdateCall) Visibility(visibility string) *PropertiesUpdateCall {
-	c.opt_["visibility"] = visibility
+	c.urlParams_.Set("visibility", visibility)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PropertiesUpdateCall) Fields(s ...googleapi.Field) *PropertiesUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PropertiesUpdateCall) Do() (*Property, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PropertiesUpdateCall) Context(ctx context.Context) *PropertiesUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PropertiesUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.property)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["visibility"]; ok {
-		params.Set("visibility", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/properties/{propertyKey}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":      c.fileId,
 		"propertyKey": c.propertyKey,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.properties.update" call.
+// Exactly one of *Property or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Property.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *PropertiesUpdateCall) Do(opts ...googleapi.CallOption) (*Property, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -6724,13 +9605,18 @@ func (c *PropertiesUpdateCall) Do() (*Property, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Property
+	ret := &Property{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates a property.",
+	//   "description": "Updates a property, or adds it if it doesn't exist.",
 	//   "httpMethod": "PUT",
 	//   "id": "drive.properties.update",
 	//   "parameterOrder": [
@@ -6767,7 +9653,8 @@ func (c *PropertiesUpdateCall) Do() (*Property, error) {
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
-	//     "https://www.googleapis.com/auth/drive.file"
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata"
 	//   ]
 	// }
 
@@ -6776,15 +9663,17 @@ func (c *PropertiesUpdateCall) Do() (*Property, error) {
 // method id "drive.realtime.get":
 
 type RealtimeGetCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s            *Service
+	fileId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Exports the contents of the Realtime API data model associated
 // with this file as JSON.
 func (r *RealtimeService) Get(fileId string) *RealtimeGetCall {
-	c := &RealtimeGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RealtimeGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
@@ -6794,36 +9683,75 @@ func (r *RealtimeService) Get(fileId string) *RealtimeGetCall {
 // empty data model) and are incremented with each change. If this
 // parameter is excluded, the most recent data model will be returned.
 func (c *RealtimeGetCall) Revision(revision int64) *RealtimeGetCall {
-	c.opt_["revision"] = revision
+	c.urlParams_.Set("revision", fmt.Sprint(revision))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RealtimeGetCall) Fields(s ...googleapi.Field) *RealtimeGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RealtimeGetCall) Do() error {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RealtimeGetCall) IfNoneMatch(entityTag string) *RealtimeGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do and Download
+// methods. Any pending HTTP request will be aborted if the provided
+// context is canceled.
+func (c *RealtimeGetCall) Context(ctx context.Context) *RealtimeGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RealtimeGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["revision"]; ok {
-		params.Set("revision", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/realtime")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Download fetches the API endpoint's "media" value, instead of the normal
+// API response value. If the returned error is nil, the Response is guaranteed to
+// have a 2xx status code. Callers must close the Response.Body as usual.
+func (c *RealtimeGetCall) Download(opts ...googleapi.CallOption) (*http.Response, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("media")
+	if err != nil {
+		return nil, err
+	}
+	if err := googleapi.CheckMediaResponse(res); err != nil {
+		res.Body.Close()
+		return nil, err
+	}
+	return res, nil
+}
+
+// Do executes the "drive.realtime.get" call.
+func (c *RealtimeGetCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -6868,20 +9796,21 @@ func (c *RealtimeGetCall) Do() error {
 // method id "drive.realtime.update":
 
 type RealtimeUpdateCall struct {
-	s          *Service
-	fileId     string
-	opt_       map[string]interface{}
-	media_     io.Reader
-	resumable_ googleapi.SizeReaderAt
-	mediaType_ string
-	ctx_       context.Context
-	protocol_  string
+	s                *Service
+	fileId           string
+	urlParams_       gensupport.URLParams
+	media_           io.Reader
+	resumableBuffer_ *gensupport.ResumableBuffer
+	mediaType_       string
+	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
+	progressUpdater_ googleapi.ProgressUpdater
+	ctx_             context.Context
 }
 
 // Update: Overwrites the Realtime API data model associated with this
 // file with the provided JSON data model.
 func (r *RealtimeService) Update(fileId string) *RealtimeUpdateCall {
-	c := &RealtimeUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RealtimeUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
@@ -6893,93 +9822,116 @@ func (r *RealtimeService) Update(fileId string) *RealtimeUpdateCall {
 // revision. If not set, the uploaded model replaces the current model
 // on the server.
 func (c *RealtimeUpdateCall) BaseRevision(baseRevision string) *RealtimeUpdateCall {
-	c.opt_["baseRevision"] = baseRevision
+	c.urlParams_.Set("baseRevision", baseRevision)
 	return c
 }
 
-// Media specifies the media to upload in a single chunk.
+// Media specifies the media to upload in one or more chunks. The chunk
+// size may be controlled by supplying a MediaOption generated by
+// googleapi.ChunkSize. The chunk size defaults to
+// googleapi.DefaultUploadChunkSize.The Content-Type header used in the
+// upload request will be determined by sniffing the contents of r,
+// unless a MediaOption generated by googleapi.ContentType is
+// supplied.
 // At most one of Media and ResumableMedia may be set.
-func (c *RealtimeUpdateCall) Media(r io.Reader) *RealtimeUpdateCall {
-	c.media_ = r
-	c.protocol_ = "multipart"
+func (c *RealtimeUpdateCall) Media(r io.Reader, options ...googleapi.MediaOption) *RealtimeUpdateCall {
+	opts := googleapi.ProcessMediaOptions(options)
+	chunkSize := opts.ChunkSize
+	if !opts.ForceEmptyContentType {
+		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
+	}
+	c.media_, c.resumableBuffer_ = gensupport.PrepareUpload(r, chunkSize)
 	return c
 }
 
-// ResumableMedia specifies the media to upload in chunks and can be cancelled with ctx.
-// At most one of Media and ResumableMedia may be set.
-// mediaType identifies the MIME media type of the upload, such as "image/png".
-// If mediaType is "", it will be auto-detected.
+// ResumableMedia specifies the media to upload in chunks and can be
+// canceled with ctx.
+//
+// Deprecated: use Media instead.
+//
+// At most one of Media and ResumableMedia may be set. mediaType
+// identifies the MIME media type of the upload, such as "image/png". If
+// mediaType is "", it will be auto-detected. The provided ctx will
+// supersede any context previously provided to the Context method.
 func (c *RealtimeUpdateCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *RealtimeUpdateCall {
 	c.ctx_ = ctx
-	c.resumable_ = io.NewSectionReader(r, 0, size)
-	c.mediaType_ = mediaType
-	c.protocol_ = "resumable"
+	rdr := gensupport.ReaderAtToReader(r, size)
+	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
+	c.resumableBuffer_ = gensupport.NewResumableBuffer(rdr, googleapi.DefaultUploadChunkSize)
+	c.media_ = nil
+	c.mediaSize_ = size
 	return c
 }
 
-// ProgressUpdater provides a callback function that will be called after every chunk.
-// It should be a low-latency function in order to not slow down the upload operation.
-// This should only be called when using ResumableMedia (as opposed to Media).
+// ProgressUpdater provides a callback function that will be called
+// after every chunk. It should be a low-latency function in order to
+// not slow down the upload operation. This should only be called when
+// using ResumableMedia (as opposed to Media).
 func (c *RealtimeUpdateCall) ProgressUpdater(pu googleapi.ProgressUpdater) *RealtimeUpdateCall {
-	c.opt_["progressUpdater"] = pu
+	c.progressUpdater_ = pu
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RealtimeUpdateCall) Fields(s ...googleapi.Field) *RealtimeUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RealtimeUpdateCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+// This context will supersede any context previously provided to the
+// ResumableMedia method.
+func (c *RealtimeUpdateCall) Context(ctx context.Context) *RealtimeUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RealtimeUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["baseRevision"]; ok {
-		params.Set("baseRevision", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/realtime")
-	var progressUpdater_ googleapi.ProgressUpdater
-	if v, ok := c.opt_["progressUpdater"]; ok {
-		if pu, ok := v.(googleapi.ProgressUpdater); ok {
-			progressUpdater_ = pu
-		}
-	}
-	if c.media_ != nil || c.resumable_ != nil {
+	if c.media_ != nil || c.resumableBuffer_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		params.Set("uploadType", c.protocol_)
+		protocol := "multipart"
+		if c.resumableBuffer_ != nil {
+			protocol = "resumable"
+		}
+		c.urlParams_.Set("uploadType", protocol)
 	}
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	body = new(bytes.Buffer)
 	ctype := "application/json"
-	if c.protocol_ != "resumable" {
-		var cancel func()
-		cancel, _ = googleapi.ConditionallyIncludeMedia(c.media_, &body, &ctype)
-		if cancel != nil {
-			defer cancel()
-		}
+	if c.media_ != nil {
+		var combined io.ReadCloser
+		combined, ctype = gensupport.CombineBodyMedia(body, ctype, c.media_, c.mediaType_)
+		defer combined.Close()
+		body = combined
 	}
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
-		if c.mediaType_ == "" {
-			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
-		}
+	if c.resumableBuffer_ != nil && c.mediaType_ != "" {
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
-	} else {
-		req.Header.Set("Content-Type", ctype)
 	}
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.realtime.update" call.
+func (c *RealtimeUpdateCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := gensupport.Retry(c.ctx_, func() (*http.Response, error) {
+		return c.doRequest("json")
+	}, gensupport.DefaultBackoffStrategy())
 	if err != nil {
 		return err
 	}
@@ -6987,21 +9939,32 @@ func (c *RealtimeUpdateCall) Do() error {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return err
 	}
-	if c.protocol_ == "resumable" {
+	if c.resumableBuffer_ != nil {
 		loc := res.Header.Get("Location")
-		rx := &googleapi.ResumableUpload{
-			Client:        c.s.client,
-			URI:           loc,
-			Media:         c.resumable_,
-			MediaType:     c.mediaType_,
-			ContentLength: c.resumable_.Size(),
-			Callback:      progressUpdater_,
+		rx := &gensupport.ResumableUpload{
+			Client:    c.s.client,
+			UserAgent: c.s.userAgent(),
+			URI:       loc,
+			Media:     c.resumableBuffer_,
+			MediaType: c.mediaType_,
+			Callback: func(curr int64) {
+				if c.progressUpdater_ != nil {
+					c.progressUpdater_(curr, c.mediaSize_)
+				}
+			},
 		}
-		res, err = rx.Upload(c.ctx_)
+		ctx := c.ctx_
+		if ctx == nil {
+			ctx = context.TODO()
+		}
+		res, err = rx.Upload(ctx)
 		if err != nil {
 			return err
 		}
 		defer res.Body.Close()
+		if err := googleapi.CheckResponse(res); err != nil {
+			return err
+		}
 	}
 	return nil
 	// {
@@ -7053,47 +10016,61 @@ func (c *RealtimeUpdateCall) Do() error {
 // method id "drive.replies.delete":
 
 type RepliesDeleteCall struct {
-	s         *Service
-	fileId    string
-	commentId string
-	replyId   string
-	opt_      map[string]interface{}
+	s          *Service
+	fileId     string
+	commentId  string
+	replyId    string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Deletes a reply.
 func (r *RepliesService) Delete(fileId string, commentId string, replyId string) *RepliesDeleteCall {
-	c := &RepliesDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RepliesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	c.replyId = replyId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RepliesDeleteCall) Fields(s ...googleapi.Field) *RepliesDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RepliesDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RepliesDeleteCall) Context(ctx context.Context) *RepliesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RepliesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}/replies/{replyId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
 		"commentId": c.commentId,
 		"replyId":   c.replyId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.replies.delete" call.
+func (c *RepliesDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -7143,16 +10120,18 @@ func (c *RepliesDeleteCall) Do() error {
 // method id "drive.replies.get":
 
 type RepliesGetCall struct {
-	s         *Service
-	fileId    string
-	commentId string
-	replyId   string
-	opt_      map[string]interface{}
+	s            *Service
+	fileId       string
+	commentId    string
+	replyId      string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a reply.
 func (r *RepliesService) Get(fileId string, commentId string, replyId string) *RepliesGetCall {
-	c := &RepliesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RepliesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	c.replyId = replyId
@@ -7162,38 +10141,76 @@ func (r *RepliesService) Get(fileId string, commentId string, replyId string) *R
 // IncludeDeleted sets the optional parameter "includeDeleted": If set,
 // this will succeed when retrieving a deleted reply.
 func (c *RepliesGetCall) IncludeDeleted(includeDeleted bool) *RepliesGetCall {
-	c.opt_["includeDeleted"] = includeDeleted
+	c.urlParams_.Set("includeDeleted", fmt.Sprint(includeDeleted))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RepliesGetCall) Fields(s ...googleapi.Field) *RepliesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RepliesGetCall) Do() (*CommentReply, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RepliesGetCall) IfNoneMatch(entityTag string) *RepliesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RepliesGetCall) Context(ctx context.Context) *RepliesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RepliesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["includeDeleted"]; ok {
-		params.Set("includeDeleted", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}/replies/{replyId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
 		"commentId": c.commentId,
 		"replyId":   c.replyId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.replies.get" call.
+// Exactly one of *CommentReply or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CommentReply.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *RepliesGetCall) Do(opts ...googleapi.CallOption) (*CommentReply, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7201,7 +10218,12 @@ func (c *RepliesGetCall) Do() (*CommentReply, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CommentReply
+	ret := &CommentReply{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7261,48 +10283,77 @@ type RepliesInsertCall struct {
 	fileId       string
 	commentId    string
 	commentreply *CommentReply
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Insert: Creates a new reply to the given comment.
 func (r *RepliesService) Insert(fileId string, commentId string, commentreply *CommentReply) *RepliesInsertCall {
-	c := &RepliesInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RepliesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	c.commentreply = commentreply
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RepliesInsertCall) Fields(s ...googleapi.Field) *RepliesInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RepliesInsertCall) Do() (*CommentReply, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RepliesInsertCall) Context(ctx context.Context) *RepliesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RepliesInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.commentreply)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}/replies")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
 		"commentId": c.commentId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.replies.insert" call.
+// Exactly one of *CommentReply or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CommentReply.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *RepliesInsertCall) Do(opts ...googleapi.CallOption) (*CommentReply, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7310,7 +10361,12 @@ func (c *RepliesInsertCall) Do() (*CommentReply, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CommentReply
+	ret := &CommentReply{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7355,15 +10411,17 @@ func (c *RepliesInsertCall) Do() (*CommentReply, error) {
 // method id "drive.replies.list":
 
 type RepliesListCall struct {
-	s         *Service
-	fileId    string
-	commentId string
-	opt_      map[string]interface{}
+	s            *Service
+	fileId       string
+	commentId    string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists all of the replies to a comment.
 func (r *RepliesService) List(fileId string, commentId string) *RepliesListCall {
-	c := &RepliesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RepliesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	return c
@@ -7373,14 +10431,14 @@ func (r *RepliesService) List(fileId string, commentId string) *RepliesListCall 
 // all replies, including deleted replies (with content stripped) will
 // be returned.
 func (c *RepliesListCall) IncludeDeleted(includeDeleted bool) *RepliesListCall {
-	c.opt_["includeDeleted"] = includeDeleted
+	c.urlParams_.Set("includeDeleted", fmt.Sprint(includeDeleted))
 	return c
 }
 
 // MaxResults sets the optional parameter "maxResults": The maximum
 // number of replies to include in the response, used for paging.
 func (c *RepliesListCall) MaxResults(maxResults int64) *RepliesListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -7389,43 +10447,75 @@ func (c *RepliesListCall) MaxResults(maxResults int64) *RepliesListCall {
 // of results, set this parameter to the value of "nextPageToken" from
 // the previous response.
 func (c *RepliesListCall) PageToken(pageToken string) *RepliesListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RepliesListCall) Fields(s ...googleapi.Field) *RepliesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RepliesListCall) Do() (*CommentReplyList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RepliesListCall) IfNoneMatch(entityTag string) *RepliesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RepliesListCall) Context(ctx context.Context) *RepliesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RepliesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["includeDeleted"]; ok {
-		params.Set("includeDeleted", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}/replies")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
 		"commentId": c.commentId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.replies.list" call.
+// Exactly one of *CommentReplyList or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *CommentReplyList.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RepliesListCall) Do(opts ...googleapi.CallOption) (*CommentReplyList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7433,7 +10523,12 @@ func (c *RepliesListCall) Do() (*CommentReplyList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CommentReplyList
+	ret := &CommentReplyList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7493,6 +10588,27 @@ func (c *RepliesListCall) Do() (*CommentReplyList, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *RepliesListCall) Pages(ctx context.Context, f func(*CommentReplyList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "drive.replies.patch":
 
 type RepliesPatchCall struct {
@@ -7501,13 +10617,14 @@ type RepliesPatchCall struct {
 	commentId    string
 	replyId      string
 	commentreply *CommentReply
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Patch: Updates an existing reply. This method supports patch
 // semantics.
 func (r *RepliesService) Patch(fileId string, commentId string, replyId string, commentreply *CommentReply) *RepliesPatchCall {
-	c := &RepliesPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RepliesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	c.replyId = replyId
@@ -7515,28 +10632,32 @@ func (r *RepliesService) Patch(fileId string, commentId string, replyId string, 
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RepliesPatchCall) Fields(s ...googleapi.Field) *RepliesPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RepliesPatchCall) Do() (*CommentReply, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RepliesPatchCall) Context(ctx context.Context) *RepliesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RepliesPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.commentreply)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}/replies/{replyId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
@@ -7544,8 +10665,32 @@ func (c *RepliesPatchCall) Do() (*CommentReply, error) {
 		"replyId":   c.replyId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.replies.patch" call.
+// Exactly one of *CommentReply or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CommentReply.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *RepliesPatchCall) Do(opts ...googleapi.CallOption) (*CommentReply, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7553,7 +10698,12 @@ func (c *RepliesPatchCall) Do() (*CommentReply, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CommentReply
+	ret := &CommentReply{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7610,12 +10760,13 @@ type RepliesUpdateCall struct {
 	commentId    string
 	replyId      string
 	commentreply *CommentReply
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Update: Updates an existing reply.
 func (r *RepliesService) Update(fileId string, commentId string, replyId string, commentreply *CommentReply) *RepliesUpdateCall {
-	c := &RepliesUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RepliesUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.commentId = commentId
 	c.replyId = replyId
@@ -7623,28 +10774,32 @@ func (r *RepliesService) Update(fileId string, commentId string, replyId string,
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RepliesUpdateCall) Fields(s ...googleapi.Field) *RepliesUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RepliesUpdateCall) Do() (*CommentReply, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RepliesUpdateCall) Context(ctx context.Context) *RepliesUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RepliesUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.commentreply)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/comments/{commentId}/replies/{replyId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":    c.fileId,
@@ -7652,8 +10807,32 @@ func (c *RepliesUpdateCall) Do() (*CommentReply, error) {
 		"replyId":   c.replyId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.replies.update" call.
+// Exactly one of *CommentReply or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CommentReply.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *RepliesUpdateCall) Do(opts ...googleapi.CallOption) (*CommentReply, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7661,7 +10840,12 @@ func (c *RepliesUpdateCall) Do() (*CommentReply, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CommentReply
+	ret := &CommentReply{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7716,41 +10900,55 @@ type RevisionsDeleteCall struct {
 	s          *Service
 	fileId     string
 	revisionId string
-	opt_       map[string]interface{}
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Removes a revision.
 func (r *RevisionsService) Delete(fileId string, revisionId string) *RevisionsDeleteCall {
-	c := &RevisionsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RevisionsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.revisionId = revisionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RevisionsDeleteCall) Fields(s ...googleapi.Field) *RevisionsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RevisionsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RevisionsDeleteCall) Context(ctx context.Context) *RevisionsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RevisionsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/revisions/{revisionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":     c.fileId,
 		"revisionId": c.revisionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.revisions.delete" call.
+func (c *RevisionsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -7794,44 +10992,87 @@ func (c *RevisionsDeleteCall) Do() error {
 // method id "drive.revisions.get":
 
 type RevisionsGetCall struct {
-	s          *Service
-	fileId     string
-	revisionId string
-	opt_       map[string]interface{}
+	s            *Service
+	fileId       string
+	revisionId   string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a specific revision.
 func (r *RevisionsService) Get(fileId string, revisionId string) *RevisionsGetCall {
-	c := &RevisionsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RevisionsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.revisionId = revisionId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RevisionsGetCall) Fields(s ...googleapi.Field) *RevisionsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RevisionsGetCall) Do() (*Revision, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RevisionsGetCall) IfNoneMatch(entityTag string) *RevisionsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RevisionsGetCall) Context(ctx context.Context) *RevisionsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RevisionsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/revisions/{revisionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":     c.fileId,
 		"revisionId": c.revisionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.revisions.get" call.
+// Exactly one of *Revision or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Revision.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *RevisionsGetCall) Do(opts ...googleapi.CallOption) (*Revision, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7839,7 +11080,12 @@ func (c *RevisionsGetCall) Do() (*Revision, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Revision
+	ret := &Revision{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7874,7 +11120,9 @@ func (c *RevisionsGetCall) Do() (*Revision, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -7884,41 +11132,84 @@ func (c *RevisionsGetCall) Do() (*Revision, error) {
 // method id "drive.revisions.list":
 
 type RevisionsListCall struct {
-	s      *Service
-	fileId string
-	opt_   map[string]interface{}
+	s            *Service
+	fileId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists a file's revisions.
 func (r *RevisionsService) List(fileId string) *RevisionsListCall {
-	c := &RevisionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RevisionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RevisionsListCall) Fields(s ...googleapi.Field) *RevisionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RevisionsListCall) Do() (*RevisionList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RevisionsListCall) IfNoneMatch(entityTag string) *RevisionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RevisionsListCall) Context(ctx context.Context) *RevisionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RevisionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/revisions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId": c.fileId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.revisions.list" call.
+// Exactly one of *RevisionList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *RevisionList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *RevisionsListCall) Do(opts ...googleapi.CallOption) (*RevisionList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -7926,7 +11217,12 @@ func (c *RevisionsListCall) Do() (*RevisionList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *RevisionList
+	ret := &RevisionList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -7954,7 +11250,9 @@ func (c *RevisionsListCall) Do() (*RevisionList, error) {
 	//     "https://www.googleapis.com/auth/drive",
 	//     "https://www.googleapis.com/auth/drive.appdata",
 	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/drive.metadata",
 	//     "https://www.googleapis.com/auth/drive.metadata.readonly",
+	//     "https://www.googleapis.com/auth/drive.photos.readonly",
 	//     "https://www.googleapis.com/auth/drive.readonly"
 	//   ]
 	// }
@@ -7968,48 +11266,77 @@ type RevisionsPatchCall struct {
 	fileId     string
 	revisionId string
 	revision   *Revision
-	opt_       map[string]interface{}
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Updates a revision. This method supports patch semantics.
 func (r *RevisionsService) Patch(fileId string, revisionId string, revision *Revision) *RevisionsPatchCall {
-	c := &RevisionsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RevisionsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.revisionId = revisionId
 	c.revision = revision
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RevisionsPatchCall) Fields(s ...googleapi.Field) *RevisionsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RevisionsPatchCall) Do() (*Revision, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RevisionsPatchCall) Context(ctx context.Context) *RevisionsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RevisionsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.revision)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/revisions/{revisionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":     c.fileId,
 		"revisionId": c.revisionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.revisions.patch" call.
+// Exactly one of *Revision or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Revision.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *RevisionsPatchCall) Do(opts ...googleapi.CallOption) (*Revision, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8017,7 +11344,12 @@ func (c *RevisionsPatchCall) Do() (*Revision, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Revision
+	ret := &Revision{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -8067,48 +11399,77 @@ type RevisionsUpdateCall struct {
 	fileId     string
 	revisionId string
 	revision   *Revision
-	opt_       map[string]interface{}
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Update: Updates a revision.
 func (r *RevisionsService) Update(fileId string, revisionId string, revision *Revision) *RevisionsUpdateCall {
-	c := &RevisionsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &RevisionsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.fileId = fileId
 	c.revisionId = revisionId
 	c.revision = revision
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *RevisionsUpdateCall) Fields(s ...googleapi.Field) *RevisionsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *RevisionsUpdateCall) Do() (*Revision, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RevisionsUpdateCall) Context(ctx context.Context) *RevisionsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *RevisionsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.revision)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "files/{fileId}/revisions/{revisionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"fileId":     c.fileId,
 		"revisionId": c.revisionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "drive.revisions.update" call.
+// Exactly one of *Revision or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Revision.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *RevisionsUpdateCall) Do(opts ...googleapi.CallOption) (*Revision, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -8116,7 +11477,12 @@ func (c *RevisionsUpdateCall) Do() (*Revision, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Revision
+	ret := &Revision{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

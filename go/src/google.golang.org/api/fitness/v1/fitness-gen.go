@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/fitness/v1"
 //   ...
 //   fitnessService, err := fitness.New(oauthHttpClient)
-package fitness
+package fitness // import "google.golang.org/api/fitness/v1"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "fitness:v1"
 const apiName = "fitness"
@@ -72,15 +76,24 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Users *UsersService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewUsersService(s *Service) *UsersService {
 	rs := &UsersService{s: s}
 	rs.DataSources = NewUsersDataSourcesService(s)
+	rs.Dataset = NewUsersDatasetService(s)
 	rs.Sessions = NewUsersSessionsService(s)
 	return rs
 }
@@ -89,6 +102,8 @@ type UsersService struct {
 	s *Service
 
 	DataSources *UsersDataSourcesService
+
+	Dataset *UsersDatasetService
 
 	Sessions *UsersSessionsService
 }
@@ -114,6 +129,15 @@ type UsersDataSourcesDatasetsService struct {
 	s *Service
 }
 
+func NewUsersDatasetService(s *Service) *UsersDatasetService {
+	rs := &UsersDatasetService{s: s}
+	return rs
+}
+
+type UsersDatasetService struct {
+	s *Service
+}
+
 func NewUsersSessionsService(s *Service) *UsersSessionsService {
 	rs := &UsersSessionsService{s: s}
 	return rs
@@ -123,6 +147,164 @@ type UsersSessionsService struct {
 	s *Service
 }
 
+type AggregateBucket struct {
+	// Activity: Available for Bucket.Type.ACTIVITY_TYPE,
+	// Bucket.Type.ACTIVITY_SEGMENT
+	Activity int64 `json:"activity,omitempty"`
+
+	// Dataset: There will be one dataset per AggregateBy in the request.
+	Dataset []*Dataset `json:"dataset,omitempty"`
+
+	// EndTimeMillis: The end time for the aggregated data, in milliseconds
+	// since epoch, inclusive.
+	EndTimeMillis int64 `json:"endTimeMillis,omitempty,string"`
+
+	// Session: Available for Bucket.Type.SESSION
+	Session *Session `json:"session,omitempty"`
+
+	// StartTimeMillis: The start time for the aggregated data, in
+	// milliseconds since epoch, inclusive.
+	StartTimeMillis int64 `json:"startTimeMillis,omitempty,string"`
+
+	// Type: The type of a bucket signifies how the data aggregation is
+	// performed in the bucket.
+	//
+	// Possible values:
+	//   "activitySegment"
+	//   "activityType"
+	//   "session"
+	//   "time"
+	//   "unknown"
+	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Activity") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AggregateBucket) MarshalJSON() ([]byte, error) {
+	type noMethod AggregateBucket
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AggregateBy: The specification of which data to aggregate.
+type AggregateBy struct {
+	// DataSourceId: A data source ID to aggregate. Mutually exclusive of
+	// dataTypeName. Only data from the specified data source ID will be
+	// included in the aggregation. The dataset in the response will have
+	// the same data source ID.
+	DataSourceId string `json:"dataSourceId,omitempty"`
+
+	// DataTypeName: The data type to aggregate. All data sources providing
+	// this data type will contribute data to the aggregation. The response
+	// will contain a single dataset for this data type name. The dataset
+	// will have a data source ID of
+	// derived:com.google.:com.google.android.gms:aggregated
+	DataTypeName string `json:"dataTypeName,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataSourceId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AggregateBy) MarshalJSON() ([]byte, error) {
+	type noMethod AggregateBy
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+type AggregateRequest struct {
+	// AggregateBy: The specification of data to be aggregated. At least one
+	// aggregateBy spec must be provided. All data that is specified will be
+	// aggregated using the same bucketing criteria. There will be one
+	// dataset in the response for every aggregateBy spec.
+	AggregateBy []*AggregateBy `json:"aggregateBy,omitempty"`
+
+	// BucketByActivitySegment: Specifies that data be aggregated each
+	// activity segment recored for a user. Similar to
+	// bucketByActivitySegment, but bucketing is done for each activity
+	// segment rather than all segments of the same type. Mutually exclusive
+	// of other bucketing specifications.
+	BucketByActivitySegment *BucketByActivity `json:"bucketByActivitySegment,omitempty"`
+
+	// BucketByActivityType: Specifies that data be aggregated by the type
+	// of activity being performed when the data was recorded. All data that
+	// was recorded during a certain activity type (for the given time
+	// range) will be aggregated into the same bucket. Data that was
+	// recorded while the user was not active will not be included in the
+	// response. Mutually exclusive of other bucketing specifications.
+	BucketByActivityType *BucketByActivity `json:"bucketByActivityType,omitempty"`
+
+	// BucketBySession: Specifies that data be aggregated by user sessions.
+	// Data that does not fall within the time range of a session will not
+	// be included in the response. Mutually exclusive of other bucketing
+	// specifications.
+	BucketBySession *BucketBySession `json:"bucketBySession,omitempty"`
+
+	// BucketByTime: Specifies that data be aggregated by a single time
+	// interval. Mutually exclusive of other bucketing specifications.
+	BucketByTime *BucketByTime `json:"bucketByTime,omitempty"`
+
+	// EndTimeMillis: The end of a window of time. Data that intersects with
+	// this time window will be aggregated. The time is in milliseconds
+	// since epoch, inclusive.
+	EndTimeMillis int64 `json:"endTimeMillis,omitempty,string"`
+
+	// StartTimeMillis: The start of a window of time. Data that intersects
+	// with this time window will be aggregated. The time is in milliseconds
+	// since epoch, inclusive.
+	StartTimeMillis int64 `json:"startTimeMillis,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "AggregateBy") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AggregateRequest) MarshalJSON() ([]byte, error) {
+	type noMethod AggregateRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+type AggregateResponse struct {
+	// Bucket: A list of buckets containing the aggregated data.
+	Bucket []*AggregateBucket `json:"bucket,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Bucket") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *AggregateResponse) MarshalJSON() ([]byte, error) {
+	type noMethod AggregateResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Application: See:
+// google3/java/com/google/android/apps/heart/platform/api/Application.ja
+// va
 type Application struct {
 	// DetailsUrl: An optional URI that can be used to link back to the
 	// application.
@@ -145,8 +327,102 @@ type Application struct {
 	// whenever the application changes in a way that affects the
 	// computation of the data.
 	Version string `json:"version,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DetailsUrl") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Application) MarshalJSON() ([]byte, error) {
+	type noMethod Application
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+type BucketByActivity struct {
+	// ActivityDataSourceId: The default activity stream will be used if a
+	// specific activityDataSourceId is not specified.
+	ActivityDataSourceId string `json:"activityDataSourceId,omitempty"`
+
+	// MinDurationMillis: Specifies that only activity segments of duration
+	// longer than minDurationMillis are considered and used as a container
+	// for aggregated data.
+	MinDurationMillis int64 `json:"minDurationMillis,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "ActivityDataSourceId") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *BucketByActivity) MarshalJSON() ([]byte, error) {
+	type noMethod BucketByActivity
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+type BucketBySession struct {
+	// MinDurationMillis: Specifies that only sessions of duration longer
+	// than minDurationMillis are considered and used as a container for
+	// aggregated data.
+	MinDurationMillis int64 `json:"minDurationMillis,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "MinDurationMillis")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *BucketBySession) MarshalJSON() ([]byte, error) {
+	type noMethod BucketBySession
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+type BucketByTime struct {
+	// DurationMillis: Specifies that result buckets aggregate data by
+	// exactly durationMillis time frames. Time frames that contain no data
+	// will be included in the response with an empty dataset.
+	DurationMillis int64 `json:"durationMillis,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "DurationMillis") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *BucketByTime) MarshalJSON() ([]byte, error) {
+	type noMethod BucketByTime
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DataPoint: Represents a single data point, generated by a particular
+// data source. A data point holds a value for each field, an end
+// timestamp and an optional start time. The exact semantics of each of
+// these attributes are specified in the documentation for the
+// particular data type.
+//
+// A data point can represent an instantaneous measurement, reading or
+// input observation, as well as averages or aggregates over a time
+// interval. Check the data type documentation to determine which is the
+// case for a particular data type.
+//
+// Data points always contain one value for each field of the data type.
 type DataPoint struct {
 	// ComputationTimeMillis: Used for version checking during
 	// transformation; that is, a datapoint can only replace another
@@ -183,12 +459,44 @@ type DataPoint struct {
 	// occur in the same order that the field is listed with in the data
 	// type specified in a data source.
 	//
-	// Only one of integer and floating
-	// point fields will be populated, depending on the format enum value
-	// within data source's type field.
+	// Only one of integer and floating point fields will be populated,
+	// depending on the format enum value within data source's type field.
 	Value []*Value `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "ComputationTimeMillis") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DataPoint) MarshalJSON() ([]byte, error) {
+	type noMethod DataPoint
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DataSource: Definition of a unique source of sensor data. Data
+// sources can expose raw data coming from hardware sensors on local or
+// companion devices. They can also expose derived data, created by
+// transforming or merging other data sources. Multiple data sources can
+// exist for the same data type. Every data point inserted into or read
+// from this service has an associated data source.
+//
+// The data source contains enough information to uniquely identify its
+// data, including the hardware device and the application that
+// collected and/or transformed the data. It also holds useful metadata,
+// such as the hardware and application versions, and the device
+// type.
+//
+// Each data source produces a unique stream of data, with a unique
+// identifier. Not all changes to data source affect the stream
+// identifier, so that data collected by updated versions of the same
+// application/device can still be considered to belong to the same data
+// stream.
 type DataSource struct {
 	// Application: Information about an application which feeds sensor data
 	// into the platform.
@@ -198,29 +506,27 @@ type DataSource struct {
 	// this data source. The identifier includes:
 	//
 	//
-	// - The physical device's
-	// manufacturer, model, and serial number (UID).
-	// - The application's
-	// package name or name. Package name is used when the data source was
-	// created by an Android application. The developer project number is
-	// used when the data source was created by a REST client.
-	// - The data
-	// source's type.
-	// - The data source's stream name.  Note that not all
-	// attributes of the data source are used as part of the stream
-	// identifier. In particular, the version of the hardware/the
-	// application isn't used. This allows us to preserve the same stream
-	// through version updates. This also means that two DataSource objects
-	// may represent the same data stream even if they're not equal.
+	// - The physical device's manufacturer, model, and serial number (UID).
 	//
-	// The
-	// exact format of the data stream ID created by an Android application
-	// is:
+	// - The application's package name or name. Package name is used when
+	// the data source was created by an Android application. The developer
+	// project number is used when the data source was created by a REST
+	// client.
+	// - The data source's type.
+	// - The data source's stream name.  Note that not all attributes of the
+	// data source are used as part of the stream identifier. In particular,
+	// the version of the hardware/the application isn't used. This allows
+	// us to preserve the same stream through version updates. This also
+	// means that two DataSource objects may represent the same data stream
+	// even if they're not equal.
+	//
+	// The exact format of the data stream ID created by an Android
+	// application is:
 	// type:dataType.name:application.packageName:device.manufacturer:device.
 	// model:device.uid:dataStreamName
 	//
-	// The exact format of the data stream
-	// ID created by a REST client is: type:dataType.name:developer project
+	// The exact format of the data stream ID created by a REST client is:
+	// type:dataType.name:developer project
 	// number:device.manufacturer:device.model:device.uid:dataStreamName
 	//
 	//
@@ -229,10 +535,10 @@ type DataSource struct {
 	// viable data stream ID would be: type:dataType.name:developer project
 	// number
 	//
-	// Finally, the developer project number is obfuscated when read
-	// by any REST or Android client that did not create the data source.
-	// Only the data source creator will see the developer project number in
-	// clear and normal form.
+	// Finally, the developer project number is obfuscated when read by any
+	// REST or Android client that did not create the data source. Only the
+	// data source creator will see the developer project number in clear
+	// and normal form.
 	DataStreamId string `json:"dataStreamId,omitempty"`
 
 	// DataStreamName: The stream name uniquely identifies this particular
@@ -255,9 +561,33 @@ type DataSource struct {
 
 	// Type: A constant describing the type of this data source. Indicates
 	// whether this data source produces raw or derived data.
+	//
+	// Possible values:
+	//   "derived"
+	//   "raw"
 	Type string `json:"type,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Application") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DataSource) MarshalJSON() ([]byte, error) {
+	type noMethod DataSource
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DataType: See:
+// google3/java/com/google/android/apps/heart/platform/api/DataType.java
 type DataType struct {
 	// Field: A field represents one dimension of a data type.
 	Field []*DataTypeField `json:"field,omitempty"`
@@ -265,11 +595,42 @@ type DataType struct {
 	// Name: Each data type has a unique, namespaced, name. All data types
 	// in the com.google namespace are shared as part of the platform.
 	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Field") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DataType) MarshalJSON() ([]byte, error) {
+	type noMethod DataType
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DataTypeField: In case of multi-dimensional data (such as an
+// accelerometer with x, y, and z axes) each field represents one
+// dimension. Each data type field has a unique name which identifies
+// it. The field also defines the format of the data (int, float,
+// etc.).
+//
+// This message is only instantiated in code and not used for wire comms
+// or stored in any way.
 type DataTypeField struct {
 	// Format: The different supported formats for each field in a data
 	// type.
+	//
+	// Possible values:
+	//   "blob"
+	//   "floatList"
+	//   "floatPoint"
+	//   "integer"
+	//   "integerList"
+	//   "map"
+	//   "string"
 	Format string `json:"format,omitempty"`
 
 	// Name: Defines the name and format of data. Unlike data type names,
@@ -278,8 +639,26 @@ type DataTypeField struct {
 	Name string `json:"name,omitempty"`
 
 	Optional bool `json:"optional,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Format") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DataTypeField) MarshalJSON() ([]byte, error) {
+	type noMethod DataTypeField
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Dataset: A dataset represents a projection container for data points.
+// They do not carry any info of their own. Datasets represent a set of
+// data points from a particular data source. A data point can be found
+// in more than one dataset.
 type Dataset struct {
 	// DataSourceId: The data stream ID of the data source that created the
 	// points in this dataset.
@@ -309,8 +688,40 @@ type Dataset struct {
 	// dataset or retrieving a dataset that is too large to include in a
 	// single response.
 	Point []*DataPoint `json:"point,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DataSourceId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Dataset) MarshalJSON() ([]byte, error) {
+	type noMethod Dataset
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Device: Representation of an integrated device (such as a phone or a
+// wearable) that can hold sensors. Each sensor is exposed as a data
+// source.
+//
+// The main purpose of the device information contained in this class is
+// to identify the hardware of a particular data source. This can be
+// useful in different ways, including:
+// - Distinguishing two similar sensors on different devices (the step
+// counter on two nexus 5 phones, for instance)
+// - Display the source of data to the user (by using the device make /
+// model)
+// - Treat data differently depending on sensor type (accelerometers on
+// a watch may give different patterns than those on a phone)
+// - Build different analysis models for each device/version.
 type Device struct {
 	// Manufacturer: Manufacturer of the product/hardware.
 	Manufacturer string `json:"manufacturer,omitempty"`
@@ -319,6 +730,14 @@ type Device struct {
 	Model string `json:"model,omitempty"`
 
 	// Type: A constant representing the type of the device.
+	//
+	// Possible values:
+	//   "chestStrap"
+	//   "phone"
+	//   "scale"
+	//   "tablet"
+	//   "unknown"
+	//   "watch"
 	Type string `json:"type,omitempty"`
 
 	// Uid: The serial number or other unique ID for the hardware. This
@@ -329,11 +748,43 @@ type Device struct {
 
 	// Version: Version string for the device hardware/software.
 	Version string `json:"version,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Manufacturer") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Device) MarshalJSON() ([]byte, error) {
+	type noMethod Device
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ListDataSourcesResponse struct {
 	// DataSource: A previously created data source.
 	DataSource []*DataSource `json:"dataSource,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DataSource") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ListDataSourcesResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ListDataSourcesResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type ListSessionsResponse struct {
@@ -350,9 +801,60 @@ type ListSessionsResponse struct {
 	// Session: Sessions with an end time that is between startTime and
 	// endTime of the request.
 	Session []*Session `json:"session,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DeletedSession") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *ListSessionsResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ListSessionsResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// MapValue: Holder object for the value of an entry in a map field of a
+// data point.
+//
+// A map value supports a subset of the formats that the regular Value
+// supports.
+type MapValue struct {
+	// FpVal: Floating point value.
+	FpVal float64 `json:"fpVal,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FpVal") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *MapValue) MarshalJSON() ([]byte, error) {
+	type noMethod MapValue
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Session: Sessions contain metadata, such as a user-friendly name and
+// time interval information.
 type Session struct {
+	// ActiveTimeMillis: Session active time. While start_time_millis and
+	// end_time_millis define the full session time, the active time can be
+	// shorter and specified by active_time_millis. If the inactive time
+	// during the session is known, it should also be inserted via a
+	// com.google.activity.segment data point with a STILL activity value
+	ActiveTimeMillis int64 `json:"activeTimeMillis,omitempty,string"`
+
 	// ActivityType: The type of activity this session represents.
 	ActivityType int64 `json:"activityType,omitempty"`
 
@@ -379,15 +881,85 @@ type Session struct {
 	// StartTimeMillis: A start time, in milliseconds since epoch,
 	// inclusive.
 	StartTimeMillis int64 `json:"startTimeMillis,omitempty,string"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ActiveTimeMillis") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Session) MarshalJSON() ([]byte, error) {
+	type noMethod Session
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Value: Holder object for the value of a single field in a data
+// point.
+//
+// A field value has a particular format and is only ever set to one of
+// an integer or a floating point value.
 type Value struct {
-	// FpVal: Floating point value. When this is set, intVal must not be
-	// set.
+	// FpVal: Floating point value. When this is set, other values must not
+	// be set.
 	FpVal float64 `json:"fpVal,omitempty"`
 
-	// IntVal: Integer value. When this is set, fpVal must not be set.
+	// IntVal: Integer value. When this is set, other values must not be
+	// set.
 	IntVal int64 `json:"intVal,omitempty"`
+
+	// MapVal: Map value. The valid key space and units for the
+	// corresponding value of each entry should be documented as part of the
+	// data type definition. Keys should be kept small whenever possible.
+	// Data streams with large keys and high data frequency may be down
+	// sampled.
+	MapVal []*ValueMapValEntry `json:"mapVal,omitempty"`
+
+	// StringVal: String value. When this is set, other values must not be
+	// set. Strings should be kept small whenever possible. Data streams
+	// with large string values and high data frequency may be down sampled.
+	StringVal string `json:"stringVal,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FpVal") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Value) MarshalJSON() ([]byte, error) {
+	type noMethod Value
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+type ValueMapValEntry struct {
+	Key string `json:"key,omitempty"`
+
+	Value *MapValue `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Key") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *ValueMapValEntry) MarshalJSON() ([]byte, error) {
+	type noMethod ValueMapValEntry
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "fitness.users.dataSources.create":
@@ -396,7 +968,8 @@ type UsersDataSourcesCreateCall struct {
 	s          *Service
 	userId     string
 	datasource *DataSource
-	opt_       map[string]interface{}
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Create: Creates a new data source that is unique across all data
@@ -409,41 +982,69 @@ type UsersDataSourcesCreateCall struct {
 // number is obfuscated when read by any other developer reading public
 // data types.
 func (r *UsersDataSourcesService) Create(userId string, datasource *DataSource) *UsersDataSourcesCreateCall {
-	c := &UsersDataSourcesCreateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersDataSourcesCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	c.datasource = datasource
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersDataSourcesCreateCall) Fields(s ...googleapi.Field) *UsersDataSourcesCreateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersDataSourcesCreateCall) Do() (*DataSource, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDataSourcesCreateCall) Context(ctx context.Context) *UsersDataSourcesCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDataSourcesCreateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.datasource)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataSources")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId": c.userId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataSources.create" call.
+// Exactly one of *DataSource or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *DataSource.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *UsersDataSourcesCreateCall) Do(opts ...googleapi.CallOption) (*DataSource, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -451,7 +1052,12 @@ func (c *UsersDataSourcesCreateCall) Do() (*DataSource, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *DataSource
+	ret := &DataSource{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -487,47 +1093,77 @@ func (c *UsersDataSourcesCreateCall) Do() (*DataSource, error) {
 
 }
 
-// method id "fitness.users.dataSources.get":
+// method id "fitness.users.dataSources.delete":
 
-type UsersDataSourcesGetCall struct {
+type UsersDataSourcesDeleteCall struct {
 	s            *Service
 	userId       string
 	dataSourceId string
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
-// Get: Returns a data source identified by a data stream ID.
-func (r *UsersDataSourcesService) Get(userId string, dataSourceId string) *UsersDataSourcesGetCall {
-	c := &UsersDataSourcesGetCall{s: r.s, opt_: make(map[string]interface{})}
+// Delete: Delete the data source if there are no datapoints associated
+// with it
+func (r *UsersDataSourcesService) Delete(userId string, dataSourceId string) *UsersDataSourcesDeleteCall {
+	c := &UsersDataSourcesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	c.dataSourceId = dataSourceId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
-func (c *UsersDataSourcesGetCall) Fields(s ...googleapi.Field) *UsersDataSourcesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+func (c *UsersDataSourcesDeleteCall) Fields(s ...googleapi.Field) *UsersDataSourcesDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersDataSourcesGetCall) Do() (*DataSource, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDataSourcesDeleteCall) Context(ctx context.Context) *UsersDataSourcesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDataSourcesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataSources/{dataSourceId}")
-	urls += "?" + params.Encode()
-	req, _ := http.NewRequest("GET", urls, body)
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId":       c.userId,
 		"dataSourceId": c.dataSourceId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataSources.delete" call.
+// Exactly one of *DataSource or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *DataSource.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *UsersDataSourcesDeleteCall) Do(opts ...googleapi.CallOption) (*DataSource, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -535,7 +1171,148 @@ func (c *UsersDataSourcesGetCall) Do() (*DataSource, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *DataSource
+	ret := &DataSource{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Delete the data source if there are no datapoints associated with it",
+	//   "httpMethod": "DELETE",
+	//   "id": "fitness.users.dataSources.delete",
+	//   "parameterOrder": [
+	//     "userId",
+	//     "dataSourceId"
+	//   ],
+	//   "parameters": {
+	//     "dataSourceId": {
+	//       "description": "The data stream ID of the data source to delete.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "userId": {
+	//       "description": "Retrieve a data source for the person identified. Use me to indicate the authenticated user. Only me is supported at this time.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{userId}/dataSources/{dataSourceId}",
+	//   "response": {
+	//     "$ref": "DataSource"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/fitness.activity.write",
+	//     "https://www.googleapis.com/auth/fitness.body.write",
+	//     "https://www.googleapis.com/auth/fitness.location.write"
+	//   ]
+	// }
+
+}
+
+// method id "fitness.users.dataSources.get":
+
+type UsersDataSourcesGetCall struct {
+	s            *Service
+	userId       string
+	dataSourceId string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+}
+
+// Get: Returns a data source identified by a data stream ID.
+func (r *UsersDataSourcesService) Get(userId string, dataSourceId string) *UsersDataSourcesGetCall {
+	c := &UsersDataSourcesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.userId = userId
+	c.dataSourceId = dataSourceId
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *UsersDataSourcesGetCall) Fields(s ...googleapi.Field) *UsersDataSourcesGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *UsersDataSourcesGetCall) IfNoneMatch(entityTag string) *UsersDataSourcesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDataSourcesGetCall) Context(ctx context.Context) *UsersDataSourcesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDataSourcesGetCall) doRequest(alt string) (*http.Response, error) {
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataSources/{dataSourceId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	googleapi.Expand(req.URL, map[string]string{
+		"userId":       c.userId,
+		"dataSourceId": c.dataSourceId,
+	})
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataSources.get" call.
+// Exactly one of *DataSource or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *DataSource.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *UsersDataSourcesGetCall) Do(opts ...googleapi.CallOption) (*DataSource, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &DataSource{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -581,9 +1358,11 @@ func (c *UsersDataSourcesGetCall) Do() (*DataSource, error) {
 // method id "fitness.users.dataSources.list":
 
 type UsersDataSourcesListCall struct {
-	s      *Service
-	userId string
-	opt_   map[string]interface{}
+	s            *Service
+	userId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists all data sources that are visible to the developer, using
@@ -591,7 +1370,7 @@ type UsersDataSourcesListCall struct {
 // have private data sources that are only visible to other developers
 // or calls using other scopes.
 func (r *UsersDataSourcesService) List(userId string) *UsersDataSourcesListCall {
-	c := &UsersDataSourcesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersDataSourcesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	return c
 }
@@ -599,37 +1378,75 @@ func (r *UsersDataSourcesService) List(userId string) *UsersDataSourcesListCall 
 // DataTypeName sets the optional parameter "dataTypeName": The names of
 // data types to include in the list. If not specified, all data sources
 // will be returned.
-func (c *UsersDataSourcesListCall) DataTypeName(dataTypeName string) *UsersDataSourcesListCall {
-	c.opt_["dataTypeName"] = dataTypeName
+func (c *UsersDataSourcesListCall) DataTypeName(dataTypeName ...string) *UsersDataSourcesListCall {
+	c.urlParams_.SetMulti("dataTypeName", append([]string{}, dataTypeName...))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersDataSourcesListCall) Fields(s ...googleapi.Field) *UsersDataSourcesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersDataSourcesListCall) Do() (*ListDataSourcesResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *UsersDataSourcesListCall) IfNoneMatch(entityTag string) *UsersDataSourcesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDataSourcesListCall) Context(ctx context.Context) *UsersDataSourcesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDataSourcesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["dataTypeName"]; ok {
-		params.Set("dataTypeName", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataSources")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId": c.userId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataSources.list" call.
+// Exactly one of *ListDataSourcesResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ListDataSourcesResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *UsersDataSourcesListCall) Do(opts ...googleapi.CallOption) (*ListDataSourcesResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -637,7 +1454,12 @@ func (c *UsersDataSourcesListCall) Do() (*ListDataSourcesResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ListDataSourcesResponse
+	ret := &ListDataSourcesResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -686,7 +1508,8 @@ type UsersDataSourcesPatchCall struct {
 	userId       string
 	dataSourceId string
 	datasource   *DataSource
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Patch: Updates a given data source. It is an error to modify the data
@@ -695,46 +1518,74 @@ type UsersDataSourcesPatchCall struct {
 // would require a new unique data stream ID and separate data
 // source.
 //
-// Data sources are identified by their data stream ID. This
-// method supports patch semantics.
+// Data sources are identified by their data stream ID. This method
+// supports patch semantics.
 func (r *UsersDataSourcesService) Patch(userId string, dataSourceId string, datasource *DataSource) *UsersDataSourcesPatchCall {
-	c := &UsersDataSourcesPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersDataSourcesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	c.dataSourceId = dataSourceId
 	c.datasource = datasource
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersDataSourcesPatchCall) Fields(s ...googleapi.Field) *UsersDataSourcesPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersDataSourcesPatchCall) Do() (*DataSource, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDataSourcesPatchCall) Context(ctx context.Context) *UsersDataSourcesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDataSourcesPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.datasource)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataSources/{dataSourceId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId":       c.userId,
 		"dataSourceId": c.dataSourceId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataSources.patch" call.
+// Exactly one of *DataSource or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *DataSource.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *UsersDataSourcesPatchCall) Do(opts ...googleapi.CallOption) (*DataSource, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -742,7 +1593,12 @@ func (c *UsersDataSourcesPatchCall) Do() (*DataSource, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *DataSource
+	ret := &DataSource{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -792,7 +1648,8 @@ type UsersDataSourcesUpdateCall struct {
 	userId       string
 	dataSourceId string
 	datasource   *DataSource
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Update: Updates a given data source. It is an error to modify the
@@ -803,43 +1660,71 @@ type UsersDataSourcesUpdateCall struct {
 //
 // Data sources are identified by their data stream ID.
 func (r *UsersDataSourcesService) Update(userId string, dataSourceId string, datasource *DataSource) *UsersDataSourcesUpdateCall {
-	c := &UsersDataSourcesUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersDataSourcesUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	c.dataSourceId = dataSourceId
 	c.datasource = datasource
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersDataSourcesUpdateCall) Fields(s ...googleapi.Field) *UsersDataSourcesUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersDataSourcesUpdateCall) Do() (*DataSource, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDataSourcesUpdateCall) Context(ctx context.Context) *UsersDataSourcesUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDataSourcesUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.datasource)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataSources/{dataSourceId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId":       c.userId,
 		"dataSourceId": c.dataSourceId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataSources.update" call.
+// Exactly one of *DataSource or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *DataSource.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *UsersDataSourcesUpdateCall) Do(opts ...googleapi.CallOption) (*DataSource, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -847,7 +1732,12 @@ func (c *UsersDataSourcesUpdateCall) Do() (*DataSource, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *DataSource
+	ret := &DataSource{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -897,7 +1787,8 @@ type UsersDataSourcesDatasetsDeleteCall struct {
 	userId       string
 	dataSourceId string
 	datasetId    string
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Delete: Performs an inclusive delete of all data points whose start
@@ -908,7 +1799,7 @@ type UsersDataSourcesDatasetsDeleteCall struct {
 // straddles either end point of the dataset, only the overlapping
 // portion of the data point will be deleted.
 func (r *UsersDataSourcesDatasetsService) Delete(userId string, dataSourceId string, datasetId string) *UsersDataSourcesDatasetsDeleteCall {
-	c := &UsersDataSourcesDatasetsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersDataSourcesDatasetsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	c.dataSourceId = dataSourceId
 	c.datasetId = datasetId
@@ -918,48 +1809,55 @@ func (r *UsersDataSourcesDatasetsService) Delete(userId string, dataSourceId str
 // CurrentTimeMillis sets the optional parameter "currentTimeMillis":
 // The client's current time in milliseconds since epoch.
 func (c *UsersDataSourcesDatasetsDeleteCall) CurrentTimeMillis(currentTimeMillis int64) *UsersDataSourcesDatasetsDeleteCall {
-	c.opt_["currentTimeMillis"] = currentTimeMillis
+	c.urlParams_.Set("currentTimeMillis", fmt.Sprint(currentTimeMillis))
 	return c
 }
 
 // ModifiedTimeMillis sets the optional parameter "modifiedTimeMillis":
 // When the operation was performed on the client.
 func (c *UsersDataSourcesDatasetsDeleteCall) ModifiedTimeMillis(modifiedTimeMillis int64) *UsersDataSourcesDatasetsDeleteCall {
-	c.opt_["modifiedTimeMillis"] = modifiedTimeMillis
+	c.urlParams_.Set("modifiedTimeMillis", fmt.Sprint(modifiedTimeMillis))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersDataSourcesDatasetsDeleteCall) Fields(s ...googleapi.Field) *UsersDataSourcesDatasetsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersDataSourcesDatasetsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDataSourcesDatasetsDeleteCall) Context(ctx context.Context) *UsersDataSourcesDatasetsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDataSourcesDatasetsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["currentTimeMillis"]; ok {
-		params.Set("currentTimeMillis", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["modifiedTimeMillis"]; ok {
-		params.Set("modifiedTimeMillis", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataSources/{dataSourceId}/datasets/{datasetId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId":       c.userId,
 		"dataSourceId": c.dataSourceId,
 		"datasetId":    c.datasetId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataSources.datasets.delete" call.
+func (c *UsersDataSourcesDatasetsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -1026,7 +1924,9 @@ type UsersDataSourcesDatasetsGetCall struct {
 	userId       string
 	dataSourceId string
 	datasetId    string
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Returns a dataset containing all data points whose start and end
@@ -1035,7 +1935,7 @@ type UsersDataSourcesDatasetsGetCall struct {
 // time is less than or equal to the dataset end time and whose end time
 // is greater than or equal to the dataset start time.
 func (r *UsersDataSourcesDatasetsService) Get(userId string, dataSourceId string, datasetId string) *UsersDataSourcesDatasetsGetCall {
-	c := &UsersDataSourcesDatasetsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersDataSourcesDatasetsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	c.dataSourceId = dataSourceId
 	c.datasetId = datasetId
@@ -1047,7 +1947,7 @@ func (r *UsersDataSourcesDatasetsService) Get(userId string, dataSourceId string
 // are more data points in the dataset, nextPageToken will be set in the
 // dataset response.
 func (c *UsersDataSourcesDatasetsGetCall) Limit(limit int64) *UsersDataSourcesDatasetsGetCall {
-	c.opt_["limit"] = limit
+	c.urlParams_.Set("limit", fmt.Sprint(limit))
 	return c
 }
 
@@ -1058,41 +1958,76 @@ func (c *UsersDataSourcesDatasetsGetCall) Limit(limit int64) *UsersDataSourcesDa
 // dataset with data point end timestamps that are strictly smaller than
 // those in the previous partial response.
 func (c *UsersDataSourcesDatasetsGetCall) PageToken(pageToken string) *UsersDataSourcesDatasetsGetCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersDataSourcesDatasetsGetCall) Fields(s ...googleapi.Field) *UsersDataSourcesDatasetsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersDataSourcesDatasetsGetCall) Do() (*Dataset, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *UsersDataSourcesDatasetsGetCall) IfNoneMatch(entityTag string) *UsersDataSourcesDatasetsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDataSourcesDatasetsGetCall) Context(ctx context.Context) *UsersDataSourcesDatasetsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDataSourcesDatasetsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["limit"]; ok {
-		params.Set("limit", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataSources/{dataSourceId}/datasets/{datasetId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId":       c.userId,
 		"dataSourceId": c.dataSourceId,
 		"datasetId":    c.datasetId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataSources.datasets.get" call.
+// Exactly one of *Dataset or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Dataset.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *UsersDataSourcesDatasetsGetCall) Do(opts ...googleapi.CallOption) (*Dataset, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1100,7 +2035,12 @@ func (c *UsersDataSourcesDatasetsGetCall) Do() (*Dataset, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Dataset
+	ret := &Dataset{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1161,6 +2101,27 @@ func (c *UsersDataSourcesDatasetsGetCall) Do() (*Dataset, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *UsersDataSourcesDatasetsGetCall) Pages(ctx context.Context, f func(*Dataset) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "fitness.users.dataSources.datasets.patch":
 
 type UsersDataSourcesDatasetsPatchCall struct {
@@ -1169,7 +2130,8 @@ type UsersDataSourcesDatasetsPatchCall struct {
 	dataSourceId string
 	datasetId    string
 	dataset      *Dataset
-	opt_         map[string]interface{}
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
 }
 
 // Patch: Adds data points to a dataset. The dataset need not be
@@ -1178,7 +2140,7 @@ type UsersDataSourcesDatasetsPatchCall struct {
 // can belong to more than one dataset. This method does not use patch
 // semantics.
 func (r *UsersDataSourcesDatasetsService) Patch(userId string, dataSourceId string, datasetId string, dataset *Dataset) *UsersDataSourcesDatasetsPatchCall {
-	c := &UsersDataSourcesDatasetsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersDataSourcesDatasetsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	c.dataSourceId = dataSourceId
 	c.datasetId = datasetId
@@ -1191,35 +2153,36 @@ func (r *UsersDataSourcesDatasetsService) Patch(userId string, dataSourceId stri
 // minStartTimeNs and maxEndTimeNs properties in the request body are in
 // nanoseconds instead of milliseconds.
 func (c *UsersDataSourcesDatasetsPatchCall) CurrentTimeMillis(currentTimeMillis int64) *UsersDataSourcesDatasetsPatchCall {
-	c.opt_["currentTimeMillis"] = currentTimeMillis
+	c.urlParams_.Set("currentTimeMillis", fmt.Sprint(currentTimeMillis))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersDataSourcesDatasetsPatchCall) Fields(s ...googleapi.Field) *UsersDataSourcesDatasetsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersDataSourcesDatasetsPatchCall) Do() (*Dataset, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDataSourcesDatasetsPatchCall) Context(ctx context.Context) *UsersDataSourcesDatasetsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDataSourcesDatasetsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.dataset)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["currentTimeMillis"]; ok {
-		params.Set("currentTimeMillis", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataSources/{dataSourceId}/datasets/{datasetId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId":       c.userId,
@@ -1227,8 +2190,32 @@ func (c *UsersDataSourcesDatasetsPatchCall) Do() (*Dataset, error) {
 		"datasetId":    c.datasetId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataSources.datasets.patch" call.
+// Exactly one of *Dataset or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Dataset.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *UsersDataSourcesDatasetsPatchCall) Do(opts ...googleapi.CallOption) (*Dataset, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1236,7 +2223,12 @@ func (c *UsersDataSourcesDatasetsPatchCall) Do() (*Dataset, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Dataset
+	ret := &Dataset{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1292,18 +2284,148 @@ func (c *UsersDataSourcesDatasetsPatchCall) Do() (*Dataset, error) {
 
 }
 
+// method id "fitness.users.dataset.aggregate":
+
+type UsersDatasetAggregateCall struct {
+	s                *Service
+	userId           string
+	aggregaterequest *AggregateRequest
+	urlParams_       gensupport.URLParams
+	ctx_             context.Context
+}
+
+// Aggregate: Aggregates data of a certain type or stream into buckets
+// divided by a given type of boundary. Multiple data sets of multiple
+// types and from multiple sources can be aggreated into exactly one
+// bucket type per request.
+func (r *UsersDatasetService) Aggregate(userId string, aggregaterequest *AggregateRequest) *UsersDatasetAggregateCall {
+	c := &UsersDatasetAggregateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.userId = userId
+	c.aggregaterequest = aggregaterequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *UsersDatasetAggregateCall) Fields(s ...googleapi.Field) *UsersDatasetAggregateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersDatasetAggregateCall) Context(ctx context.Context) *UsersDatasetAggregateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersDatasetAggregateCall) doRequest(alt string) (*http.Response, error) {
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.aggregaterequest)
+	if err != nil {
+		return nil, err
+	}
+	ctype := "application/json"
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/dataset:aggregate")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	googleapi.Expand(req.URL, map[string]string{
+		"userId": c.userId,
+	})
+	req.Header.Set("Content-Type", ctype)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.dataset.aggregate" call.
+// Exactly one of *AggregateResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *AggregateResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *UsersDatasetAggregateCall) Do(opts ...googleapi.CallOption) (*AggregateResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &AggregateResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Aggregates data of a certain type or stream into buckets divided by a given type of boundary. Multiple data sets of multiple types and from multiple sources can be aggreated into exactly one bucket type per request.",
+	//   "httpMethod": "POST",
+	//   "id": "fitness.users.dataset.aggregate",
+	//   "parameterOrder": [
+	//     "userId"
+	//   ],
+	//   "parameters": {
+	//     "userId": {
+	//       "description": "Aggregate data for the person identified. Use me to indicate the authenticated user. Only me is supported at this time.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{userId}/dataset:aggregate",
+	//   "request": {
+	//     "$ref": "AggregateRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "AggregateResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/fitness.activity.read",
+	//     "https://www.googleapis.com/auth/fitness.activity.write",
+	//     "https://www.googleapis.com/auth/fitness.body.read",
+	//     "https://www.googleapis.com/auth/fitness.body.write",
+	//     "https://www.googleapis.com/auth/fitness.location.read",
+	//     "https://www.googleapis.com/auth/fitness.location.write"
+	//   ]
+	// }
+
+}
+
 // method id "fitness.users.sessions.delete":
 
 type UsersSessionsDeleteCall struct {
-	s         *Service
-	userId    string
-	sessionId string
-	opt_      map[string]interface{}
+	s          *Service
+	userId     string
+	sessionId  string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Deletes a session specified by the given session ID.
 func (r *UsersSessionsService) Delete(userId string, sessionId string) *UsersSessionsDeleteCall {
-	c := &UsersSessionsDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersSessionsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	c.sessionId = sessionId
 	return c
@@ -1312,37 +2434,47 @@ func (r *UsersSessionsService) Delete(userId string, sessionId string) *UsersSes
 // CurrentTimeMillis sets the optional parameter "currentTimeMillis":
 // The client's current time in milliseconds since epoch.
 func (c *UsersSessionsDeleteCall) CurrentTimeMillis(currentTimeMillis int64) *UsersSessionsDeleteCall {
-	c.opt_["currentTimeMillis"] = currentTimeMillis
+	c.urlParams_.Set("currentTimeMillis", fmt.Sprint(currentTimeMillis))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersSessionsDeleteCall) Fields(s ...googleapi.Field) *UsersSessionsDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersSessionsDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersSessionsDeleteCall) Context(ctx context.Context) *UsersSessionsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersSessionsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["currentTimeMillis"]; ok {
-		params.Set("currentTimeMillis", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/sessions/{sessionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId":    c.userId,
 		"sessionId": c.sessionId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.sessions.delete" call.
+func (c *UsersSessionsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -1390,14 +2522,16 @@ func (c *UsersSessionsDeleteCall) Do() error {
 // method id "fitness.users.sessions.list":
 
 type UsersSessionsListCall struct {
-	s      *Service
-	userId string
-	opt_   map[string]interface{}
+	s            *Service
+	userId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Lists sessions previously created.
 func (r *UsersSessionsService) List(userId string) *UsersSessionsListCall {
-	c := &UsersSessionsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersSessionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	return c
 }
@@ -1406,7 +2540,7 @@ func (r *UsersSessionsService) List(userId string) *UsersSessionsListCall {
 // Only sessions ending between the start and end times will be included
 // in the response.
 func (c *UsersSessionsListCall) EndTime(endTime string) *UsersSessionsListCall {
-	c.opt_["endTime"] = endTime
+	c.urlParams_.Set("endTime", endTime)
 	return c
 }
 
@@ -1415,7 +2549,7 @@ func (c *UsersSessionsListCall) EndTime(endTime string) *UsersSessionsListCall {
 // returned in this response will only have an ID and will not have any
 // other fields.
 func (c *UsersSessionsListCall) IncludeDeleted(includeDeleted bool) *UsersSessionsListCall {
-	c.opt_["includeDeleted"] = includeDeleted
+	c.urlParams_.Set("includeDeleted", fmt.Sprint(includeDeleted))
 	return c
 }
 
@@ -1424,7 +2558,7 @@ func (c *UsersSessionsListCall) IncludeDeleted(includeDeleted bool) *UsersSessio
 // next page of results, set this parameter to the value of
 // nextPageToken from the previous response.
 func (c *UsersSessionsListCall) PageToken(pageToken string) *UsersSessionsListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
@@ -1432,45 +2566,74 @@ func (c *UsersSessionsListCall) PageToken(pageToken string) *UsersSessionsListCa
 // timestamp. Only sessions ending between the start and end times will
 // be included in the response.
 func (c *UsersSessionsListCall) StartTime(startTime string) *UsersSessionsListCall {
-	c.opt_["startTime"] = startTime
+	c.urlParams_.Set("startTime", startTime)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersSessionsListCall) Fields(s ...googleapi.Field) *UsersSessionsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersSessionsListCall) Do() (*ListSessionsResponse, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *UsersSessionsListCall) IfNoneMatch(entityTag string) *UsersSessionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersSessionsListCall) Context(ctx context.Context) *UsersSessionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersSessionsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["endTime"]; ok {
-		params.Set("endTime", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["includeDeleted"]; ok {
-		params.Set("includeDeleted", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["startTime"]; ok {
-		params.Set("startTime", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/sessions")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId": c.userId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.sessions.list" call.
+// Exactly one of *ListSessionsResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ListSessionsResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *UsersSessionsListCall) Do(opts ...googleapi.CallOption) (*ListSessionsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1478,7 +2641,12 @@ func (c *UsersSessionsListCall) Do() (*ListSessionsResponse, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *ListSessionsResponse
+	ret := &ListSessionsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1534,19 +2702,41 @@ func (c *UsersSessionsListCall) Do() (*ListSessionsResponse, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *UsersSessionsListCall) Pages(ctx context.Context, f func(*ListSessionsResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "fitness.users.sessions.update":
 
 type UsersSessionsUpdateCall struct {
-	s         *Service
-	userId    string
-	sessionId string
-	session   *Session
-	opt_      map[string]interface{}
+	s          *Service
+	userId     string
+	sessionId  string
+	session    *Session
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Update: Updates or insert a given session.
 func (r *UsersSessionsService) Update(userId string, sessionId string, session *Session) *UsersSessionsUpdateCall {
-	c := &UsersSessionsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &UsersSessionsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
 	c.sessionId = sessionId
 	c.session = session
@@ -1556,43 +2746,68 @@ func (r *UsersSessionsService) Update(userId string, sessionId string, session *
 // CurrentTimeMillis sets the optional parameter "currentTimeMillis":
 // The client's current time in milliseconds since epoch.
 func (c *UsersSessionsUpdateCall) CurrentTimeMillis(currentTimeMillis int64) *UsersSessionsUpdateCall {
-	c.opt_["currentTimeMillis"] = currentTimeMillis
+	c.urlParams_.Set("currentTimeMillis", fmt.Sprint(currentTimeMillis))
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *UsersSessionsUpdateCall) Fields(s ...googleapi.Field) *UsersSessionsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *UsersSessionsUpdateCall) Do() (*Session, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersSessionsUpdateCall) Context(ctx context.Context) *UsersSessionsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *UsersSessionsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.session)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["currentTimeMillis"]; ok {
-		params.Set("currentTimeMillis", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{userId}/sessions/{sessionId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"userId":    c.userId,
 		"sessionId": c.sessionId,
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "fitness.users.sessions.update" call.
+// Exactly one of *Session or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Session.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *UsersSessionsUpdateCall) Do(opts ...googleapi.CallOption) (*Session, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1600,7 +2815,12 @@ func (c *UsersSessionsUpdateCall) Do() (*Session, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Session
+	ret := &Session{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

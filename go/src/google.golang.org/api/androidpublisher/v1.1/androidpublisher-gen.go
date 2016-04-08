@@ -1,4 +1,4 @@
-// Package androidpublisher provides access to the Google Play Android Developer API.
+// Package androidpublisher provides access to the Google Play Developer API.
 //
 // See https://developers.google.com/android-publisher
 //
@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/androidpublisher/v1.1"
 //   ...
 //   androidpublisherService, err := androidpublisher.New(oauthHttpClient)
-package androidpublisher
+package androidpublisher // import "google.golang.org/api/androidpublisher/v1.1"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "androidpublisher:v1.1"
 const apiName = "androidpublisher"
@@ -43,7 +47,7 @@ const basePath = "https://www.googleapis.com/androidpublisher/v1.1/applications/
 
 // OAuth2 scopes used by this API.
 const (
-	// View and manage your Google Play Android Developer account
+	// View and manage your Google Play Developer account
 	AndroidpublisherScope = "https://www.googleapis.com/auth/androidpublisher"
 )
 
@@ -58,12 +62,20 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Inapppurchases *InapppurchasesService
 
 	Purchases *PurchasesService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewInapppurchasesService(s *Service) *InapppurchasesService {
@@ -84,6 +96,8 @@ type PurchasesService struct {
 	s *Service
 }
 
+// InappPurchase: An InappPurchase resource indicates the status of a
+// user's inapp product purchase.
 type InappPurchase struct {
 	// ConsumptionState: The consumption state of the inapp product.
 	// Possible values are:
@@ -108,8 +122,28 @@ type InappPurchase struct {
 	// PurchaseTime: The time the product was purchased, in milliseconds
 	// since the epoch (Jan 1, 1970).
 	PurchaseTime int64 `json:"purchaseTime,omitempty,string"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ConsumptionState") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *InappPurchase) MarshalJSON() ([]byte, error) {
+	type noMethod InappPurchase
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// SubscriptionPurchase: A SubscriptionPurchase resource indicates the
+// status of a user's subscription purchase.
 type SubscriptionPurchase struct {
 	// AutoRenewing: Whether the subscription will automatically be renewed
 	// when it reaches its current expiry time.
@@ -126,52 +160,113 @@ type SubscriptionPurchase struct {
 	// ValidUntilTimestampMsec: Time at which the subscription will expire,
 	// in milliseconds since Epoch.
 	ValidUntilTimestampMsec int64 `json:"validUntilTimestampMsec,omitempty,string"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AutoRenewing") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *SubscriptionPurchase) MarshalJSON() ([]byte, error) {
+	type noMethod SubscriptionPurchase
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "androidpublisher.inapppurchases.get":
 
 type InapppurchasesGetCall struct {
-	s           *Service
-	packageName string
-	productId   string
-	token       string
-	opt_        map[string]interface{}
+	s            *Service
+	packageName  string
+	productId    string
+	token        string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Checks the purchase and consumption status of an inapp item.
 func (r *InapppurchasesService) Get(packageName string, productId string, token string) *InapppurchasesGetCall {
-	c := &InapppurchasesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &InapppurchasesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.productId = productId
 	c.token = token
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *InapppurchasesGetCall) Fields(s ...googleapi.Field) *InapppurchasesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *InapppurchasesGetCall) Do() (*InappPurchase, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *InapppurchasesGetCall) IfNoneMatch(entityTag string) *InapppurchasesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InapppurchasesGetCall) Context(ctx context.Context) *InapppurchasesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *InapppurchasesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/inapp/{productId}/purchases/{token}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageName,
 		"productId":   c.productId,
 		"token":       c.token,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.inapppurchases.get" call.
+// Exactly one of *InappPurchase or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *InappPurchase.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *InapppurchasesGetCall) Do(opts ...googleapi.CallOption) (*InappPurchase, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +274,12 @@ func (c *InapppurchasesGetCall) Do() (*InappPurchase, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *InappPurchase
+	ret := &InappPurchase{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -231,44 +331,58 @@ type PurchasesCancelCall struct {
 	packageName    string
 	subscriptionId string
 	token          string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
 }
 
 // Cancel: Cancels a user's subscription purchase. The subscription
 // remains valid until its expiration time.
 func (r *PurchasesService) Cancel(packageName string, subscriptionId string, token string) *PurchasesCancelCall {
-	c := &PurchasesCancelCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PurchasesCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.subscriptionId = subscriptionId
 	c.token = token
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PurchasesCancelCall) Fields(s ...googleapi.Field) *PurchasesCancelCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PurchasesCancelCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PurchasesCancelCall) Context(ctx context.Context) *PurchasesCancelCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PurchasesCancelCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/subscriptions/{subscriptionId}/purchases/{token}/cancel")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageName,
 		"subscriptionId": c.subscriptionId,
 		"token":          c.token,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.purchases.cancel" call.
+func (c *PurchasesCancelCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -321,44 +435,87 @@ type PurchasesGetCall struct {
 	packageName    string
 	subscriptionId string
 	token          string
-	opt_           map[string]interface{}
+	urlParams_     gensupport.URLParams
+	ifNoneMatch_   string
+	ctx_           context.Context
 }
 
 // Get: Checks whether a user's subscription purchase is valid and
 // returns its expiry time.
 func (r *PurchasesService) Get(packageName string, subscriptionId string, token string) *PurchasesGetCall {
-	c := &PurchasesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PurchasesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.packageName = packageName
 	c.subscriptionId = subscriptionId
 	c.token = token
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PurchasesGetCall) Fields(s ...googleapi.Field) *PurchasesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PurchasesGetCall) Do() (*SubscriptionPurchase, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PurchasesGetCall) IfNoneMatch(entityTag string) *PurchasesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PurchasesGetCall) Context(ctx context.Context) *PurchasesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PurchasesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/subscriptions/{subscriptionId}/purchases/{token}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":    c.packageName,
 		"subscriptionId": c.subscriptionId,
 		"token":          c.token,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "androidpublisher.purchases.get" call.
+// Exactly one of *SubscriptionPurchase or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *SubscriptionPurchase.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PurchasesGetCall) Do(opts ...googleapi.CallOption) (*SubscriptionPurchase, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +523,12 @@ func (c *PurchasesGetCall) Do() (*SubscriptionPurchase, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *SubscriptionPurchase
+	ret := &SubscriptionPurchase{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

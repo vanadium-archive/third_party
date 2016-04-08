@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/TNq58uhDuCyuU5JtNXwx-a0s4AI\"",
+ "etag": "\"bRFOOrZKfO9LweMbPqu0kcu6De8/Go25La_aBhasMN_9AV8UWOibQ18\"",
  "discoveryVersion": "v1",
  "id": "adexchangebuyer:v1.3",
  "name": "adexchangebuyer",
  "canonicalName": "Ad Exchange Buyer",
  "version": "v1.3",
- "revision": "20141123",
+ "revision": "20160310",
  "title": "Ad Exchange Buyer API",
  "description": "Accesses your bidding-account information, submits creatives for validation, finds available direct deals, and retrieves performance reports.",
  "ownerDomain": "google.com",
@@ -222,7 +222,7 @@
     },
     "budgetAmount": {
      "type": "string",
-     "description": "The budget amount to apply for the billingId provided. This is required for update requests.",
+     "description": "The daily budget amount in unit amount of the account currency to apply for the billingId provided. This is required for update requests.",
      "format": "int64"
     },
     "currencyCode": {
@@ -280,6 +280,11 @@
      "type": "string",
      "description": "The agency id for this creative.",
      "format": "int64"
+    },
+    "apiUploadTimestamp": {
+     "type": "string",
+     "description": "The last upload timestamp of this creative if it was uploaded via API. Read-only. The value of this field is generated, and will be ignored for uploads. (formatted RFC 3339 timestamp).",
+     "format": "date-time"
     },
     "attribute": {
      "type": "array",
@@ -352,7 +357,7 @@
     },
     "filteringReasons": {
      "type": "object",
-     "description": "The filtering reasons for the creative. If this feature is not enabled, please ask your technical account manager. Read-only. This field should not be set in requests.",
+     "description": "The filtering reasons for the creative. Read-only. This field should not be set in requests.",
      "properties": {
       "date": {
        "type": "string",
@@ -389,10 +394,113 @@
       ]
      }
     },
+    "impressionTrackingUrl": {
+     "type": "array",
+     "description": "The set of urls to be called to record an impression.",
+     "items": {
+      "type": "string"
+     }
+    },
     "kind": {
      "type": "string",
      "description": "Resource type.",
      "default": "adexchangebuyer#creative"
+    },
+    "nativeAd": {
+     "type": "object",
+     "description": "If nativeAd is set, HTMLSnippet and videoURL should not be set.",
+     "properties": {
+      "advertiser": {
+       "type": "string"
+      },
+      "appIcon": {
+       "type": "object",
+       "description": "The app icon, for app download ads.",
+       "properties": {
+        "height": {
+         "type": "integer",
+         "format": "int32"
+        },
+        "url": {
+         "type": "string"
+        },
+        "width": {
+         "type": "integer",
+         "format": "int32"
+        }
+       }
+      },
+      "body": {
+       "type": "string",
+       "description": "A long description of the ad."
+      },
+      "callToAction": {
+       "type": "string",
+       "description": "A label for the button that the user is supposed to click."
+      },
+      "clickTrackingUrl": {
+       "type": "string",
+       "description": "The URL to use for click tracking."
+      },
+      "headline": {
+       "type": "string",
+       "description": "A short title for the ad."
+      },
+      "image": {
+       "type": "object",
+       "description": "A large image.",
+       "properties": {
+        "height": {
+         "type": "integer",
+         "format": "int32"
+        },
+        "url": {
+         "type": "string"
+        },
+        "width": {
+         "type": "integer",
+         "format": "int32"
+        }
+       }
+      },
+      "impressionTrackingUrl": {
+       "type": "array",
+       "description": "The URLs are called when the impression is rendered.",
+       "items": {
+        "type": "string"
+       }
+      },
+      "logo": {
+       "type": "object",
+       "description": "A smaller image, for the advertiser logo.",
+       "properties": {
+        "height": {
+         "type": "integer",
+         "format": "int32"
+        },
+        "url": {
+         "type": "string"
+        },
+        "width": {
+         "type": "integer",
+         "format": "int32"
+        }
+       }
+      },
+      "price": {
+       "type": "string",
+       "description": "The price of the promoted app including the currency info."
+      },
+      "starRating": {
+       "type": "number",
+       "description": "The app rating in the app store. Must be in the range [0-5].",
+       "format": "double"
+      },
+      "store": {
+       "type": "string",
+       "description": "The URL to the app store to purchase/download the promoted app."
+      }
+     }
     },
     "productCategories": {
      "type": "array",
@@ -429,6 +537,11 @@
       "type": "integer",
       "format": "int32"
      }
+    },
+    "version": {
+     "type": "integer",
+     "description": "The version for this creative. Read-only. This field should not be set in requests.",
+     "format": "int32"
     },
     "videoURL": {
      "type": "string",
@@ -483,9 +596,22 @@
      "type": "string",
      "description": "The name of the advertiser this deal is for."
     },
+    "allowsAlcohol": {
+     "type": "boolean",
+     "description": "Whether the publisher for this deal is eligible for alcohol ads."
+    },
+    "buyerAccountId": {
+     "type": "string",
+     "description": "The account id that this deal was negotiated for. It is either the buyer or the client that this deal was negotiated on behalf of.",
+     "format": "int64"
+    },
     "currencyCode": {
      "type": "string",
      "description": "The currency code that applies to the fixed_cpm value. If not set then assumed to be USD."
+    },
+    "dealTier": {
+     "type": "string",
+     "description": "The deal type such as programmatic reservation or fixed price and so on."
     },
     "endTime": {
      "type": "string",
@@ -555,6 +681,16 @@
    "type": "object",
    "description": "The configuration data for an Ad Exchange performance report list.",
    "properties": {
+    "bidRate": {
+     "type": "number",
+     "description": "The number of bid responses with an ad.",
+     "format": "double"
+    },
+    "bidRequestRate": {
+     "type": "number",
+     "description": "The number of bid requests sent to your bidder.",
+     "format": "double"
+    },
     "calloutStatusRate": {
      "type": "array",
      "description": "Rate of various prefiltering statuses per match. Please refer to the callout-status-codes.txt file for different statuses.",
@@ -576,12 +712,22 @@
       "type": "any"
      }
     },
+    "filteredBidRate": {
+     "type": "number",
+     "description": "The number of bid responses that were filtered due to a policy violation or other errors.",
+     "format": "double"
+    },
     "hostedMatchStatusRate": {
      "type": "array",
      "description": "Average QPS for hosted match operations.",
      "items": {
       "type": "any"
      }
+    },
+    "inventoryMatchRate": {
+     "type": "number",
+     "description": "The number of potential queries based on your pretargeting settings.",
+     "format": "double"
     },
     "kind": {
      "type": "string",
@@ -637,10 +783,20 @@
      "type": "string",
      "description": "The trading location of this data."
     },
+    "successfulRequestRate": {
+     "type": "number",
+     "description": "The number of properly formed bid responses received by our servers within the deadline.",
+     "format": "double"
+    },
     "timestamp": {
      "type": "string",
      "description": "The unix timestamp of the starting time of this performance data.",
      "format": "int64"
+    },
+    "unsuccessfulRequestRate": {
+     "type": "number",
+     "description": "The number of bid responses that were unsuccessful due to timeouts, incorrect formatting, etc.",
+     "format": "double"
     }
    }
   },

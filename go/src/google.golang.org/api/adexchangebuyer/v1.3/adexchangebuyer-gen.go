@@ -7,15 +7,17 @@
 //   import "google.golang.org/api/adexchangebuyer/v1.3"
 //   ...
 //   adexchangebuyerService, err := adexchangebuyer.New(oauthHttpClient)
-package adexchangebuyer
+package adexchangebuyer // import "google.golang.org/api/adexchangebuyer/v1.3"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
-	"google.golang.org/api/googleapi"
+	context "golang.org/x/net/context"
+	ctxhttp "golang.org/x/net/context/ctxhttp"
+	gensupport "google.golang.org/api/gensupport"
+	googleapi "google.golang.org/api/googleapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -31,10 +33,12 @@ var _ = fmt.Sprintf
 var _ = json.NewDecoder
 var _ = io.Copy
 var _ = url.Parse
+var _ = gensupport.MarshalJSON
 var _ = googleapi.Version
 var _ = errors.New
 var _ = strings.Replace
-var _ = context.Background
+var _ = context.Canceled
+var _ = ctxhttp.Do
 
 const apiId = "adexchangebuyer:v1.3"
 const apiName = "adexchangebuyer"
@@ -63,8 +67,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client   *http.Client
-	BasePath string // API endpoint base URL
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Accounts *AccountsService
 
@@ -79,6 +84,13 @@ type Service struct {
 	PerformanceReport *PerformanceReportService
 
 	PretargetingConfig *PretargetingConfigService
+}
+
+func (s *Service) userAgent() string {
+	if s.UserAgent == "" {
+		return googleapi.UserAgent
+	}
+	return googleapi.UserAgent + " " + s.UserAgent
 }
 
 func NewAccountsService(s *Service) *AccountsService {
@@ -144,6 +156,7 @@ type PretargetingConfigService struct {
 	s *Service
 }
 
+// Account: Configuration data for an Ad Exchange buyer account.
 type Account struct {
 	// BidderLocation: Your bidder locations that have distinct URLs.
 	BidderLocation []*AccountBidderLocation `json:"bidderLocation,omitempty"`
@@ -176,6 +189,24 @@ type Account struct {
 	// NumberActiveCreatives: The number of creatives that this account
 	// inserted or bid with in the last 30 days.
 	NumberActiveCreatives int64 `json:"numberActiveCreatives,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "BidderLocation") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Account) MarshalJSON() ([]byte, error) {
+	type noMethod Account
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type AccountBidderLocation struct {
@@ -188,22 +219,57 @@ type AccountBidderLocation struct {
 	// - ASIA
 	// - EUROPE
 	// - US_EAST
-	// -
-	// US_WEST
+	// - US_WEST
 	Region string `json:"region,omitempty"`
 
 	// Url: The URL to which the Ad Exchange will send bid requests.
 	Url string `json:"url,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "MaximumQps") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AccountBidderLocation) MarshalJSON() ([]byte, error) {
+	type noMethod AccountBidderLocation
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// AccountsList: An account feed lists Ad Exchange buyer accounts that
+// the user has access to. Each entry in the feed corresponds to a
+// single buyer account.
 type AccountsList struct {
 	// Items: A list of accounts.
 	Items []*Account `json:"items,omitempty"`
 
 	// Kind: Resource type.
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *AccountsList) MarshalJSON() ([]byte, error) {
+	type noMethod AccountsList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// BillingInfo: The configuration data for an Ad Exchange billing info.
 type BillingInfo struct {
 	// AccountId: Account id.
 	AccountId int64 `json:"accountId,omitempty"`
@@ -218,16 +284,56 @@ type BillingInfo struct {
 
 	// Kind: Resource type.
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *BillingInfo) MarshalJSON() ([]byte, error) {
+	type noMethod BillingInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// BillingInfoList: A billing info feed lists Billing Info the Ad
+// Exchange buyer account has access to. Each entry in the feed
+// corresponds to a single billing info.
 type BillingInfoList struct {
 	// Items: A list of billing info relevant for your account.
 	Items []*BillingInfo `json:"items,omitempty"`
 
 	// Kind: Resource type.
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *BillingInfoList) MarshalJSON() ([]byte, error) {
+	type noMethod BillingInfoList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Budget: The configuration data for Ad Exchange RTB - Budget API.
 type Budget struct {
 	// AccountId: The id of the account. This is required for get and update
 	// requests.
@@ -237,8 +343,9 @@ type Budget struct {
 	// budget information for. This is required for get and update requests.
 	BillingId int64 `json:"billingId,omitempty,string"`
 
-	// BudgetAmount: The budget amount to apply for the billingId provided.
-	// This is required for update requests.
+	// BudgetAmount: The daily budget amount in unit amount of the account
+	// currency to apply for the billingId provided. This is required for
+	// update requests.
 	BudgetAmount int64 `json:"budgetAmount,omitempty,string"`
 
 	// CurrencyCode: The currency code for the buyer. This cannot be altered
@@ -250,8 +357,27 @@ type Budget struct {
 
 	// Kind: The kind of the resource, i.e. "adexchangebuyer#budget".
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *Budget) MarshalJSON() ([]byte, error) {
+	type noMethod Budget
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// Creative: A creative and its classification data.
 type Creative struct {
 	// HTMLSnippet: The HTML snippet that displays the ad when inserted in
 	// the web page. If set, videoURL should not be set.
@@ -270,6 +396,12 @@ type Creative struct {
 
 	// AgencyId: The agency id for this creative.
 	AgencyId int64 `json:"agencyId,omitempty,string"`
+
+	// ApiUploadTimestamp: The last upload timestamp of this creative if it
+	// was uploaded via API. Read-only. The value of this field is
+	// generated, and will be ignored for uploads. (formatted RFC 3339
+	// timestamp).
+	ApiUploadTimestamp string `json:"apiUploadTimestamp,omitempty"`
 
 	// Attribute: All attributes for the ads that may be shown from this
 	// snippet.
@@ -294,16 +426,23 @@ type Creative struct {
 	// requests.
 	DisapprovalReasons []*CreativeDisapprovalReasons `json:"disapprovalReasons,omitempty"`
 
-	// FilteringReasons: The filtering reasons for the creative. If this
-	// feature is not enabled, please ask your technical account manager.
-	// Read-only. This field should not be set in requests.
+	// FilteringReasons: The filtering reasons for the creative. Read-only.
+	// This field should not be set in requests.
 	FilteringReasons *CreativeFilteringReasons `json:"filteringReasons,omitempty"`
 
 	// Height: Ad height.
 	Height int64 `json:"height,omitempty"`
 
+	// ImpressionTrackingUrl: The set of urls to be called to record an
+	// impression.
+	ImpressionTrackingUrl []string `json:"impressionTrackingUrl,omitempty"`
+
 	// Kind: Resource type.
 	Kind string `json:"kind,omitempty"`
+
+	// NativeAd: If nativeAd is set, HTMLSnippet and videoURL should not be
+	// set.
+	NativeAd *CreativeNativeAd `json:"nativeAd,omitempty"`
 
 	// ProductCategories: Detected product categories, if any. Read-only.
 	// This field should not be set in requests.
@@ -325,12 +464,34 @@ type Creative struct {
 	// snippet.
 	VendorType []int64 `json:"vendorType,omitempty"`
 
+	// Version: The version for this creative. Read-only. This field should
+	// not be set in requests.
+	Version int64 `json:"version,omitempty"`
+
 	// VideoURL: The url to fetch a video ad. If set, HTMLSnippet should not
 	// be set.
 	VideoURL string `json:"videoURL,omitempty"`
 
 	// Width: Ad width.
 	Width int64 `json:"width,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "HTMLSnippet") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *Creative) MarshalJSON() ([]byte, error) {
+	type noMethod Creative
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type CreativeCorrections struct {
@@ -339,6 +500,20 @@ type CreativeCorrections struct {
 
 	// Reason: The type of correction that was applied to the creative.
 	Reason string `json:"reason,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Details") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *CreativeCorrections) MarshalJSON() ([]byte, error) {
+	type noMethod CreativeCorrections
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type CreativeDisapprovalReasons struct {
@@ -347,8 +522,24 @@ type CreativeDisapprovalReasons struct {
 
 	// Reason: The categorized reason for disapproval.
 	Reason string `json:"reason,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Details") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CreativeDisapprovalReasons) MarshalJSON() ([]byte, error) {
+	type noMethod CreativeDisapprovalReasons
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CreativeFilteringReasons: The filtering reasons for the creative.
+// Read-only. This field should not be set in requests.
 type CreativeFilteringReasons struct {
 	// Date: The date in ISO 8601 format for the data. The data is collected
 	// from 00:00:00 to 23:59:59 in PST.
@@ -356,6 +547,20 @@ type CreativeFilteringReasons struct {
 
 	// Reasons: The filtering reasons.
 	Reasons []*CreativeFilteringReasonsReasons `json:"reasons,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Date") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *CreativeFilteringReasons) MarshalJSON() ([]byte, error) {
+	type noMethod CreativeFilteringReasons
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type CreativeFilteringReasonsReasons struct {
@@ -367,8 +572,151 @@ type CreativeFilteringReasonsReasons struct {
 	// FilteringStatus: The filtering status code. Please refer to the
 	// creative-status-codes.txt file for different statuses.
 	FilteringStatus int64 `json:"filteringStatus,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FilteringCount") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CreativeFilteringReasonsReasons) MarshalJSON() ([]byte, error) {
+	type noMethod CreativeFilteringReasonsReasons
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CreativeNativeAd: If nativeAd is set, HTMLSnippet and videoURL should
+// not be set.
+type CreativeNativeAd struct {
+	Advertiser string `json:"advertiser,omitempty"`
+
+	// AppIcon: The app icon, for app download ads.
+	AppIcon *CreativeNativeAdAppIcon `json:"appIcon,omitempty"`
+
+	// Body: A long description of the ad.
+	Body string `json:"body,omitempty"`
+
+	// CallToAction: A label for the button that the user is supposed to
+	// click.
+	CallToAction string `json:"callToAction,omitempty"`
+
+	// ClickTrackingUrl: The URL to use for click tracking.
+	ClickTrackingUrl string `json:"clickTrackingUrl,omitempty"`
+
+	// Headline: A short title for the ad.
+	Headline string `json:"headline,omitempty"`
+
+	// Image: A large image.
+	Image *CreativeNativeAdImage `json:"image,omitempty"`
+
+	// ImpressionTrackingUrl: The URLs are called when the impression is
+	// rendered.
+	ImpressionTrackingUrl []string `json:"impressionTrackingUrl,omitempty"`
+
+	// Logo: A smaller image, for the advertiser logo.
+	Logo *CreativeNativeAdLogo `json:"logo,omitempty"`
+
+	// Price: The price of the promoted app including the currency info.
+	Price string `json:"price,omitempty"`
+
+	// StarRating: The app rating in the app store. Must be in the range
+	// [0-5].
+	StarRating float64 `json:"starRating,omitempty"`
+
+	// Store: The URL to the app store to purchase/download the promoted
+	// app.
+	Store string `json:"store,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Advertiser") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *CreativeNativeAd) MarshalJSON() ([]byte, error) {
+	type noMethod CreativeNativeAd
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CreativeNativeAdAppIcon: The app icon, for app download ads.
+type CreativeNativeAdAppIcon struct {
+	Height int64 `json:"height,omitempty"`
+
+	Url string `json:"url,omitempty"`
+
+	Width int64 `json:"width,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Height") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *CreativeNativeAdAppIcon) MarshalJSON() ([]byte, error) {
+	type noMethod CreativeNativeAdAppIcon
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CreativeNativeAdImage: A large image.
+type CreativeNativeAdImage struct {
+	Height int64 `json:"height,omitempty"`
+
+	Url string `json:"url,omitempty"`
+
+	Width int64 `json:"width,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Height") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *CreativeNativeAdImage) MarshalJSON() ([]byte, error) {
+	type noMethod CreativeNativeAdImage
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CreativeNativeAdLogo: A smaller image, for the advertiser logo.
+type CreativeNativeAdLogo struct {
+	Height int64 `json:"height,omitempty"`
+
+	Url string `json:"url,omitempty"`
+
+	Width int64 `json:"width,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Height") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *CreativeNativeAdLogo) MarshalJSON() ([]byte, error) {
+	type noMethod CreativeNativeAdLogo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// CreativesList: The creatives feed lists the active creatives for the
+// Ad Exchange buyer accounts that the user has access to. Each entry in
+// the feed corresponds to a single creative.
 type CreativesList struct {
 	// Items: A list of creatives.
 	Items []*Creative `json:"items,omitempty"`
@@ -380,8 +728,27 @@ type CreativesList struct {
 	// retrieve the next page of results, set the next request's "pageToken"
 	// value to this.
 	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *CreativesList) MarshalJSON() ([]byte, error) {
+	type noMethod CreativesList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DirectDeal: The configuration data for an Ad Exchange direct deal.
 type DirectDeal struct {
 	// AccountId: The account id of the buyer this deal is for.
 	AccountId int64 `json:"accountId,omitempty"`
@@ -389,9 +756,22 @@ type DirectDeal struct {
 	// Advertiser: The name of the advertiser this deal is for.
 	Advertiser string `json:"advertiser,omitempty"`
 
+	// AllowsAlcohol: Whether the publisher for this deal is eligible for
+	// alcohol ads.
+	AllowsAlcohol bool `json:"allowsAlcohol,omitempty"`
+
+	// BuyerAccountId: The account id that this deal was negotiated for. It
+	// is either the buyer or the client that this deal was negotiated on
+	// behalf of.
+	BuyerAccountId int64 `json:"buyerAccountId,omitempty,string"`
+
 	// CurrencyCode: The currency code that applies to the fixed_cpm value.
 	// If not set then assumed to be USD.
 	CurrencyCode string `json:"currencyCode,omitempty"`
+
+	// DealTier: The deal type such as programmatic reservation or fixed
+	// price and so on.
+	DealTier string `json:"dealTier,omitempty"`
 
 	// EndTime: End time for when this deal stops being active. If not set
 	// then this deal is valid until manually disabled by the publisher. In
@@ -430,17 +810,64 @@ type DirectDeal struct {
 	// then this deal is active immediately upon creation. In seconds since
 	// the epoch.
 	StartTime int64 `json:"startTime,omitempty,string"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "AccountId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DirectDeal) MarshalJSON() ([]byte, error) {
+	type noMethod DirectDeal
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// DirectDealsList: A direct deals feed lists Direct Deals the Ad
+// Exchange buyer account has access to. This includes direct deals set
+// up for the buyer account as well as its merged stream seats.
 type DirectDealsList struct {
 	// DirectDeals: A list of direct deals relevant for your account.
 	DirectDeals []*DirectDeal `json:"directDeals,omitempty"`
 
 	// Kind: Resource type.
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "DirectDeals") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *DirectDealsList) MarshalJSON() ([]byte, error) {
+	type noMethod DirectDealsList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PerformanceReport: The configuration data for an Ad Exchange
+// performance report list.
 type PerformanceReport struct {
+	// BidRate: The number of bid responses with an ad.
+	BidRate float64 `json:"bidRate,omitempty"`
+
+	// BidRequestRate: The number of bid requests sent to your bidder.
+	BidRequestRate float64 `json:"bidRequestRate,omitempty"`
+
 	// CalloutStatusRate: Rate of various prefiltering statuses per match.
 	// Please refer to the callout-status-codes.txt file for different
 	// statuses.
@@ -453,8 +880,16 @@ type PerformanceReport struct {
 	// the creative-status-codes.txt file for different statuses.
 	CreativeStatusRate []interface{} `json:"creativeStatusRate,omitempty"`
 
+	// FilteredBidRate: The number of bid responses that were filtered due
+	// to a policy violation or other errors.
+	FilteredBidRate float64 `json:"filteredBidRate,omitempty"`
+
 	// HostedMatchStatusRate: Average QPS for hosted match operations.
 	HostedMatchStatusRate []interface{} `json:"hostedMatchStatusRate,omitempty"`
+
+	// InventoryMatchRate: The number of potential queries based on your
+	// pretargeting settings.
+	InventoryMatchRate float64 `json:"inventoryMatchRate,omitempty"`
 
 	// Kind: Resource type.
 	Kind string `json:"kind,omitempty"`
@@ -498,11 +933,37 @@ type PerformanceReport struct {
 	// Region: The trading location of this data.
 	Region string `json:"region,omitempty"`
 
+	// SuccessfulRequestRate: The number of properly formed bid responses
+	// received by our servers within the deadline.
+	SuccessfulRequestRate float64 `json:"successfulRequestRate,omitempty"`
+
 	// Timestamp: The unix timestamp of the starting time of this
 	// performance data.
 	Timestamp int64 `json:"timestamp,omitempty,string"`
+
+	// UnsuccessfulRequestRate: The number of bid responses that were
+	// unsuccessful due to timeouts, incorrect formatting, etc.
+	UnsuccessfulRequestRate float64 `json:"unsuccessfulRequestRate,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BidRate") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
 }
 
+func (s *PerformanceReport) MarshalJSON() ([]byte, error) {
+	type noMethod PerformanceReport
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
+}
+
+// PerformanceReportList: The configuration data for an Ad Exchange
+// performance report list.
+// https://sites.google.com/a/google.com/adx-integration/Home/engineering/binary-releases/rtb-api-release
+// https://cs.corp.google.com/#piper///depot/google3/contentads/adx/tools/rtb_api/adxrtb.py
 type PerformanceReportList struct {
 	// Kind: Resource type.
 	Kind string `json:"kind,omitempty"`
@@ -510,6 +971,24 @@ type PerformanceReportList struct {
 	// PerformanceReport: A list of performance reports relevant for the
 	// account.
 	PerformanceReport []*PerformanceReport `json:"performanceReport,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *PerformanceReportList) MarshalJSON() ([]byte, error) {
+	type noMethod PerformanceReportList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type PretargetingConfig struct {
@@ -609,6 +1088,24 @@ type PretargetingConfig struct {
 
 	// Verticals: Requests containing any of these vertical ids will match.
 	Verticals googleapi.Int64s `json:"verticals,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "BillingId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *PretargetingConfig) MarshalJSON() ([]byte, error) {
+	type noMethod PretargetingConfig
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type PretargetingConfigDimensions struct {
@@ -617,6 +1114,20 @@ type PretargetingConfigDimensions struct {
 
 	// Width: Width in pixels.
 	Width int64 `json:"width,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "Height") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *PretargetingConfigDimensions) MarshalJSON() ([]byte, error) {
+	type noMethod PretargetingConfigDimensions
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type PretargetingConfigExcludedPlacements struct {
@@ -627,6 +1138,20 @@ type PretargetingConfigExcludedPlacements struct {
 
 	// Type: The type of the placement.
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Token") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *PretargetingConfigExcludedPlacements) MarshalJSON() ([]byte, error) {
+	type noMethod PretargetingConfigExcludedPlacements
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type PretargetingConfigPlacements struct {
@@ -637,6 +1162,20 @@ type PretargetingConfigPlacements struct {
 
 	// Type: The type of the placement.
 	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Token") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *PretargetingConfigPlacements) MarshalJSON() ([]byte, error) {
+	type noMethod PretargetingConfigPlacements
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 type PretargetingConfigList struct {
@@ -645,46 +1184,107 @@ type PretargetingConfigList struct {
 
 	// Kind: Resource type.
 	Kind string `json:"kind,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Items") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+}
+
+func (s *PretargetingConfigList) MarshalJSON() ([]byte, error) {
+	type noMethod PretargetingConfigList
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields)
 }
 
 // method id "adexchangebuyer.accounts.get":
 
 type AccountsGetCall struct {
-	s    *Service
-	id   int64
-	opt_ map[string]interface{}
+	s            *Service
+	id           int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets one account by ID.
 func (r *AccountsService) Get(id int64) *AccountsGetCall {
-	c := &AccountsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AccountsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AccountsGetCall) Fields(s ...googleapi.Field) *AccountsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AccountsGetCall) Do() (*Account, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AccountsGetCall) IfNoneMatch(entityTag string) *AccountsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AccountsGetCall) Context(ctx context.Context) *AccountsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AccountsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "accounts/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": strconv.FormatInt(c.id, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.accounts.get" call.
+// Exactly one of *Account or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Account.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *AccountsGetCall) Do(opts ...googleapi.CallOption) (*Account, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -692,7 +1292,12 @@ func (c *AccountsGetCall) Do() (*Account, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Account
+	ret := &Account{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -727,37 +1332,80 @@ func (c *AccountsGetCall) Do() (*Account, error) {
 // method id "adexchangebuyer.accounts.list":
 
 type AccountsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Retrieves the authenticated user's list of accounts.
 func (r *AccountsService) List() *AccountsListCall {
-	c := &AccountsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AccountsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AccountsListCall) Fields(s ...googleapi.Field) *AccountsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AccountsListCall) Do() (*AccountsList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AccountsListCall) IfNoneMatch(entityTag string) *AccountsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AccountsListCall) Context(ctx context.Context) *AccountsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AccountsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "accounts")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.accounts.list" call.
+// Exactly one of *AccountsList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *AccountsList.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *AccountsListCall) Do(opts ...googleapi.CallOption) (*AccountsList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -765,7 +1413,12 @@ func (c *AccountsListCall) Do() (*AccountsList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *AccountsList
+	ret := &AccountsList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -788,50 +1441,79 @@ func (c *AccountsListCall) Do() (*AccountsList, error) {
 // method id "adexchangebuyer.accounts.patch":
 
 type AccountsPatchCall struct {
-	s       *Service
-	id      int64
-	account *Account
-	opt_    map[string]interface{}
+	s          *Service
+	id         int64
+	account    *Account
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Updates an existing account. This method supports patch
 // semantics.
 func (r *AccountsService) Patch(id int64, account *Account) *AccountsPatchCall {
-	c := &AccountsPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AccountsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.account = account
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AccountsPatchCall) Fields(s ...googleapi.Field) *AccountsPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AccountsPatchCall) Do() (*Account, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AccountsPatchCall) Context(ctx context.Context) *AccountsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AccountsPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.account)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "accounts/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": strconv.FormatInt(c.id, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.accounts.patch" call.
+// Exactly one of *Account or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Account.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *AccountsPatchCall) Do(opts ...googleapi.CallOption) (*Account, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -839,7 +1521,12 @@ func (c *AccountsPatchCall) Do() (*Account, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Account
+	ret := &Account{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -877,49 +1564,78 @@ func (c *AccountsPatchCall) Do() (*Account, error) {
 // method id "adexchangebuyer.accounts.update":
 
 type AccountsUpdateCall struct {
-	s       *Service
-	id      int64
-	account *Account
-	opt_    map[string]interface{}
+	s          *Service
+	id         int64
+	account    *Account
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Update: Updates an existing account.
 func (r *AccountsService) Update(id int64, account *Account) *AccountsUpdateCall {
-	c := &AccountsUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &AccountsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	c.account = account
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *AccountsUpdateCall) Fields(s ...googleapi.Field) *AccountsUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *AccountsUpdateCall) Do() (*Account, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AccountsUpdateCall) Context(ctx context.Context) *AccountsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *AccountsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.account)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "accounts/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": strconv.FormatInt(c.id, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.accounts.update" call.
+// Exactly one of *Account or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Account.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *AccountsUpdateCall) Do(opts ...googleapi.CallOption) (*Account, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -927,7 +1643,12 @@ func (c *AccountsUpdateCall) Do() (*Account, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Account
+	ret := &Account{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -965,42 +1686,85 @@ func (c *AccountsUpdateCall) Do() (*Account, error) {
 // method id "adexchangebuyer.billingInfo.get":
 
 type BillingInfoGetCall struct {
-	s         *Service
-	accountId int64
-	opt_      map[string]interface{}
+	s            *Service
+	accountId    int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Returns the billing information for one account specified by
 // account ID.
 func (r *BillingInfoService) Get(accountId int64) *BillingInfoGetCall {
-	c := &BillingInfoGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &BillingInfoGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *BillingInfoGetCall) Fields(s ...googleapi.Field) *BillingInfoGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *BillingInfoGetCall) Do() (*BillingInfo, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *BillingInfoGetCall) IfNoneMatch(entityTag string) *BillingInfoGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BillingInfoGetCall) Context(ctx context.Context) *BillingInfoGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *BillingInfoGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "billinginfo/{accountId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.billingInfo.get" call.
+// Exactly one of *BillingInfo or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *BillingInfo.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *BillingInfoGetCall) Do(opts ...googleapi.CallOption) (*BillingInfo, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1008,7 +1772,12 @@ func (c *BillingInfoGetCall) Do() (*BillingInfo, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *BillingInfo
+	ret := &BillingInfo{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1043,38 +1812,81 @@ func (c *BillingInfoGetCall) Do() (*BillingInfo, error) {
 // method id "adexchangebuyer.billingInfo.list":
 
 type BillingInfoListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Retrieves a list of billing information for all accounts of the
 // authenticated user.
 func (r *BillingInfoService) List() *BillingInfoListCall {
-	c := &BillingInfoListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &BillingInfoListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *BillingInfoListCall) Fields(s ...googleapi.Field) *BillingInfoListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *BillingInfoListCall) Do() (*BillingInfoList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *BillingInfoListCall) IfNoneMatch(entityTag string) *BillingInfoListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BillingInfoListCall) Context(ctx context.Context) *BillingInfoListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *BillingInfoListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "billinginfo")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.billingInfo.list" call.
+// Exactly one of *BillingInfoList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *BillingInfoList.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *BillingInfoListCall) Do(opts ...googleapi.CallOption) (*BillingInfoList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1082,7 +1894,12 @@ func (c *BillingInfoListCall) Do() (*BillingInfoList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *BillingInfoList
+	ret := &BillingInfoList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1105,45 +1922,88 @@ func (c *BillingInfoListCall) Do() (*BillingInfoList, error) {
 // method id "adexchangebuyer.budget.get":
 
 type BudgetGetCall struct {
-	s         *Service
-	accountId int64
-	billingId int64
-	opt_      map[string]interface{}
+	s            *Service
+	accountId    int64
+	billingId    int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Returns the budget information for the adgroup specified by the
 // accountId and billingId.
 func (r *BudgetService) Get(accountId int64, billingId int64) *BudgetGetCall {
-	c := &BudgetGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &BudgetGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.billingId = billingId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *BudgetGetCall) Fields(s ...googleapi.Field) *BudgetGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *BudgetGetCall) Do() (*Budget, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *BudgetGetCall) IfNoneMatch(entityTag string) *BudgetGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BudgetGetCall) Context(ctx context.Context) *BudgetGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *BudgetGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "billinginfo/{accountId}/{billingId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 		"billingId": strconv.FormatInt(c.billingId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.budget.get" call.
+// Exactly one of *Budget or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Budget.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *BudgetGetCall) Do(opts ...googleapi.CallOption) (*Budget, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1151,7 +2011,12 @@ func (c *BudgetGetCall) Do() (*Budget, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Budget
+	ret := &Budget{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1194,54 +2059,83 @@ func (c *BudgetGetCall) Do() (*Budget, error) {
 // method id "adexchangebuyer.budget.patch":
 
 type BudgetPatchCall struct {
-	s         *Service
-	accountId int64
-	billingId int64
-	budget    *Budget
-	opt_      map[string]interface{}
+	s          *Service
+	accountId  int64
+	billingId  int64
+	budget     *Budget
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Patch: Updates the budget amount for the budget of the adgroup
 // specified by the accountId and billingId, with the budget amount in
 // the request. This method supports patch semantics.
 func (r *BudgetService) Patch(accountId int64, billingId int64, budget *Budget) *BudgetPatchCall {
-	c := &BudgetPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &BudgetPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.billingId = billingId
 	c.budget = budget
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *BudgetPatchCall) Fields(s ...googleapi.Field) *BudgetPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *BudgetPatchCall) Do() (*Budget, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BudgetPatchCall) Context(ctx context.Context) *BudgetPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *BudgetPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.budget)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "billinginfo/{accountId}/{billingId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 		"billingId": strconv.FormatInt(c.billingId, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.budget.patch" call.
+// Exactly one of *Budget or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Budget.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *BudgetPatchCall) Do(opts ...googleapi.CallOption) (*Budget, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1249,7 +2143,12 @@ func (c *BudgetPatchCall) Do() (*Budget, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Budget
+	ret := &Budget{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1295,54 +2194,83 @@ func (c *BudgetPatchCall) Do() (*Budget, error) {
 // method id "adexchangebuyer.budget.update":
 
 type BudgetUpdateCall struct {
-	s         *Service
-	accountId int64
-	billingId int64
-	budget    *Budget
-	opt_      map[string]interface{}
+	s          *Service
+	accountId  int64
+	billingId  int64
+	budget     *Budget
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Update: Updates the budget amount for the budget of the adgroup
 // specified by the accountId and billingId, with the budget amount in
 // the request.
 func (r *BudgetService) Update(accountId int64, billingId int64, budget *Budget) *BudgetUpdateCall {
-	c := &BudgetUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &BudgetUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.billingId = billingId
 	c.budget = budget
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *BudgetUpdateCall) Fields(s ...googleapi.Field) *BudgetUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *BudgetUpdateCall) Do() (*Budget, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BudgetUpdateCall) Context(ctx context.Context) *BudgetUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *BudgetUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.budget)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "billinginfo/{accountId}/{billingId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 		"billingId": strconv.FormatInt(c.billingId, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.budget.update" call.
+// Exactly one of *Budget or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Budget.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *BudgetUpdateCall) Do(opts ...googleapi.CallOption) (*Budget, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1350,7 +2278,12 @@ func (c *BudgetUpdateCall) Do() (*Budget, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Budget
+	ret := &Budget{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1399,42 +2332,85 @@ type CreativesGetCall struct {
 	s               *Service
 	accountId       int64
 	buyerCreativeId string
-	opt_            map[string]interface{}
+	urlParams_      gensupport.URLParams
+	ifNoneMatch_    string
+	ctx_            context.Context
 }
 
 // Get: Gets the status for a single creative. A creative will be
 // available 30-40 minutes after submission.
 func (r *CreativesService) Get(accountId int64, buyerCreativeId string) *CreativesGetCall {
-	c := &CreativesGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CreativesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.buyerCreativeId = buyerCreativeId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CreativesGetCall) Fields(s ...googleapi.Field) *CreativesGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CreativesGetCall) Do() (*Creative, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CreativesGetCall) IfNoneMatch(entityTag string) *CreativesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CreativesGetCall) Context(ctx context.Context) *CreativesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CreativesGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "creatives/{accountId}/{buyerCreativeId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId":       strconv.FormatInt(c.accountId, 10),
 		"buyerCreativeId": c.buyerCreativeId,
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.creatives.get" call.
+// Exactly one of *Creative or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Creative.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *CreativesGetCall) Do(opts ...googleapi.CallOption) (*Creative, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1442,7 +2418,12 @@ func (c *CreativesGetCall) Do() (*Creative, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Creative
+	ret := &Creative{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1484,45 +2465,74 @@ func (c *CreativesGetCall) Do() (*Creative, error) {
 // method id "adexchangebuyer.creatives.insert":
 
 type CreativesInsertCall struct {
-	s        *Service
-	creative *Creative
-	opt_     map[string]interface{}
+	s          *Service
+	creative   *Creative
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Insert: Submit a new creative.
 func (r *CreativesService) Insert(creative *Creative) *CreativesInsertCall {
-	c := &CreativesInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CreativesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.creative = creative
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CreativesInsertCall) Fields(s ...googleapi.Field) *CreativesInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CreativesInsertCall) Do() (*Creative, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CreativesInsertCall) Context(ctx context.Context) *CreativesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CreativesInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.creative)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "creatives")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.creatives.insert" call.
+// Exactly one of *Creative or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Creative.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *CreativesInsertCall) Do(opts ...googleapi.CallOption) (*Creative, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1530,7 +2540,12 @@ func (c *CreativesInsertCall) Do() (*Creative, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *Creative
+	ret := &Creative{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1556,29 +2571,35 @@ func (c *CreativesInsertCall) Do() (*Creative, error) {
 // method id "adexchangebuyer.creatives.list":
 
 type CreativesListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Retrieves a list of the authenticated user's active creatives.
 // A creative will be available 30-40 minutes after submission.
 func (r *CreativesService) List() *CreativesListCall {
-	c := &CreativesListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &CreativesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
 // AccountId sets the optional parameter "accountId": When specified,
 // only creatives for the given account ids are returned.
-func (c *CreativesListCall) AccountId(accountId int64) *CreativesListCall {
-	c.opt_["accountId"] = accountId
+func (c *CreativesListCall) AccountId(accountId ...int64) *CreativesListCall {
+	var accountId_ []string
+	for _, v := range accountId {
+		accountId_ = append(accountId_, fmt.Sprint(v))
+	}
+	c.urlParams_.SetMulti("accountId", accountId_)
 	return c
 }
 
 // BuyerCreativeId sets the optional parameter "buyerCreativeId": When
 // specified, only creatives for the given buyer creative ids are
 // returned.
-func (c *CreativesListCall) BuyerCreativeId(buyerCreativeId string) *CreativesListCall {
-	c.opt_["buyerCreativeId"] = buyerCreativeId
+func (c *CreativesListCall) BuyerCreativeId(buyerCreativeId ...string) *CreativesListCall {
+	c.urlParams_.SetMulti("buyerCreativeId", append([]string{}, buyerCreativeId...))
 	return c
 }
 
@@ -1586,7 +2607,7 @@ func (c *CreativesListCall) BuyerCreativeId(buyerCreativeId string) *CreativesLi
 // of entries returned on one result page. If not set, the default is
 // 100.
 func (c *CreativesListCall) MaxResults(maxResults int64) *CreativesListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -1595,53 +2616,84 @@ func (c *CreativesListCall) MaxResults(maxResults int64) *CreativesListCall {
 // set this parameter to the value of "nextPageToken" from the previous
 // response.
 func (c *CreativesListCall) PageToken(pageToken string) *CreativesListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
 // StatusFilter sets the optional parameter "statusFilter": When
 // specified, only creatives having the given status are returned.
+//
+// Possible values:
+//   "approved" - Creatives which have been approved.
+//   "disapproved" - Creatives which have been disapproved.
+//   "not_checked" - Creatives whose status is not yet checked.
 func (c *CreativesListCall) StatusFilter(statusFilter string) *CreativesListCall {
-	c.opt_["statusFilter"] = statusFilter
+	c.urlParams_.Set("statusFilter", statusFilter)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *CreativesListCall) Fields(s ...googleapi.Field) *CreativesListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *CreativesListCall) Do() (*CreativesList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CreativesListCall) IfNoneMatch(entityTag string) *CreativesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CreativesListCall) Context(ctx context.Context) *CreativesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *CreativesListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["accountId"]; ok {
-		params.Set("accountId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["buyerCreativeId"]; ok {
-		params.Set("buyerCreativeId", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["statusFilter"]; ok {
-		params.Set("statusFilter", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "creatives")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.creatives.list" call.
+// Exactly one of *CreativesList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *CreativesList.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *CreativesListCall) Do(opts ...googleapi.CallOption) (*CreativesList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1649,7 +2701,12 @@ func (c *CreativesListCall) Do() (*CreativesList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *CreativesList
+	ret := &CreativesList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1712,44 +2769,108 @@ func (c *CreativesListCall) Do() (*CreativesList, error) {
 
 }
 
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *CreativesListCall) Pages(ctx context.Context, f func(*CreativesList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
 // method id "adexchangebuyer.directDeals.get":
 
 type DirectDealsGetCall struct {
-	s    *Service
-	id   int64
-	opt_ map[string]interface{}
+	s            *Service
+	id           int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets one direct deal by ID.
 func (r *DirectDealsService) Get(id int64) *DirectDealsGetCall {
-	c := &DirectDealsGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &DirectDealsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *DirectDealsGetCall) Fields(s ...googleapi.Field) *DirectDealsGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *DirectDealsGetCall) Do() (*DirectDeal, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *DirectDealsGetCall) IfNoneMatch(entityTag string) *DirectDealsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DirectDealsGetCall) Context(ctx context.Context) *DirectDealsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *DirectDealsGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "directdeals/{id}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"id": strconv.FormatInt(c.id, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.directDeals.get" call.
+// Exactly one of *DirectDeal or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *DirectDeal.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *DirectDealsGetCall) Do(opts ...googleapi.CallOption) (*DirectDeal, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1757,7 +2878,12 @@ func (c *DirectDealsGetCall) Do() (*DirectDeal, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *DirectDeal
+	ret := &DirectDeal{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1792,37 +2918,80 @@ func (c *DirectDealsGetCall) Do() (*DirectDeal, error) {
 // method id "adexchangebuyer.directDeals.list":
 
 type DirectDealsListCall struct {
-	s    *Service
-	opt_ map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Retrieves the authenticated user's list of direct deals.
 func (r *DirectDealsService) List() *DirectDealsListCall {
-	c := &DirectDealsListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &DirectDealsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *DirectDealsListCall) Fields(s ...googleapi.Field) *DirectDealsListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *DirectDealsListCall) Do() (*DirectDealsList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *DirectDealsListCall) IfNoneMatch(entityTag string) *DirectDealsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DirectDealsListCall) Context(ctx context.Context) *DirectDealsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *DirectDealsListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "directdeals")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.directDeals.list" call.
+// Exactly one of *DirectDealsList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *DirectDealsList.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *DirectDealsListCall) Do(opts ...googleapi.CallOption) (*DirectDealsList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1830,7 +2999,12 @@ func (c *DirectDealsListCall) Do() (*DirectDealsList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *DirectDealsList
+	ret := &DirectDealsList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1853,19 +3027,18 @@ func (c *DirectDealsListCall) Do() (*DirectDealsList, error) {
 // method id "adexchangebuyer.performanceReport.list":
 
 type PerformanceReportListCall struct {
-	s             *Service
-	accountId     int64
-	endDateTime   string
-	startDateTime string
-	opt_          map[string]interface{}
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Retrieves the authenticated user's list of performance metrics.
 func (r *PerformanceReportService) List(accountId int64, endDateTime string, startDateTime string) *PerformanceReportListCall {
-	c := &PerformanceReportListCall{s: r.s, opt_: make(map[string]interface{})}
-	c.accountId = accountId
-	c.endDateTime = endDateTime
-	c.startDateTime = startDateTime
+	c := &PerformanceReportListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.urlParams_.Set("accountId", fmt.Sprint(accountId))
+	c.urlParams_.Set("endDateTime", endDateTime)
+	c.urlParams_.Set("startDateTime", startDateTime)
 	return c
 }
 
@@ -1873,7 +3046,7 @@ func (r *PerformanceReportService) List(accountId int64, endDateTime string, sta
 // of entries returned on one result page. If not set, the default is
 // 100.
 func (c *PerformanceReportListCall) MaxResults(maxResults int64) *PerformanceReportListCall {
-	c.opt_["maxResults"] = maxResults
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
 }
 
@@ -1882,40 +3055,72 @@ func (c *PerformanceReportListCall) MaxResults(maxResults int64) *PerformanceRep
 // page, set this parameter to the value of "nextPageToken" from the
 // previous response.
 func (c *PerformanceReportListCall) PageToken(pageToken string) *PerformanceReportListCall {
-	c.opt_["pageToken"] = pageToken
+	c.urlParams_.Set("pageToken", pageToken)
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PerformanceReportListCall) Fields(s ...googleapi.Field) *PerformanceReportListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PerformanceReportListCall) Do() (*PerformanceReportList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PerformanceReportListCall) IfNoneMatch(entityTag string) *PerformanceReportListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PerformanceReportListCall) Context(ctx context.Context) *PerformanceReportListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PerformanceReportListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	params.Set("accountId", fmt.Sprintf("%v", c.accountId))
-	params.Set("endDateTime", fmt.Sprintf("%v", c.endDateTime))
-	params.Set("startDateTime", fmt.Sprintf("%v", c.startDateTime))
-	if v, ok := c.opt_["maxResults"]; ok {
-		params.Set("maxResults", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["pageToken"]; ok {
-		params.Set("pageToken", fmt.Sprintf("%v", v))
-	}
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "performancereport")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.SetOpaque(req.URL)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.performanceReport.list" call.
+// Exactly one of *PerformanceReportList or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PerformanceReportList.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PerformanceReportListCall) Do(opts ...googleapi.CallOption) (*PerformanceReportList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1923,7 +3128,12 @@ func (c *PerformanceReportListCall) Do() (*PerformanceReportList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PerformanceReportList
+	ret := &PerformanceReportList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -1985,44 +3195,58 @@ func (c *PerformanceReportListCall) Do() (*PerformanceReportList, error) {
 // method id "adexchangebuyer.pretargetingConfig.delete":
 
 type PretargetingConfigDeleteCall struct {
-	s         *Service
-	accountId int64
-	configId  int64
-	opt_      map[string]interface{}
+	s          *Service
+	accountId  int64
+	configId   int64
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
 }
 
 // Delete: Deletes an existing pretargeting config.
 func (r *PretargetingConfigService) Delete(accountId int64, configId int64) *PretargetingConfigDeleteCall {
-	c := &PretargetingConfigDeleteCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PretargetingConfigDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.configId = configId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PretargetingConfigDeleteCall) Fields(s ...googleapi.Field) *PretargetingConfigDeleteCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PretargetingConfigDeleteCall) Do() error {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PretargetingConfigDeleteCall) Context(ctx context.Context) *PretargetingConfigDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PretargetingConfigDeleteCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "pretargetingconfigs/{accountId}/{configId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("DELETE", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 		"configId":  strconv.FormatInt(c.configId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.pretargetingConfig.delete" call.
+func (c *PretargetingConfigDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
 	if err != nil {
 		return err
 	}
@@ -2066,44 +3290,87 @@ func (c *PretargetingConfigDeleteCall) Do() error {
 // method id "adexchangebuyer.pretargetingConfig.get":
 
 type PretargetingConfigGetCall struct {
-	s         *Service
-	accountId int64
-	configId  int64
-	opt_      map[string]interface{}
+	s            *Service
+	accountId    int64
+	configId     int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // Get: Gets a specific pretargeting configuration
 func (r *PretargetingConfigService) Get(accountId int64, configId int64) *PretargetingConfigGetCall {
-	c := &PretargetingConfigGetCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PretargetingConfigGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.configId = configId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PretargetingConfigGetCall) Fields(s ...googleapi.Field) *PretargetingConfigGetCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PretargetingConfigGetCall) Do() (*PretargetingConfig, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PretargetingConfigGetCall) IfNoneMatch(entityTag string) *PretargetingConfigGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PretargetingConfigGetCall) Context(ctx context.Context) *PretargetingConfigGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PretargetingConfigGetCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "pretargetingconfigs/{accountId}/{configId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 		"configId":  strconv.FormatInt(c.configId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.pretargetingConfig.get" call.
+// Exactly one of *PretargetingConfig or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PretargetingConfig.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PretargetingConfigGetCall) Do(opts ...googleapi.CallOption) (*PretargetingConfig, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2111,7 +3378,12 @@ func (c *PretargetingConfigGetCall) Do() (*PretargetingConfig, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PretargetingConfig
+	ret := &PretargetingConfig{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2157,46 +3429,75 @@ type PretargetingConfigInsertCall struct {
 	s                  *Service
 	accountId          int64
 	pretargetingconfig *PretargetingConfig
-	opt_               map[string]interface{}
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
 }
 
 // Insert: Inserts a new pretargeting configuration.
 func (r *PretargetingConfigService) Insert(accountId int64, pretargetingconfig *PretargetingConfig) *PretargetingConfigInsertCall {
-	c := &PretargetingConfigInsertCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PretargetingConfigInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.pretargetingconfig = pretargetingconfig
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PretargetingConfigInsertCall) Fields(s ...googleapi.Field) *PretargetingConfigInsertCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PretargetingConfigInsertCall) Do() (*PretargetingConfig, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PretargetingConfigInsertCall) Context(ctx context.Context) *PretargetingConfigInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PretargetingConfigInsertCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pretargetingconfig)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "pretargetingconfigs/{accountId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.pretargetingConfig.insert" call.
+// Exactly one of *PretargetingConfig or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PretargetingConfig.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PretargetingConfigInsertCall) Do(opts ...googleapi.CallOption) (*PretargetingConfig, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2204,7 +3505,12 @@ func (c *PretargetingConfigInsertCall) Do() (*PretargetingConfig, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PretargetingConfig
+	ret := &PretargetingConfig{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2242,42 +3548,85 @@ func (c *PretargetingConfigInsertCall) Do() (*PretargetingConfig, error) {
 // method id "adexchangebuyer.pretargetingConfig.list":
 
 type PretargetingConfigListCall struct {
-	s         *Service
-	accountId int64
-	opt_      map[string]interface{}
+	s            *Service
+	accountId    int64
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
 }
 
 // List: Retrieves a list of the authenticated user's pretargeting
 // configurations.
 func (r *PretargetingConfigService) List(accountId int64) *PretargetingConfigListCall {
-	c := &PretargetingConfigListCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PretargetingConfigListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PretargetingConfigListCall) Fields(s ...googleapi.Field) *PretargetingConfigListCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PretargetingConfigListCall) Do() (*PretargetingConfigList, error) {
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *PretargetingConfigListCall) IfNoneMatch(entityTag string) *PretargetingConfigListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PretargetingConfigListCall) Context(ctx context.Context) *PretargetingConfigListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PretargetingConfigListCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "pretargetingconfigs/{accountId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("GET", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 	})
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		req.Header.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.pretargetingConfig.list" call.
+// Exactly one of *PretargetingConfigList or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PretargetingConfigList.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PretargetingConfigListCall) Do(opts ...googleapi.CallOption) (*PretargetingConfigList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2285,7 +3634,12 @@ func (c *PretargetingConfigListCall) Do() (*PretargetingConfigList, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PretargetingConfigList
+	ret := &PretargetingConfigList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2324,49 +3678,78 @@ type PretargetingConfigPatchCall struct {
 	accountId          int64
 	configId           int64
 	pretargetingconfig *PretargetingConfig
-	opt_               map[string]interface{}
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
 }
 
 // Patch: Updates an existing pretargeting config. This method supports
 // patch semantics.
 func (r *PretargetingConfigService) Patch(accountId int64, configId int64, pretargetingconfig *PretargetingConfig) *PretargetingConfigPatchCall {
-	c := &PretargetingConfigPatchCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PretargetingConfigPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.configId = configId
 	c.pretargetingconfig = pretargetingconfig
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PretargetingConfigPatchCall) Fields(s ...googleapi.Field) *PretargetingConfigPatchCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PretargetingConfigPatchCall) Do() (*PretargetingConfig, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PretargetingConfigPatchCall) Context(ctx context.Context) *PretargetingConfigPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PretargetingConfigPatchCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pretargetingconfig)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "pretargetingconfigs/{accountId}/{configId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PATCH", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 		"configId":  strconv.FormatInt(c.configId, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.pretargetingConfig.patch" call.
+// Exactly one of *PretargetingConfig or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PretargetingConfig.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PretargetingConfigPatchCall) Do(opts ...googleapi.CallOption) (*PretargetingConfig, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2374,7 +3757,12 @@ func (c *PretargetingConfigPatchCall) Do() (*PretargetingConfig, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PretargetingConfig
+	ret := &PretargetingConfig{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}
@@ -2424,48 +3812,77 @@ type PretargetingConfigUpdateCall struct {
 	accountId          int64
 	configId           int64
 	pretargetingconfig *PretargetingConfig
-	opt_               map[string]interface{}
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
 }
 
 // Update: Updates an existing pretargeting config.
 func (r *PretargetingConfigService) Update(accountId int64, configId int64, pretargetingconfig *PretargetingConfig) *PretargetingConfigUpdateCall {
-	c := &PretargetingConfigUpdateCall{s: r.s, opt_: make(map[string]interface{})}
+	c := &PretargetingConfigUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.accountId = accountId
 	c.configId = configId
 	c.pretargetingconfig = pretargetingconfig
 	return c
 }
 
-// Fields allows partial responses to be retrieved.
-// See https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
 func (c *PretargetingConfigUpdateCall) Fields(s ...googleapi.Field) *PretargetingConfigUpdateCall {
-	c.opt_["fields"] = googleapi.CombineFields(s)
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
 
-func (c *PretargetingConfigUpdateCall) Do() (*PretargetingConfig, error) {
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *PretargetingConfigUpdateCall) Context(ctx context.Context) *PretargetingConfigUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+func (c *PretargetingConfigUpdateCall) doRequest(alt string) (*http.Response, error) {
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pretargetingconfig)
 	if err != nil {
 		return nil, err
 	}
 	ctype := "application/json"
-	params := make(url.Values)
-	params.Set("alt", "json")
-	if v, ok := c.opt_["fields"]; ok {
-		params.Set("fields", fmt.Sprintf("%v", v))
-	}
+	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "pretargetingconfigs/{accountId}/{configId}")
-	urls += "?" + params.Encode()
+	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	googleapi.Expand(req.URL, map[string]string{
 		"accountId": strconv.FormatInt(c.accountId, 10),
 		"configId":  strconv.FormatInt(c.configId, 10),
 	})
 	req.Header.Set("Content-Type", ctype)
-	req.Header.Set("User-Agent", "google-api-go-client/0.5")
-	res, err := c.s.client.Do(req)
+	req.Header.Set("User-Agent", c.s.userAgent())
+	if c.ctx_ != nil {
+		return ctxhttp.Do(c.ctx_, c.s.client, req)
+	}
+	return c.s.client.Do(req)
+}
+
+// Do executes the "adexchangebuyer.pretargetingConfig.update" call.
+// Exactly one of *PretargetingConfig or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *PretargetingConfig.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *PretargetingConfigUpdateCall) Do(opts ...googleapi.CallOption) (*PretargetingConfig, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -2473,7 +3890,12 @@ func (c *PretargetingConfigUpdateCall) Do() (*PretargetingConfig, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	var ret *PretargetingConfig
+	ret := &PretargetingConfig{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
 	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
 		return nil, err
 	}

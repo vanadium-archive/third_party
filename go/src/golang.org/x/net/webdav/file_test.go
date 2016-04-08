@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -505,6 +506,13 @@ func testFS(t *testing.T, fs FileSystem) {
 }
 
 func TestDir(t *testing.T) {
+	switch runtime.GOOS {
+	case "nacl":
+		t.Skip("see golang.org/issue/12004")
+	case "plan9":
+		t.Skip("see golang.org/issue/11453")
+	}
+
 	td, err := ioutil.TempDir("", "webdav-test")
 	if err != nil {
 		t.Fatal(err)

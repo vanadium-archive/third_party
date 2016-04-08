@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/dz0RIXMJ6g8PvYu0hLKFSrO2nhc\"",
+ "etag": "\"bRFOOrZKfO9LweMbPqu0kcu6De8/KhQlHpyUs8rKakqcULR3lepd_Vc\"",
  "discoveryVersion": "v1",
  "id": "doubleclickbidmanager:v1",
  "name": "doubleclickbidmanager",
  "canonicalName": "DoubleClick Bid Manager",
  "version": "v1",
- "revision": "20150122",
+ "revision": "20160225",
  "title": "DoubleClick Bid Manager API",
  "description": "API for viewing and managing your reports in DoubleClick Bid Manager.",
  "ownerDomain": "google.com",
@@ -76,6 +76,18 @@
    "type": "object",
    "description": "Request to fetch stored line items.",
    "properties": {
+    "fileSpec": {
+     "type": "string",
+     "description": "File specification (column names, types, order) in which the line items will be returned. Default to EWF.",
+     "enum": [
+      "EWF",
+      "SDF"
+     ],
+     "enumDescriptions": [
+      "",
+      ""
+     ]
+    },
     "filterIds": {
      "type": "array",
      "description": "Ids of the specified filter type used to filter line items to fetch. If omitted, all the line items will be returned.",
@@ -117,7 +129,7 @@
    "properties": {
     "lineItems": {
      "type": "string",
-     "description": "Retrieved line items in CSV format. Refer to  Entity Write File Format for more information on file format."
+     "description": "Retrieved line items in CSV format. Refer to  Entity Write File Format or  Structured Data File Format for more information on file formats."
     }
    }
   },
@@ -145,12 +157,15 @@
       "FILTER_CITY",
       "FILTER_CONVERSION_DELAY",
       "FILTER_COUNTRY",
+      "FILTER_CREATIVE_HEIGHT",
       "FILTER_CREATIVE_ID",
       "FILTER_CREATIVE_SIZE",
       "FILTER_CREATIVE_TYPE",
+      "FILTER_CREATIVE_WIDTH",
       "FILTER_DATA_PROVIDER",
       "FILTER_DATE",
       "FILTER_DAY_OF_WEEK",
+      "FILTER_DFP_ORDER_ID",
       "FILTER_DMA",
       "FILTER_EXCHANGE_ID",
       "FILTER_FLOODLIGHT_PIXEL_ID",
@@ -158,6 +173,7 @@
       "FILTER_INSERTION_ORDER",
       "FILTER_INVENTORY_FORMAT",
       "FILTER_INVENTORY_SOURCE",
+      "FILTER_INVENTORY_SOURCE_TYPE",
       "FILTER_KEYWORD",
       "FILTER_LINE_ITEM",
       "FILTER_LINE_ITEM_DAILY_FREQUENCY",
@@ -187,12 +203,21 @@
       "FILTER_SITE_LANGUAGE",
       "FILTER_TARGETED_USER_LIST",
       "FILTER_TIME_OF_DAY",
+      "FILTER_TRUEVIEW_AD_GROUP_AD_ID",
+      "FILTER_TRUEVIEW_AD_GROUP_ID",
+      "FILTER_TRUEVIEW_AGE",
       "FILTER_TRUEVIEW_CONVERSION_TYPE",
+      "FILTER_TRUEVIEW_GENDER",
+      "FILTER_TRUEVIEW_INTEREST",
+      "FILTER_TRUEVIEW_PARENTAL_STATUS",
+      "FILTER_TRUEVIEW_REMARKETING_LIST",
       "FILTER_UNKNOWN",
       "FILTER_USER_LIST",
       "FILTER_USER_LIST_FIRST_PARTY",
       "FILTER_USER_LIST_THIRD_PARTY",
       "FILTER_VIDEO_AD_POSITION_IN_STREAM",
+      "FILTER_VIDEO_COMPANION_SIZE",
+      "FILTER_VIDEO_COMPANION_TYPE",
       "FILTER_VIDEO_CREATIVE_DURATION",
       "FILTER_VIDEO_CREATIVE_DURATION_SKIPPABLE",
       "FILTER_VIDEO_DURATION_SECONDS",
@@ -208,6 +233,19 @@
       "FILTER_ZIP_CODE"
      ],
      "enumDescriptions": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
       "",
       "",
       "",
@@ -330,6 +368,65 @@
     }
    }
   },
+  "Note": {
+   "id": "Note",
+   "type": "object",
+   "description": "Publisher comment from Rubicon.",
+   "properties": {
+    "id": {
+     "type": "string",
+     "description": "Note id.",
+     "format": "int64"
+    },
+    "message": {
+     "type": "string",
+     "description": "Message from publisher."
+    },
+    "source": {
+     "type": "string",
+     "description": "Equals \"publisher\" for notification from Rubicon."
+    },
+    "timestamp": {
+     "type": "string",
+     "description": "Time when the note was added, e.g. \"2015-12-16T17:25:35.000-08:00\"."
+    },
+    "username": {
+     "type": "string",
+     "description": "Publisher user name."
+    }
+   }
+  },
+  "NotifyProposalChangeRequest": {
+   "id": "NotifyProposalChangeRequest",
+   "type": "object",
+   "description": "NotifyProposalChange request.",
+   "properties": {
+    "action": {
+     "type": "string",
+     "description": "Action taken by publisher. One of: Accept, Decline, Append"
+    },
+    "href": {
+     "type": "string",
+     "description": "URL to access proposal detail."
+    },
+    "id": {
+     "type": "string",
+     "description": "Below are contents of notification from Rubicon. Proposal id.",
+     "format": "int64"
+    },
+    "notes": {
+     "type": "array",
+     "description": "Notes from publisher",
+     "items": {
+      "$ref": "Note"
+     }
+    },
+    "token": {
+     "type": "string",
+     "description": "Deal token, available when proposal is accepted by publisher."
+    }
+   }
+  },
   "Parameters": {
    "id": "Parameters",
    "type": "object",
@@ -363,12 +460,15 @@
        "FILTER_CITY",
        "FILTER_CONVERSION_DELAY",
        "FILTER_COUNTRY",
+       "FILTER_CREATIVE_HEIGHT",
        "FILTER_CREATIVE_ID",
        "FILTER_CREATIVE_SIZE",
        "FILTER_CREATIVE_TYPE",
+       "FILTER_CREATIVE_WIDTH",
        "FILTER_DATA_PROVIDER",
        "FILTER_DATE",
        "FILTER_DAY_OF_WEEK",
+       "FILTER_DFP_ORDER_ID",
        "FILTER_DMA",
        "FILTER_EXCHANGE_ID",
        "FILTER_FLOODLIGHT_PIXEL_ID",
@@ -376,6 +476,7 @@
        "FILTER_INSERTION_ORDER",
        "FILTER_INVENTORY_FORMAT",
        "FILTER_INVENTORY_SOURCE",
+       "FILTER_INVENTORY_SOURCE_TYPE",
        "FILTER_KEYWORD",
        "FILTER_LINE_ITEM",
        "FILTER_LINE_ITEM_DAILY_FREQUENCY",
@@ -405,12 +506,21 @@
        "FILTER_SITE_LANGUAGE",
        "FILTER_TARGETED_USER_LIST",
        "FILTER_TIME_OF_DAY",
+       "FILTER_TRUEVIEW_AD_GROUP_AD_ID",
+       "FILTER_TRUEVIEW_AD_GROUP_ID",
+       "FILTER_TRUEVIEW_AGE",
        "FILTER_TRUEVIEW_CONVERSION_TYPE",
+       "FILTER_TRUEVIEW_GENDER",
+       "FILTER_TRUEVIEW_INTEREST",
+       "FILTER_TRUEVIEW_PARENTAL_STATUS",
+       "FILTER_TRUEVIEW_REMARKETING_LIST",
        "FILTER_UNKNOWN",
        "FILTER_USER_LIST",
        "FILTER_USER_LIST_FIRST_PARTY",
        "FILTER_USER_LIST_THIRD_PARTY",
        "FILTER_VIDEO_AD_POSITION_IN_STREAM",
+       "FILTER_VIDEO_COMPANION_SIZE",
+       "FILTER_VIDEO_COMPANION_TYPE",
        "FILTER_VIDEO_CREATIVE_DURATION",
        "FILTER_VIDEO_CREATIVE_DURATION_SKIPPABLE",
        "FILTER_VIDEO_DURATION_SECONDS",
@@ -426,6 +536,19 @@
        "FILTER_ZIP_CODE"
       ],
       "enumDescriptions": [
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
        "",
        "",
        "",
@@ -579,6 +702,15 @@
        "METRIC_FEE19_ADVERTISER",
        "METRIC_FEE19_PARTNER",
        "METRIC_FEE19_USD",
+       "METRIC_FEE20_ADVERTISER",
+       "METRIC_FEE20_PARTNER",
+       "METRIC_FEE20_USD",
+       "METRIC_FEE21_ADVERTISER",
+       "METRIC_FEE21_PARTNER",
+       "METRIC_FEE21_USD",
+       "METRIC_FEE22_ADVERTISER",
+       "METRIC_FEE22_PARTNER",
+       "METRIC_FEE22_USD",
        "METRIC_FEE2_ADVERTISER",
        "METRIC_FEE2_PARTNER",
        "METRIC_FEE2_USD",
@@ -628,6 +760,9 @@
        "METRIC_MEDIA_COST_ECPM_USD",
        "METRIC_MEDIA_COST_PARTNER",
        "METRIC_MEDIA_COST_USD",
+       "METRIC_MEDIA_COST_VIEWABLE_ECPM_ADVERTISER",
+       "METRIC_MEDIA_COST_VIEWABLE_ECPM_PARTNER",
+       "METRIC_MEDIA_COST_VIEWABLE_ECPM_USD",
        "METRIC_MEDIA_FEE1_ADVERTISER",
        "METRIC_MEDIA_FEE1_PARTNER",
        "METRIC_MEDIA_FEE1_USD",
@@ -668,6 +803,9 @@
        "METRIC_PROFIT_MARGIN",
        "METRIC_PROFIT_PARTNER",
        "METRIC_PROFIT_USD",
+       "METRIC_PROFIT_VIEWABLE_ECPM_ADVERTISER",
+       "METRIC_PROFIT_VIEWABLE_ECPM_PARTNER",
+       "METRIC_PROFIT_VIEWABLE_ECPM_USD",
        "METRIC_REVENUE_ADVERTISER",
        "METRIC_REVENUE_ECPAPC_ADVERTISER",
        "METRIC_REVENUE_ECPAPC_PARTNER",
@@ -689,6 +827,9 @@
        "METRIC_REVENUE_ECPM_USD",
        "METRIC_REVENUE_PARTNER",
        "METRIC_REVENUE_USD",
+       "METRIC_REVENUE_VIEWABLE_ECPM_ADVERTISER",
+       "METRIC_REVENUE_VIEWABLE_ECPM_PARTNER",
+       "METRIC_REVENUE_VIEWABLE_ECPM_USD",
        "METRIC_RICH_MEDIA_VIDEO_COMPLETIONS",
        "METRIC_RICH_MEDIA_VIDEO_FIRST_QUARTILE_COMPLETES",
        "METRIC_RICH_MEDIA_VIDEO_FULL_SCREENS",
@@ -723,9 +864,24 @@
        "METRIC_TOTAL_MEDIA_COST_ECPM_USD",
        "METRIC_TOTAL_MEDIA_COST_PARTNER",
        "METRIC_TOTAL_MEDIA_COST_USD",
+       "METRIC_TOTAL_MEDIA_COST_VIEWABLE_ECPM_ADVERTISER",
+       "METRIC_TOTAL_MEDIA_COST_VIEWABLE_ECPM_PARTNER",
+       "METRIC_TOTAL_MEDIA_COST_VIEWABLE_ECPM_USD",
+       "METRIC_TRUEVIEW_CONVERSION_COST_MANY_PER_VIEW_ADVERTISER",
+       "METRIC_TRUEVIEW_CONVERSION_COST_MANY_PER_VIEW_PARTNER",
+       "METRIC_TRUEVIEW_CONVERSION_COST_MANY_PER_VIEW_USD",
+       "METRIC_TRUEVIEW_CONVERSION_COST_ONE_PER_VIEW_ADVERTISER",
+       "METRIC_TRUEVIEW_CONVERSION_COST_ONE_PER_VIEW_PARTNER",
+       "METRIC_TRUEVIEW_CONVERSION_COST_ONE_PER_VIEW_USD",
        "METRIC_TRUEVIEW_CONVERSION_MANY_PER_VIEW",
        "METRIC_TRUEVIEW_CONVERSION_ONE_PER_VIEW",
        "METRIC_TRUEVIEW_CONVERSION_RATE_ONE_PER_VIEW",
+       "METRIC_TRUEVIEW_CONVERSION_VALUE_MANY_PER_VIEW_ADVERTISER",
+       "METRIC_TRUEVIEW_CONVERSION_VALUE_MANY_PER_VIEW_PARTNER",
+       "METRIC_TRUEVIEW_CONVERSION_VALUE_MANY_PER_VIEW_USD",
+       "METRIC_TRUEVIEW_CONVERSION_VALUE_ONE_PER_VIEW_ADVERTISER",
+       "METRIC_TRUEVIEW_CONVERSION_VALUE_ONE_PER_VIEW_PARTNER",
+       "METRIC_TRUEVIEW_CONVERSION_VALUE_ONE_PER_VIEW_USD",
        "METRIC_TRUEVIEW_COST_CONVERSION_MANY_PER_VIEW_RATIO",
        "METRIC_TRUEVIEW_COST_CONVERSION_ONE_PER_VIEW_RATIO",
        "METRIC_TRUEVIEW_CPV_ADVERTISER",
@@ -740,6 +896,9 @@
        "METRIC_TRUEVIEW_LOST_IS_BUDGET",
        "METRIC_TRUEVIEW_LOST_IS_RANK",
        "METRIC_TRUEVIEW_TOTAL_CONVERSION_VALUE",
+       "METRIC_TRUEVIEW_TOTAL_CONVERSION_VALUES_ADVERTISER",
+       "METRIC_TRUEVIEW_TOTAL_CONVERSION_VALUES_PARTNER",
+       "METRIC_TRUEVIEW_TOTAL_CONVERSION_VALUES_USD",
        "METRIC_TRUEVIEW_UNIQUE_VIEWERS",
        "METRIC_TRUEVIEW_VALUE_CONVERSION_MANY_PER_VIEW_RATIO",
        "METRIC_TRUEVIEW_VALUE_CONVERSION_ONE_PER_VIEW_RATIO",
@@ -753,6 +912,42 @@
        "METRIC_VIDEO_COMPLETION_RATE"
       ],
       "enumDescriptions": [
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
+       "",
        "",
        "",
        "",
@@ -1011,9 +1206,14 @@
       "TYPE_KEYWORD",
       "TYPE_NIELSEN_AUDIENCE_PROFILE",
       "TYPE_NIELSEN_DAILY_REACH_BUILD",
+      "TYPE_NIELSEN_ONLINE_GLOBAL_MARKET",
       "TYPE_NIELSEN_SITE",
+      "TYPE_NOT_SUPPORTED",
       "TYPE_ORDER_ID",
       "TYPE_PAGE_CATEGORY",
+      "TYPE_PETRA_NIELSEN_AUDIENCE_PROFILE",
+      "TYPE_PETRA_NIELSEN_DAILY_REACH_BUILD",
+      "TYPE_PETRA_NIELSEN_ONLINE_GLOBAL_MARKET",
       "TYPE_PIXEL_LOAD",
       "TYPE_REACH_AND_FREQUENCY",
       "TYPE_THIRD_PARTY_DATA_PROVIDER",
@@ -1023,6 +1223,11 @@
       "TYPE_YOUTUBE_VERTICAL"
      ],
      "enumDescriptions": [
+      "",
+      "",
+      "",
+      "",
+      "",
       "",
       "",
       "",
@@ -1692,6 +1897,19 @@
      ],
      "response": {
       "$ref": "ListReportsResponse"
+     }
+    }
+   }
+  },
+  "rubicon": {
+   "methods": {
+    "notifyproposalchange": {
+     "id": "doubleclickbidmanager.rubicon.notifyproposalchange",
+     "path": "rubicon/notifyproposalchange",
+     "httpMethod": "POST",
+     "description": "Update proposal upon actions of Rubicon publisher.",
+     "request": {
+      "$ref": "NotifyProposalChangeRequest"
      }
     }
    }
