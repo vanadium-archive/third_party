@@ -1,0 +1,10 @@
+URL: https://github.com/davecgh/go-spew/archive/5215b55f46b2b919f50a1df0eaa5886afe4e3b3d.zip
+Version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+License: MIT
+License File: LICENSE
+
+Description:
+Go-spew implements a deep pretty printer for Go data structures to aid in debugging.
+
+Local Modifications:
+None.

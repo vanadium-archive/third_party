@@ -1,0 +1,11 @@
+URL: https://github.com/stretchr/testify/archive/6cb3b85ef5a0efef77caef88363ec4d4b5c0976d.zip
+Version: 6cb3b85ef5a0efef77caef88363ec4d4b5c0976d
+License: MIT
+License File: LICENSE
+
+Description:
+Go code (golang) set of packages that provide many tools for testifying that
+your code will behave as you intend.
+
+Local Modifications:
+None.

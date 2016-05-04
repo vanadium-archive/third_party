@@ -1,0 +1,11 @@
+URL: https://github.com/shirou/gopsutil/archive/7b991b8135166c7fc81b65665a2f35c7a1966cfc.zip
+Version: 7b991b8135166c7fc81b65665a2f35c7a1966cfc
+License: BSD
+License File: LICENSE
+
+Description:
+A golang port of psutil, a cross-platform library for retrieving information on
+running processes and system utilization (CPU, memory, disks, network).
+
+Local Modifications:
+None.

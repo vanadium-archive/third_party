@@ -1,0 +1,11 @@
+URL: https://github.com/pmezard/go-difflib/archive/792786c7400a136282c1664665ae0a8db921c6c2.zip
+Version: 792786c7400a136282c1664665ae0a8db921c6c2
+License: MIT
+License File: LICENSE
+
+Description:
+Go-difflib is a partial port of python 3 difflib package. Its main goal was to
+make unified and context diff available in pure Go, mostly for testing purposes.
+
+Local Modifications:
+None.

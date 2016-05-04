@@ -1,0 +1,10 @@
+URL: https://github.com/stretchr/objx/archive/1a9d0bb9f541897e62256577b352fdbc1fb4fd94.zip
+Version: 1a9d0bb9f541897e62256577b352fdbc1fb4fd94
+License: MIT
+License File: LICENSE.md
+
+Description:
+Go package for dealing with maps, slices, JSON and other data.
+
+Local Modifications:
+None.
