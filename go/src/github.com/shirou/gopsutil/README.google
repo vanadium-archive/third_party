@@ -8,4 +8,8 @@ A golang port of psutil, a cross-platform library for retrieving information on
 running processes and system utilization (CPU, memory, disks, network).
 
 Local Modifications:
-None.
+Fixed compiling for arm64/darwin (iOS) by adding conditional preprocessor guard
+on cpu_darwin_cgo.go, and duplicating disk_darwin_amd64.go for arm64 (after confirming
+that sys/mount.h are the same between the two platforms, thus the constants in
+the files should be the same). The upstream pull request is at
+https://github.com/shirou/gopsutil/pull/200
