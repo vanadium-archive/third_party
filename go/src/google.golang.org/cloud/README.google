@@ -7,4 +7,5 @@ Description:
 Auto-generated Google APIs for Go.
 
 Local Modifications:
-No modifications.
+Disabled flaky test pubsub.TestKeepAliveStop
+https://github.com/vanadium/build/issues/87

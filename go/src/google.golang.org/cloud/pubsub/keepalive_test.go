@@ -75,6 +75,7 @@ func TestKeepAlive(t *testing.T) {
 
 // TestKeepAliveStop checks that Stop blocks until all ackIDs have been removed.
 func TestKeepAliveStop(t *testing.T) {
+	t.Skip("https://github.com/vanadium/build/issues/87")
 	tick := 100 * time.Microsecond
 	ticker := time.NewTicker(tick)
 	defer ticker.Stop()
