@@ -331,21 +331,63 @@ func TestLargeMessage(t *testing.T) {
 			defer wg.Done()
 			s, err := ct.NewStream(context.Background(), callHdr)
 			if err != nil {
-				t.Errorf("failed to open stream: %v", err)
+				t.Errorf("%v.NewStream(_, _) = _, %v, want _, <nil>", ct, err)
 			}
 			if err := ct.Write(s, expectedRequestLarge, &Options{Last: true, Delay: false}); err != nil {
-				t.Errorf("failed to send data: %v", err)
+				t.Errorf("%v.Write(_, _, _) = %v, want  <nil>", ct, err)
 			}
 			p := make([]byte, len(expectedResponseLarge))
-			_, recvErr := io.ReadFull(s, p)
-			if recvErr != nil || !bytes.Equal(p, expectedResponseLarge) {
-				t.Errorf("Error: %v, want <nil>; Result len: %d, want len %d", recvErr, len(p), len(expectedResponseLarge))
+			if _, err := io.ReadFull(s, p); err != nil || !bytes.Equal(p, expectedResponseLarge) {
+				t.Errorf("io.ReadFull(_, %v) = _, %v, want %v, <nil>", err, p, expectedResponse)
 			}
-			_, recvErr = io.ReadFull(s, p)
-			if recvErr != io.EOF {
-				t.Errorf("Error: %v; want <EOF>", recvErr)
+			if _, err = io.ReadFull(s, p); err != io.EOF {
+				t.Errorf("Failed to complete the stream %v; want <EOF>", err)
 			}
 		}()
+	}
+	wg.Wait()
+	ct.Close()
+	server.stop()
+}
+
+func TestGracefulClose(t *testing.T) {
+	server, ct := setUp(t, 0, math.MaxUint32, normal)
+	callHdr := &CallHdr{
+		Host:   "localhost",
+		Method: "foo.Small",
+	}
+	s, err := ct.NewStream(context.Background(), callHdr)
+	if err != nil {
+		t.Fatalf("%v.NewStream(_, _) = _, %v, want _, <nil>", ct, err)
+	}
+	if err = ct.GracefulClose(); err != nil {
+		t.Fatalf("%v.GracefulClose() = %v, want <nil>", ct, err)
+	}
+	var wg sync.WaitGroup
+	// Expect the failure for all the follow-up streams because ct has been closed gracefully.
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err := ct.NewStream(context.Background(), callHdr); err != ErrConnClosing {
+				t.Errorf("%v.NewStream(_, _) = _, %v, want _, %v", err, ErrConnClosing)
+			}
+		}()
+	}
+	opts := Options{
+		Last:  true,
+		Delay: false,
+	}
+	// The stream which was created before graceful close can still proceed.
+	if err := ct.Write(s, expectedRequest, &opts); err != nil {
+		t.Fatalf("%v.Write(_, _, _) = %v, want  <nil>", ct, err)
+	}
+	p := make([]byte, len(expectedResponse))
+	if _, err := io.ReadFull(s, p); err != nil || !bytes.Equal(p, expectedResponse) {
+		t.Fatalf("io.ReadFull(_, %v) = _, %v, want %v, <nil>", err, p, expectedResponse)
+	}
+	if _, err = io.ReadFull(s, p); err != io.EOF {
+		t.Fatalf("Failed to complete the stream %v; want <EOF>", err)
 	}
 	wg.Wait()
 	ct.Close()
@@ -584,8 +626,8 @@ func TestServerWithMisbehavedClient(t *testing.T) {
 		t.Fatalf("%v got err %v with statusCode %d, want err <EOF> with statusCode %d", s, err, s.statusCode, code)
 	}
 
-	if ss.fc.pendingData != 0 || ss.fc.pendingUpdate != 0 || sc.fc.pendingData != 0 || sc.fc.pendingUpdate != initialWindowSize {
-		t.Fatalf("Server mistakenly resets inbound flow control params: got %d, %d, %d, %d; want 0, 0, 0, %d", ss.fc.pendingData, ss.fc.pendingUpdate, sc.fc.pendingData, sc.fc.pendingUpdate, initialWindowSize)
+	if ss.fc.pendingData != 0 || ss.fc.pendingUpdate != 0 || sc.fc.pendingData != 0 || sc.fc.pendingUpdate <= initialWindowSize {
+		t.Fatalf("Server mistakenly resets inbound flow control params: got %d, %d, %d, %d; want 0, 0, 0, >%d", ss.fc.pendingData, ss.fc.pendingUpdate, sc.fc.pendingData, sc.fc.pendingUpdate, initialWindowSize)
 	}
 	ct.CloseStream(s, nil)
 	// Test server behavior for violation of connection flow control window size restriction.
@@ -631,15 +673,15 @@ func TestClientWithMisbehavedServer(t *testing.T) {
 			break
 		}
 	}
-	if s.fc.pendingData != initialWindowSize || s.fc.pendingUpdate != 0 || conn.fc.pendingData != initialWindowSize || conn.fc.pendingUpdate != 0 {
-		t.Fatalf("Client mistakenly updates inbound flow control params: got %d, %d, %d, %d; want %d, %d, %d, %d", s.fc.pendingData, s.fc.pendingUpdate, conn.fc.pendingData, conn.fc.pendingUpdate, initialWindowSize, 0, initialWindowSize, 0)
+	if s.fc.pendingData <= initialWindowSize || s.fc.pendingUpdate != 0 || conn.fc.pendingData <= initialWindowSize || conn.fc.pendingUpdate != 0 {
+		t.Fatalf("Client mistakenly updates inbound flow control params: got %d, %d, %d, %d; want >%d, %d, >%d, %d", s.fc.pendingData, s.fc.pendingUpdate, conn.fc.pendingData, conn.fc.pendingUpdate, initialWindowSize, 0, initialWindowSize, 0)
 	}
 	if err != io.EOF || s.statusCode != codes.Internal {
 		t.Fatalf("Got err %v and the status code %d, want <EOF> and the code %d", err, s.statusCode, codes.Internal)
 	}
 	conn.CloseStream(s, err)
-	if s.fc.pendingData != 0 || s.fc.pendingUpdate != 0 || conn.fc.pendingData != 0 || conn.fc.pendingUpdate != initialWindowSize {
-		t.Fatalf("Client mistakenly resets inbound flow control params: got %d, %d, %d, %d; want 0, 0, 0, %d", s.fc.pendingData, s.fc.pendingUpdate, conn.fc.pendingData, conn.fc.pendingUpdate, initialWindowSize)
+	if s.fc.pendingData != 0 || s.fc.pendingUpdate != 0 || conn.fc.pendingData != 0 || conn.fc.pendingUpdate <= initialWindowSize {
+		t.Fatalf("Client mistakenly resets inbound flow control params: got %d, %d, %d, %d; want 0, 0, 0, >%d", s.fc.pendingData, s.fc.pendingUpdate, conn.fc.pendingData, conn.fc.pendingUpdate, initialWindowSize)
 	}
 	// Test the logic for the violation of the connection flow control window size restriction.
 	//

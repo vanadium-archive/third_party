@@ -25,6 +25,7 @@ import (
 var (
 	typeOfByteSlice = reflect.TypeOf([]byte(nil))
 	typeOfTime      = reflect.TypeOf(time.Time{})
+	typeOfGeoPoint  = reflect.TypeOf(GeoPoint{})
 )
 
 // typeMismatchReason returns a string explaining why the property p could not
@@ -42,6 +43,8 @@ func typeMismatchReason(p Property, v reflect.Value) string {
 		entityType = "float"
 	case *Key:
 		entityType = "*datastore.Key"
+	case GeoPoint:
+		entityType = "GeoPoint"
 	case time.Time:
 		entityType = "time.Time"
 	case []byte:
@@ -58,6 +61,20 @@ type propertyLoader struct {
 }
 
 func (l *propertyLoader) load(codec *structCodec, structValue reflect.Value, p Property, prev map[string]struct{}) string {
+	sl, ok := p.Value.([]interface{})
+	if !ok {
+		return l.loadOneElement(codec, structValue, p, prev)
+	}
+	for _, val := range sl {
+		p.Value = val
+		if errStr := l.loadOneElement(codec, structValue, p, prev); errStr != "" {
+			return errStr
+		}
+	}
+	return ""
+}
+
+func (l *propertyLoader) loadOneElement(codec *structCodec, structValue reflect.Value, p Property, prev map[string]struct{}) string {
 	var sliceOk bool
 	var v reflect.Value
 	// Traverse a struct's struct-typed fields.
@@ -78,6 +95,7 @@ func (l *propertyLoader) load(codec *structCodec, structValue reflect.Value, p P
 			break
 		}
 
+		// If the element is a slice, we need to accommodate it.
 		if v.Kind() == reflect.Slice {
 			if l.m == nil {
 				l.m = make(map[string]int)
@@ -102,9 +120,9 @@ func (l *propertyLoader) load(codec *structCodec, structValue reflect.Value, p P
 		slice = v
 		v = reflect.New(v.Type().Elem()).Elem()
 	} else if _, ok := prev[p.Name]; ok && !sliceOk {
-		// Zero the field back out that was set previously, turns out its a slice and we don't know what to do with it
+		// Zero the field back out that was set previously, turns out
+		// it's a slice and we don't know what to do with it
 		v.Set(reflect.Zero(v.Type()))
-
 		return "multiple-valued property requires a slice field type"
 	}
 
@@ -155,6 +173,12 @@ func (l *propertyLoader) load(codec *structCodec, structValue reflect.Value, p P
 		switch v.Type() {
 		case typeOfTime:
 			x, ok := pValue.(time.Time)
+			if !ok && pValue != nil {
+				return typeMismatchReason(p, v)
+			}
+			v.Set(reflect.ValueOf(x))
+		case typeOfGeoPoint:
+			x, ok := pValue.(GeoPoint)
 			if !ok && pValue != nil {
 				return typeMismatchReason(p, v)
 			}
@@ -216,31 +240,18 @@ func protoToProperties(src *pb.Entity) []Property {
 	props := src.Properties
 	out := make([]Property, 0, len(props))
 	for name, val := range props {
-		noIndex := val.ExcludeFromIndexes
-		if arr, ok := val.ValueType.(*pb.Value_ArrayValue); ok {
-			for _, v := range arr.ArrayValue.Values {
-				out = append(out, Property{
-					Name:     name,
-					Value:    propValue(v),
-					NoIndex:  noIndex,
-					Multiple: true,
-				})
-			}
-		} else {
-			out = append(out, Property{
-				Name:     name,
-				Value:    propValue(val),
-				NoIndex:  noIndex,
-				Multiple: false,
-			})
-		}
+		out = append(out, Property{
+			Name:    name,
+			Value:   propToValue(val),
+			NoIndex: val.ExcludeFromIndexes,
+		})
 	}
 	return out
 }
 
-// propValue returns a Go value that represents the PropertyValue. For
+// propToValue returns a Go value that represents the PropertyValue. For
 // example, a TimestampValue becomes a time.Time.
-func propValue(v *pb.Value) interface{} {
+func propToValue(v *pb.Value) interface{} {
 	switch v := v.ValueType.(type) {
 	case *pb.Value_NullValue:
 		return nil
@@ -261,13 +272,16 @@ func propValue(v *pb.Value) interface{} {
 	case *pb.Value_BlobValue:
 		return []byte(v.BlobValue)
 	case *pb.Value_GeoPointValue:
-		// TODO(djd): Support GeoPointValue.
-		return nil
+		return GeoPoint{Lat: v.GeoPointValue.Latitude, Lng: v.GeoPointValue.Longitude}
 	case *pb.Value_EntityValue:
 		// TODO(djd): Support EntityValue.
 		return nil
 	case *pb.Value_ArrayValue:
-		panic("propValue should not encounter ArrayValue")
+		arr := make([]interface{}, 0, len(v.ArrayValue.Values))
+		for _, v := range v.ArrayValue.Values {
+			arr = append(arr, propToValue(v))
+		}
+		return arr
 	default:
 		return nil
 	}

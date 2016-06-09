@@ -22,48 +22,56 @@ import (
 	"golang.org/x/net/context"
 )
 
+type fetchResult struct {
+	msgs []*Message
+	err  error
+}
+
 type fetcherService struct {
 	service
-	msgs [][]*Message
+	results        []fetchResult
+	unexpectedCall bool
 }
 
 func (s *fetcherService) fetchMessages(ctx context.Context, subName string, maxMessages int64) ([]*Message, error) {
-	if len(s.msgs) == 0 {
+	if len(s.results) == 0 {
+		s.unexpectedCall = true
 		return nil, errors.New("bang")
 	}
-	ret := s.msgs[0]
-	s.msgs = s.msgs[1:]
-	return ret, nil
+	ret := s.results[0]
+	s.results = s.results[1:]
+	return ret.msgs, ret.err
 }
 
 func TestPuller(t *testing.T) {
 	s := &fetcherService{
-		msgs: [][]*Message{
-			{{AckID: "a"}, {AckID: "b"}},
+		results: []fetchResult{
+			{
+				msgs: []*Message{{AckID: "a"}, {AckID: "b"}},
+			},
 			{},
-			{{AckID: "c"}, {AckID: "d"}},
-			{{AckID: "e"}},
+			{
+				msgs: []*Message{{AckID: "c"}, {AckID: "d"}},
+			},
+			{
+				msgs: []*Message{{AckID: "e"}},
+			},
 		},
 	}
-	c := &Client{projectID: "projid", s: s}
 
 	pulled := make(chan string, 10)
-	pull := &puller{
-		Client:    c,
-		Sub:       "subname",
-		BatchSize: 2,
-		Notify:    func(ackID string) { pulled <- ackID },
-	}
+
+	pull := newPuller(s, "subname", context.Background(), 2, func(ackID string) { pulled <- ackID }, func(string) {})
 
 	got := []string{}
 	for i := 0; i < 5; i++ {
-		m, err := pull.Next(context.Background())
+		m, err := pull.Next()
 		got = append(got, m.AckID)
 		if err != nil {
 			t.Errorf("unexpected err from pull.Next: %v", err)
 		}
 	}
-	_, err := pull.Next(context.Background())
+	_, err := pull.Next()
 	if err == nil {
 		t.Errorf("unexpected err from pull.Next: %v", err)
 	}
@@ -74,26 +82,25 @@ func TestPuller(t *testing.T) {
 	}
 }
 
-func TestPullerNotification(t *testing.T) {
+func TestPullerAddsToKeepAlive(t *testing.T) {
 	s := &fetcherService{
-		msgs: [][]*Message{
-			{{AckID: "a"}, {AckID: "b"}},
-			{{AckID: "c"}, {AckID: "d"}},
+		results: []fetchResult{
+			{
+				msgs: []*Message{{AckID: "a"}, {AckID: "b"}},
+			},
+			{
+				msgs: []*Message{{AckID: "c"}, {AckID: "d"}},
+			},
 		},
 	}
-	c := &Client{projectID: "projid", s: s}
 
 	pulled := make(chan string, 10)
-	pull := &puller{
-		Client:    c,
-		Sub:       "subname",
-		BatchSize: 2,
-		Notify:    func(ackID string) { pulled <- ackID },
-	}
+
+	pull := newPuller(s, "subname", context.Background(), 2, func(ackID string) { pulled <- ackID }, func(string) {})
 
 	got := []string{}
 	for i := 0; i < 3; i++ {
-		m, err := pull.Next(context.Background())
+		m, err := pull.Next()
 		got = append(got, m.AckID)
 		if err != nil {
 			t.Errorf("unexpected err from pull.Next: %v", err)
@@ -115,5 +122,33 @@ func TestPullerNotification(t *testing.T) {
 	want = append(want, "d")
 	if !reflect.DeepEqual(pulledIDs, want) {
 		t.Errorf("pulled ack ids: got: %v ; want: %v", pulledIDs, want)
+	}
+}
+
+func TestPullerRetriesOnce(t *testing.T) {
+	bang := errors.New("bang")
+	s := &fetcherService{
+		results: []fetchResult{
+			{
+				err: bang,
+			},
+			{
+				err: bang,
+			},
+		},
+	}
+
+	pull := newPuller(s, "subname", context.Background(), 2, func(string) {}, func(string) {})
+
+	_, err := pull.Next()
+	if err != bang {
+		t.Errorf("pull.Next err got: %v, want: %v", err, bang)
+	}
+
+	if s.unexpectedCall {
+		t.Errorf("unexpected retry")
+	}
+	if len(s.results) != 0 {
+		t.Errorf("outstanding calls: got: %v, want: 0", len(s.results))
 	}
 }

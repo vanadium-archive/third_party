@@ -82,25 +82,35 @@ func createTopic(client *pubsub.Client, argv []string) {
 }
 
 func listTopics(client *pubsub.Client, argv []string) {
+	ctx := context.Background()
 	checkArgs(argv, 1)
-	topics, err := client.Topics(context.Background())
-	if err != nil {
-		log.Fatalf("Listing topics failed: %v", err)
-	}
-	for _, t := range topics {
-		fmt.Println(t.Name())
+	topics := client.Topics(ctx)
+	for {
+		switch topic, err := topics.Next(); err {
+		case nil:
+			fmt.Println(topic.Name())
+		case pubsub.Done:
+			return
+		default:
+			log.Fatalf("Listing topics failed: %v", err)
+		}
 	}
 }
 
 func listTopicSubscriptions(client *pubsub.Client, argv []string) {
+	ctx := context.Background()
 	checkArgs(argv, 2)
 	topic := argv[1]
-	subs, err := client.Topic(topic).Subscriptions(context.Background())
-	if err != nil {
-		log.Fatalf("Listing subscriptions failed: %v", err)
-	}
-	for _, s := range subs {
-		fmt.Println(s.Name())
+	subs := client.Topic(topic).Subscriptions(ctx)
+	for {
+		switch sub, err := subs.Next(); err {
+		case nil:
+			fmt.Println(sub.Name())
+		case pubsub.Done:
+			return
+		default:
+			log.Fatalf("Listing subscriptions failed: %v", err)
+		}
 	}
 }
 
@@ -173,13 +183,18 @@ func deleteSubscription(client *pubsub.Client, argv []string) {
 }
 
 func listSubscriptions(client *pubsub.Client, argv []string) {
+	ctx := context.Background()
 	checkArgs(argv, 1)
-	subs, err := client.Subscriptions(context.Background())
-	if err != nil {
-		log.Fatalf("Listing subscriptions failed: %v", err)
-	}
-	for _, s := range subs {
-		fmt.Println(s.Name())
+	subs := client.Subscriptions(ctx)
+	for {
+		switch sub, err := subs.Next(); err {
+		case nil:
+			fmt.Println(sub.Name())
+		case pubsub.Done:
+			return
+		default:
+			log.Fatalf("Listing subscriptions failed: %v", err)
+		}
 	}
 }
 
@@ -281,11 +296,11 @@ func genMessages(prefix string) []*pubsub.Message {
 }
 
 // publish publishes a series of messages to the named topic.
-func publishMessageBatches(client *pubsub.Client, topicName string, workerid int, rep *reporter) {
+func publishMessageBatches(client *pubsub.Client, topicName string, workerID int, rep *reporter) {
 	var r uint64
 	topic := client.Topic(topicName)
 	for !shouldQuit() {
-		msgPrefix := fmt.Sprintf("Worker: %d, Round: %d,", workerid, r)
+		msgPrefix := fmt.Sprintf("Worker: %d, Round: %d,", workerID, r)
 		if _, err := topic.Publish(context.Background(), genMessages(msgPrefix)...); err != nil {
 			log.Printf("Publish failed, %v\n", err)
 			return

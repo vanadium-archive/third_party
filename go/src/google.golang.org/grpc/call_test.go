@@ -54,6 +54,7 @@ var (
 	expectedResponse = "pong"
 	weirdError       = "format verbs: %v%s"
 	sizeLargeErr     = 1024 * 1024
+	canceled         = 0
 )
 
 type testCodec struct {
@@ -73,7 +74,8 @@ func (testCodec) String() string {
 }
 
 type testStreamHandler struct {
-	t transport.ServerTransport
+	port string
+	t    transport.ServerTransport
 }
 
 func (h *testStreamHandler) handleStream(t *testing.T, s *transport.Stream) {
@@ -100,6 +102,16 @@ func (h *testStreamHandler) handleStream(t *testing.T, s *transport.Stream) {
 			h.t.WriteStatus(s, codes.Internal, weirdError)
 			return
 		}
+		if v == "canceled" {
+			canceled++
+			h.t.WriteStatus(s, codes.Internal, "")
+			return
+		}
+		if v == "port" {
+			h.t.WriteStatus(s, codes.Internal, h.port)
+			return
+		}
+
 		if v != expectedRequest {
 			h.t.WriteStatus(s, codes.Internal, strings.Repeat("A", sizeLargeErr))
 			return
@@ -154,7 +166,7 @@ func (s *server) start(t *testing.T, port int, maxStreams uint32) {
 		}
 		st, err := transport.NewServerTransport("http2", conn, maxStreams, nil)
 		if err != nil {
-			return
+			continue
 		}
 		s.mu.Lock()
 		if s.conns == nil {
@@ -164,7 +176,10 @@ func (s *server) start(t *testing.T, port int, maxStreams uint32) {
 		}
 		s.conns[st] = true
 		s.mu.Unlock()
-		h := &testStreamHandler{st}
+		h := &testStreamHandler{
+			port: s.port,
+			t:    st,
+		}
 		go st.HandleStreams(func(s *transport.Stream) {
 			go h.handleStream(t, s)
 		})
@@ -240,6 +255,23 @@ func TestInvokeErrorSpecialChars(t *testing.T) {
 	}
 	if got, want := ErrorDesc(err), weirdError; got != want {
 		t.Fatalf("grpc.Invoke(_, _, _, _, _) error = %q, want %q", got, want)
+	}
+	cc.Close()
+	server.stop()
+}
+
+// TestInvokeCancel checks that an Invoke with a canceled context is not sent.
+func TestInvokeCancel(t *testing.T) {
+	server, cc := setUp(t, 0, math.MaxUint32)
+	var reply string
+	req := "canceled"
+	for i := 0; i < 100; i++ {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		Invoke(ctx, "/foo/bar", &req, &reply, cc)
+	}
+	if canceled != 0 {
+		t.Fatalf("received %d of 100 canceled requests", canceled)
 	}
 	cc.Close()
 	server.stop()

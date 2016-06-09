@@ -72,11 +72,50 @@ func TestCredentialsMisuse(t *testing.T) {
 		t.Fatalf("Failed to create credentials %v", err)
 	}
 	// Two conflicting credential configurations
-	if _, err := Dial("Non-Existent.Server:80", WithTransportCredentials(creds), WithTimeout(time.Millisecond), WithBlock(), WithInsecure()); err != ErrCredentialsMisuse {
-		t.Fatalf("Dial(_, _) = _, %v, want _, %v", err, ErrCredentialsMisuse)
+	if _, err := Dial("Non-Existent.Server:80", WithTransportCredentials(creds), WithTimeout(time.Millisecond), WithBlock(), WithInsecure()); err != errCredentialsMisuse {
+		t.Fatalf("Dial(_, _) = _, %v, want _, %v", err, errCredentialsMisuse)
 	}
 	// security info on insecure connection
-	if _, err := Dial("Non-Existent.Server:80", WithPerRPCCredentials(creds), WithTimeout(time.Millisecond), WithBlock(), WithInsecure()); err != ErrCredentialsMisuse {
-		t.Fatalf("Dial(_, _) = _, %v, want _, %v", err, ErrCredentialsMisuse)
+	if _, err := Dial("Non-Existent.Server:80", WithPerRPCCredentials(creds), WithTimeout(time.Millisecond), WithBlock(), WithInsecure()); err != errCredentialsMisuse {
+		t.Fatalf("Dial(_, _) = _, %v, want _, %v", err, errCredentialsMisuse)
+	}
+}
+
+func TestWithBackoffConfigDefault(t *testing.T) {
+	testBackoffConfigSet(t, &DefaultBackoffConfig)
+}
+
+func TestWithBackoffConfig(t *testing.T) {
+	b := BackoffConfig{MaxDelay: DefaultBackoffConfig.MaxDelay / 2}
+	expected := b
+	setDefaults(&expected) // defaults should be set
+	testBackoffConfigSet(t, &expected, WithBackoffConfig(b))
+}
+
+func TestWithBackoffMaxDelay(t *testing.T) {
+	md := DefaultBackoffConfig.MaxDelay / 2
+	expected := BackoffConfig{MaxDelay: md}
+	setDefaults(&expected)
+	testBackoffConfigSet(t, &expected, WithBackoffMaxDelay(md))
+}
+
+func testBackoffConfigSet(t *testing.T, expected *BackoffConfig, opts ...DialOption) {
+	opts = append(opts, WithInsecure())
+	conn, err := Dial("foo:80", opts...)
+	if err != nil {
+		t.Fatalf("unexpected error dialing connection: %v", err)
+	}
+
+	if conn.dopts.bs == nil {
+		t.Fatalf("backoff config not set")
+	}
+
+	actual, ok := conn.dopts.bs.(BackoffConfig)
+	if !ok {
+		t.Fatalf("unexpected type of backoff config: %#v", conn.dopts.bs)
+	}
+
+	if actual != *expected {
+		t.Fatalf("unexpected backoff config on connection: %v, want %v", actual, expected)
 	}
 }

@@ -25,7 +25,7 @@ import (
 // periodically extends them.
 // Messages are tracked by Ack ID.
 type keepAlive struct {
-	Client        *Client
+	s             service
 	Ctx           context.Context  // The context to use when extending deadlines.
 	Sub           string           // The full name of the subscription.
 	ExtensionTick <-chan time.Time // ExtenstionTick supplies the frequency with which to make extension requests.
@@ -71,9 +71,11 @@ func (ka *keepAlive) Start() {
 }
 
 // Add adds an ack id to be kept alive.
+// It should not be called after Stop.
 func (ka *keepAlive) Add(ackID string) {
 	ka.mu.Lock()
 	defer ka.mu.Unlock()
+
 	ka.items[ackID] = time.Now().Add(ka.MaxExtension)
 	ka.dr.SetPending(true)
 }
@@ -82,6 +84,9 @@ func (ka *keepAlive) Add(ackID string) {
 func (ka *keepAlive) Remove(ackID string) {
 	ka.mu.Lock()
 	defer ka.mu.Unlock()
+
+	// Note: If users NACKs a message after it has been removed due to
+	// expiring, Remove will be called twice with same ack id.  This is OK.
 	delete(ka.items, ackID)
 	ka.dr.SetPending(len(ka.items) != 0)
 }
@@ -114,12 +119,30 @@ func (ka *keepAlive) getAckIDs() (live, expired []string) {
 	return live, expired
 }
 
+const maxExtensionAttempts = 2
+
 func (ka *keepAlive) extendDeadlines(ackIDs []string) {
-	// TODO: split into separate requests if there are too many ackIDs.
-	if len(ackIDs) > 0 {
-		_ = ka.Client.s.modifyAckDeadline(ka.Ctx, ka.Sub, ka.Deadline, ackIDs)
+	head, tail := ka.s.splitAckIDs(ackIDs)
+	for len(head) > 0 {
+		for i := 0; i < maxExtensionAttempts; i++ {
+			if ka.s.modifyAckDeadline(ka.Ctx, ka.Sub, ka.Deadline, head) == nil {
+				break
+			}
+		}
+		// NOTE: Messages whose deadlines we fail to extend will
+		// eventually be redelivered and this is a documented behaviour
+		// of the API.
+		//
+		// NOTE: If we fail to extend deadlines here, this
+		// implementation will continue to attempt extending the
+		// deadlines for those ack IDs the next time the extension
+		// ticker ticks.  By then the deadline will have expired.
+		// Re-extending them is harmless, however.
+		//
+		// TODO: call Remove for ids which fail to be extended.
+
+		head, tail = ka.s.splitAckIDs(tail)
 	}
-	// TODO: retry on error.  NOTE: if we ultimately fail to extend deadlines here, the messages will be redelivered, which is OK.
 }
 
 // A drain (once started) indicates via a channel when there is no work pending.
@@ -145,6 +168,12 @@ func (d *drain) SetPending(pending bool) {
 
 func (d *drain) closeIfDrained() {
 	if !d.pending && d.started {
-		close(d.Drained)
+		// Check to see if d.Drained is closed before closing it.
+		// This allows SetPending(false) to be safely called multiple times.
+		select {
+		case <-d.Drained:
+		default:
+			close(d.Drained)
+		}
 	}
 }

@@ -1,5 +1,5 @@
-URL: https://github.com/grpc/grpc-go/archive/ecd00d52ac82a2cd37e17bf91d9c6ca228b71745.zip
-Version: ecd00d52ac82a2cd37e17bf91d9c6ca228b71745
+URL: https://github.com/grpc/grpc-go/archive/4c2aaab42efd64c253e2eea35d987a74a1c8c20d.zip
+Version: 4c2aaab42efd64c253e2eea35d987a74a1c8c20d
 License: New BSD
 License File: LICENSE
 
@@ -9,7 +9,4 @@ A high performance, open source, general RPC framework that puts mobile and HTTP
 Local Modifications:
 Add test/dummy.go to workaround "no buildable Go source files" error when building
 google.golang.org/grpc/test package.
-
-
-
 

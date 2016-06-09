@@ -1,0 +1,10 @@
+URL: https://github.com/googleapis/proto-client-go/archive/43a2ab8c54baf68a3ce9a4792bd62f0331bab554.zip
+Version: 43a2ab8c54baf68a3ce9a4792bd62f0331bab554
+License: New BSD
+License File: LICENSE
+
+Description:
+Generated proto and gRPC classes for Google Cloud Platform in Go
+
+Local Modifications:
+No modifications.

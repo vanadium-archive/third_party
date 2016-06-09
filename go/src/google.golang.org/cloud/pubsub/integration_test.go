@@ -61,12 +61,12 @@ func TestAll(t *testing.T) {
 		t.Fatalf("Creating client error: %v", err)
 	}
 
-	var topic *TopicHandle
+	var topic *Topic
 	if topic, err = client.NewTopic(ctx, topicName); err != nil {
 		t.Errorf("CreateTopic error: %v", err)
 	}
 
-	var sub *SubscriptionHandle
+	var sub *Subscription
 	if sub, err = client.NewSubscription(ctx, subName, topic, 0, nil); err != nil {
 		t.Errorf("CreateSub error: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestAll(t *testing.T) {
 	for i := 0; i < len(want); i++ {
 		m, err := it.Next()
 		if err != nil {
-			t.Fatalf("error getting next message:", err) // TODO: add deadline to context.
+			t.Fatalf("error getting next message:", err)
 		}
 		md := extractMessageData(m)
 		got[md.ID] = md

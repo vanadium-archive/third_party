@@ -12,12 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pubsub contains a Google Cloud Pub/Sub client.
-//
-// This package is experimental and may make backwards-incompatible changes.
-//
-// More information about Google Cloud Pub/Sub is available at
-// https://cloud.google.com/pubsub/docs
 package pubsub // import "google.golang.org/cloud/pubsub"
 
 import (
@@ -65,6 +59,9 @@ func NewClient(ctx context.Context, projectID string, opts ...cloud.ClientOption
 	}
 
 	s, err := newPubSubService(httpClient, endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("constructing pubsub client: %v", err)
+	}
 
 	c := &Client{
 		projectID: projectID,
@@ -85,4 +82,53 @@ func baseAddr() string {
 		return "http://" + host + "/"
 	}
 	return prodAddr
+}
+
+// pageToken stores the next page token for a server response which is split over multiple pages.
+type pageToken struct {
+	tok      string
+	explicit bool
+}
+
+func (pt *pageToken) set(tok string) {
+	pt.tok = tok
+	pt.explicit = true
+}
+
+func (pt *pageToken) get() string {
+	return pt.tok
+}
+
+// more returns whether further pages should be fetched from the server.
+func (pt *pageToken) more() bool {
+	return pt.tok != "" || !pt.explicit
+}
+
+// stringsIterator provides an iterator API for a sequence of API page fetches that return lists of strings.
+type stringsIterator struct {
+	ctx     context.Context
+	strings []string
+	token   pageToken
+	fetch   func(ctx context.Context, tok string) (*stringsPage, error)
+}
+
+// Next returns the next string. If there are no more strings, Done will be returned.
+func (si *stringsIterator) Next() (string, error) {
+	for len(si.strings) == 0 && si.token.more() {
+		page, err := si.fetch(si.ctx, si.token.get())
+		if err != nil {
+			return "", err
+		}
+		si.token.set(page.tok)
+		si.strings = page.strings
+	}
+
+	if len(si.strings) == 0 {
+		return "", Done
+	}
+
+	s := si.strings[0]
+	si.strings = si.strings[1:]
+
+	return s, nil
 }
