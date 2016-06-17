@@ -87,7 +87,7 @@ func TestCSVSeparator(t *testing.T) {
 	table.Render()
 }
 
-func TestBorder(t *testing.T) {
+func TestNoBorder(t *testing.T) {
 	data := [][]string{
 		[]string{"1/1/2014", "Domain name", "2233", "$10.98"},
 		[]string{"1/1/2014", "January Hosting", "2233", "$54.95"},
@@ -95,12 +95,90 @@ func TestBorder(t *testing.T) {
 		[]string{"1/4/2014", "February Extra Bandwidth", "2233", "$30.00"},
 	}
 
-	table := NewWriter(os.Stdout)
+	var buf bytes.Buffer
+	table := NewWriter(&buf)
 	table.SetHeader([]string{"Date", "Description", "CV2", "Amount"})
 	table.SetFooter([]string{"", "", "Total", "$146.93"}) // Add Footer
 	table.SetBorder(false)                                // Set Border to false
 	table.AppendBulk(data)                                // Add Bulk Data
 	table.Render()
+
+	want := `    DATE   |       DESCRIPTION        |  CV2  | AMOUNT   
++----------+--------------------------+-------+---------+
+  1/1/2014 | Domain name              |  2233 | $10.98   
+  1/1/2014 | January Hosting          |  2233 | $54.95   
+  1/4/2014 | February Hosting         |  2233 | $51.00   
+  1/4/2014 | February Extra Bandwidth |  2233 | $30.00   
++----------+--------------------------+-------+---------+
+                                        TOTAL | $146 93  
+                                      +-------+---------+
+`
+	got := buf.String()
+	if got != want {
+		t.Errorf("border table rendering failed\ngot:\n%s\nwant:\n%s\n", got, want)
+	}
+}
+
+func TestWithBorder(t *testing.T) {
+	data := [][]string{
+		[]string{"1/1/2014", "Domain name", "2233", "$10.98"},
+		[]string{"1/1/2014", "January Hosting", "2233", "$54.95"},
+		[]string{"1/4/2014", "February Hosting", "2233", "$51.00"},
+		[]string{"1/4/2014", "February Extra Bandwidth", "2233", "$30.00"},
+	}
+
+	var buf bytes.Buffer
+	table := NewWriter(&buf)
+	table.SetHeader([]string{"Date", "Description", "CV2", "Amount"})
+	table.SetFooter([]string{"", "", "Total", "$146.93"}) // Add Footer
+	table.AppendBulk(data)                                // Add Bulk Data
+	table.Render()
+
+	want := `+----------+--------------------------+-------+---------+
+|   DATE   |       DESCRIPTION        |  CV2  | AMOUNT  |
++----------+--------------------------+-------+---------+
+| 1/1/2014 | Domain name              |  2233 | $10.98  |
+| 1/1/2014 | January Hosting          |  2233 | $54.95  |
+| 1/4/2014 | February Hosting         |  2233 | $51.00  |
+| 1/4/2014 | February Extra Bandwidth |  2233 | $30.00  |
++----------+--------------------------+-------+---------+
+|                                       TOTAL | $146 93 |
++----------+--------------------------+-------+---------+
+`
+	got := buf.String()
+	if got != want {
+		t.Errorf("border table rendering failed\ngot:\n%s\nwant:\n%s\n", got, want)
+	}
+}
+
+func TestPrintingInMarkdown(t *testing.T) {
+	fmt.Println("TESTING")
+	data := [][]string{
+		[]string{"1/1/2014", "Domain name", "2233", "$10.98"},
+		[]string{"1/1/2014", "January Hosting", "2233", "$54.95"},
+		[]string{"1/4/2014", "February Hosting", "2233", "$51.00"},
+		[]string{"1/4/2014", "February Extra Bandwidth", "2233", "$30.00"},
+	}
+
+	var buf bytes.Buffer
+	table := NewWriter(&buf)
+	table.SetHeader([]string{"Date", "Description", "CV2", "Amount"})
+	table.AppendBulk(data) // Add Bulk Data
+	table.SetBorders(Border{Left: true, Top: false, Right: true, Bottom: false})
+	table.SetCenterSeparator("|")
+	table.Render()
+
+	want := `|   DATE   |       DESCRIPTION        | CV2  | AMOUNT |
+|----------|--------------------------|------|--------|
+| 1/1/2014 | Domain name              | 2233 | $10.98 |
+| 1/1/2014 | January Hosting          | 2233 | $54.95 |
+| 1/4/2014 | February Hosting         | 2233 | $51.00 |
+| 1/4/2014 | February Extra Bandwidth | 2233 | $30.00 |
+`
+	got := buf.String()
+	if got != want {
+		t.Errorf("border table rendering failed\ngot:\n%s\nwant:\n%s\n", got, want)
+	}
 }
 
 func TestPrintHeading(t *testing.T) {
@@ -109,6 +187,21 @@ func TestPrintHeading(t *testing.T) {
 	table.SetHeader([]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c"})
 	table.printHeading()
 	want := `| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C |
++---+---+---+---+---+---+---+---+---+---+---+---+
+`
+	got := buf.String()
+	if got != want {
+		t.Errorf("header rendering failed\ngot:\n%s\nwant:\n%s\n", got, want)
+	}
+}
+
+func TestPrintHeadingWithoutAutoFormat(t *testing.T) {
+	var buf bytes.Buffer
+	table := NewWriter(&buf)
+	table.SetHeader([]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c"})
+	table.SetAutoFormatHeaders(false)
+	table.printHeading()
+	want := `| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | a | b | c |
 +---+---+---+---+---+---+---+---+---+---+---+---+
 `
 	got := buf.String()
@@ -129,6 +222,56 @@ func TestPrintFooter(t *testing.T) {
 	got := buf.String()
 	if got != want {
 		t.Errorf("footer rendering failed\ngot:\n%s\nwant:\n%s\n", got, want)
+	}
+}
+
+func TestPrintFooterWithoutAutoFormat(t *testing.T) {
+	var buf bytes.Buffer
+	table := NewWriter(&buf)
+	table.SetAutoFormatHeaders(false)
+	table.SetHeader([]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c"})
+	table.SetFooter([]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c"})
+	table.printFooter()
+	want := `| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | a | b | c |
++---+---+---+---+---+---+---+---+---+---+---+---+
+`
+	got := buf.String()
+	if got != want {
+		t.Errorf("footer rendering failed\ngot:\n%s\nwant:\n%s\n", got, want)
+	}
+}
+
+func TestPrintTableWithAndWithoutAutoWrap(t *testing.T) {
+	var buf bytes.Buffer
+	var multiline = `A multiline
+string with some lines being really long.`
+
+	with := NewWriter(&buf)
+	with.Append([]string{multiline})
+	with.Render()
+	want := `+--------------------------------+
+| A multiline string with some   |
+| lines being really long.       |
++--------------------------------+
+`
+	got := buf.String()
+	if got != want {
+		t.Errorf("multiline text rendering with wrapping failed\ngot:\n%s\nwant:\n%s\n", got, want)
+	}
+
+	buf.Truncate(0)
+	without := NewWriter(&buf)
+	without.SetAutoWrapText(false)
+	without.Append([]string{multiline})
+	without.Render()
+	want = `+-------------------------------------------+
+| A multiline                               |
+| string with some lines being really long. |
++-------------------------------------------+
+`
+	got = buf.String()
+	if got != want {
+		t.Errorf("multiline text rendering without wrapping rendering failed\ngot:\n%s\nwant:\n%s\n", got, want)
 	}
 }
 
