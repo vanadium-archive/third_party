@@ -1,0 +1,11 @@
+URL: https://developers.google.com/identity/sign-in/ios/sdk/google_signin_sdk_4_0_0.zip
+Version: 4.0.0
+License: Copyright 2016 Google Inc.
+License File: None
+
+Description:
+The Google Sign-In SDK allows users to sign in with their Google account from
+third-party apps.
+
+Local Modifications:
+None
