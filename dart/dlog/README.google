@@ -1,0 +1,10 @@
+URL: https://github.com/vdakalov/dlog/archive/60479aed7047a68ba2b95b2234ee06ad6b25bb62.zip
+Version: 60479aed7047a68ba2b95b2234ee06ad6b25bb62
+License: BSD
+License File: LICENSE
+
+Description:
+dlog is a dart library for pretty-printing structured data into console.
+
+Local Modifications:
+No Modifications
