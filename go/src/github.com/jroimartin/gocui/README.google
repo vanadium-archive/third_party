@@ -1,0 +1,10 @@
+URL: https://github.com/jroimartin/gocui/archive/2dcda558bf18ec07c7065bf1eaf071b5305f7c0c.zip
+Version: 2dcda558bf18ec07c7065bf1eaf071b5305f7c0c
+License: New BSD
+License File: LICENSE
+
+Description:
+Minimalist Go package aimed at creating Console User Interfaces.
+
+Local Modifications:
+None.
