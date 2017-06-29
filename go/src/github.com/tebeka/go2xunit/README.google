@@ -1,0 +1,8 @@
+URL: https://github.com/tebeka/go2xunit/archive/3d745e6f4de3e1e94034d7cfb3cc0c543b080b49.zip
+Version: 3d745e6f4de3e1e94034d7cfb3cc0c543b080b49
+License: MIT
+License File: LICENSE
+
+Description:
+Converts go test -v (or gocheck -vv) output to xunit compatible XML output (used
+in Jenkins/Hudson).
