@@ -1,0 +1,22 @@
+=== RUN   TestGo
+--- FAIL: TestGo (4.42s)
+	benup_test.go:168: Go compiler: go version go1.8.3 darwin/amd64
+	benup_test.go:172: [/Users/cnicolaou/Dropbox/vanadium-complete/v_1/.jiri_root/profiles/v23/go/shared/1.8.3/bin/go test -v -bench . /Users/cnicolaou/Dropbox/vanadium-complete/v_1/release/go/src/v.io/x/ref/services/ben/benup/testdata_test.go] failed: exit status 1 (=== RUN   TestGood
+		--- PASS: TestGood (0.00s)
+		BenchmarkGood-8         	2000000000	         0.31 ns/op
+		BenchmarkThroughput-8   	2000000000	         0.30 ns/op	33098.55 MB/s
+		BenchmarkAllocs-8       	30000000	        43.8 ns/op	       8 B/op	       2 allocs/op
+		BenchmarkAllMetrics-8   	30000000	        43.3 ns/op	 230.91 MB/s	       8 B/op	       2 allocs/op
+		--- FAIL: BenchmarkBad
+			testdata_test.go:54: BenchmarkBad intentionally fails
+		FAIL
+		exit status 1
+		FAIL	command-line-arguments	4.009s
+		)
+=== RUN   TestNoBenchmarks
+--- PASS: TestNoBenchmarks (1.96s)
+=== RUN   TestDetectScenario
+--- PASS: TestDetectScenario (0.02s)
+FAIL
+exit status 1
+FAIL	v.io/x/ref/services/ben/benup	6.530s
